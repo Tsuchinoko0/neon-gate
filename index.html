@@ -67,6 +67,16 @@ button{font:inherit;color:inherit;cursor:pointer}
 .dlg.npc-doc{border-left-color:var(--red)} .dlg.npc-doc .who{color:var(--red)}
 .dlg.npc-mina{border-left-color:var(--pink)} .dlg.npc-mina .who{color:var(--pink)}
 .dlg.npc-gate{border-left-color:var(--amber)} .dlg.npc-gate .who{color:var(--amber)}
+.dlg.npc-genji{border-left-color:var(--amber)} .dlg.npc-genji .who{color:var(--amber)}
+.dlg.npc-ray{border-left-color:#c9d2e6} .dlg.npc-ray .who{color:#c9d2e6}
+.dlg.npc-kago{border-left-color:var(--muted)} .dlg.npc-kago .who{color:var(--muted)}
+.tags{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.tags span{position:absolute;transform:translate(-50%,-100%);font-family:var(--f-data);font-size:clamp(8px,1.3vw,11px);line-height:1.3;color:var(--cyan);background:rgba(4,10,14,.72);border:1px solid rgba(62,242,224,.5);padding:0 4px;white-space:nowrap}
+.fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .35s}
+.fade.on{opacity:1}
+.floors{display:grid;gap:8px;max-width:420px}
+.floors .nbtn{text-align:left;display:flex;justify-content:space-between;gap:12px}
+.lift-ind{font-family:var(--f-data);font-size:clamp(36px,9vw,60px);color:var(--amber);text-align:center;letter-spacing:.1em;text-shadow:0 0 14px rgba(255,181,71,.5);padding-block:30px}
 .dlg.npc-me{border-left-color:var(--muted)} .dlg.npc-me .who{color:var(--muted)}
 .dlg .txt{min-height:2.6em}
 .dlg .more{position:absolute;right:12px;bottom:6px;color:var(--cyan);animation:blink 1s steps(2) infinite}
@@ -164,7 +174,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.5 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.6 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -185,6 +195,8 @@ button{font:inherit;color:inherit;cursor:pointer}
       <div class="row" id="titleBtns"></div>
     </div>
     <div class="dlg" id="dlg" hidden><div class="who" id="dlgWho"></div><div class="txt" id="dlgTxt"></div><div class="ch" id="dlgCh"></div><span class="more" id="dlgMore">▼</span></div>
+    <div class="tags" id="tags"></div>
+    <div class="fade" id="fade"></div>
     <div class="toast" id="toast" hidden></div>
     <div class="panel" id="panel" hidden></div>
   </div>
@@ -199,7 +211,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.5"></script>
+<script src="sound.js?v=0.6"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -257,7 +269,7 @@ function effective(){const o=overall(S.cur);return o?Math.round(o.avg+implantBon
 
 /* ===== セーブ ===== */
 const KEY='neongate';
-const fresh=()=>({v:1,base:null,cur:null,scans:0,diff:'auto',mina:0,gate:0,x:36,started:false,cr:0,jobs:{},imp:{},earned:0,passed:0,snd:{bgm:0.6,se:0.8,muted:false}});
+const fresh=()=>({v:1,base:null,cur:null,scans:0,diff:'auto',mina:0,gate:0,x:36,started:false,cr:0,jobs:{},imp:{},earned:0,passed:0,snd:{bgm:0.6,se:0.8,muted:false},area:'out',reached:['out'],st:{}});
 let S=fresh();
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.v===1)S=Object.assign(fresh(),s)}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -284,7 +296,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
 function siteRecord(){try{const r=JSON.parse(localStorage.getItem('brainspec')||'null');if(r&&TESTS.every(t=>typeof r[t.id]==='number'))return{cpu:r.cpu,ram:r.ram,gpu:r.gpu,alu:r.alu}}catch(e){}return null}
 
 /* ===== 画面 ===== */
-const cv=$('#cv'),ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
+const cv=$('#cv'),ctx=cv.getContext('2d',{willReadFrequently:true});ctx.imageSmoothingEnabled=false;
 const W=320,H=180,WORLD=1000,GY=148,CAMMAX=WORLD-W;
 function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
@@ -296,6 +308,12 @@ const P_A=sprite(["...hhhh...","..hHHHHh..",".hHhhhhHh.",".hhsssshh.",".hhsvvvvh
 const P_B=sprite(["...hhhh...","..hHHHHh..",".hHhhhhHh.",".hhsssshh.",".hhsvvvvh.",".hhsssshh.","..hhsshh..",".jjjjjjjj.","jjjjcjjjjj","jjjjcjjjjj","sjjjcjjjjs","..pppppp..","..ppp.pp..",".pp....pp.",".pp....pp.","bbb....bbb"],PP);
 const MINA=sprite(["..cccc...",".ccCCcc..",".cssssc..",".csesec..",".cssssc..","..ssss...",".kkkkkk..","kkKkkKkk.","skkkkkks.",".kkkkkk..","..pppp...","..p..p...","..p..p...",".bb..bb.."],{c:'#3ef2e0',C:'#1a9e94',s:'#d9a07a',e:'#07060d',k:'#ff3d8b',K:'#a3245a',p:'#191828',b:'#0b0a12'});
 const DOC=sprite(["...gggg....","..gggggg...","..gsssmg...","..sesrms...","..sssmms...","...ssss....","..wwwwwww..",".wwWwwwWww.",".wwWwmwWww.",".swWwwwWws.","..wWwwwWw..","..wWwwwWw..","..wWwwwWw..","..wwpppww..","...pp.pp...","...pp.pp...","...pp.pp...","..bbb.bbb.."],{g:'#8a8aa0',s:'#d9a07a',e:'#07060d',r:'#ff4a5c',m:'#5c6378',w:'#c9c6d8',W:'#8e8aa6',p:'#191828',b:'#0b0a12'});
+
+const GENJI=sprite(["...wwww...","..wwwwww..","..rrrrrr..","..ssssss..","..sesses..","..ssssss..","...smms...","..oooooo..",".oaaaaaao.","oaaaaaaaao","saaaaaaaas",".aaaaaaaa.","..aaaaaa..","..pp..pp..","..pp..pp..","..pp..pp..",".bbb..bbb."],{w:'#d8d4e0',r:'#c8323c',s:'#c98f6a',e:'#07060d',m:'#9a96a8',o:'#3a3550',a:'#e8e2d0',p:'#191828',b:'#0b0a12'});
+const RAY=sprite(["...cccc...","..cCCCCc..","..cvvvvc..","..cCCCCc..","...cccc...","....cc....","..cccccc..",".cCCccCCc.","cCccLLccCc","cCccccccCc","c.cCCCCc.c","..cccccc..","..cc..cc..","..cC..Cc..","..cc..cc..","..cC..Cc..","..cc..cc..",".ccc..ccc."],{c:'#8f97ad',C:'#d6dbe8',v:'#3ef2e0',L:'#5fb8ff'});
+/* 機械化した目に映る「汎用の人型」（男性・女性） */
+const SIL_M=sprite(["...kkkk...","..kkkkkk..","..kkkkkk..","..kkkkkk..","...kkkk...",".kkkkkkkk.","kkkkkkkkkk","kkkkkkkkkk","kk.kkkk.kk","...kkkk...","...kkkk...","...kk.kk..","...kk.kk..","...kk.kk..","...kk.kk..","..kkk.kkk."],{k:'#5b6680'});
+const SIL_F=sprite(["...kkkk...","..kkkkkk..","..kkkkkk..","..kkkkkk..","..kk..kk..","..kkkkkk..",".kkkkkkkk.",".kkkkkkkk.","...kkkk...","..kkkkkk..",".kkkkkkkk.","kkkkkkkkkk","...k..k...","...k..k...","...k..k...","..kk..kk.."],{k:'#5b6680'});
 
 /* 遠景：東京（右ほど高く明るい） */
 const far=[],farWin=[];
@@ -312,13 +330,41 @@ const mid=[],midWin=[],signs=[];
 const flick=(t,s)=>(Math.sin(t*11.3+s*7.1)+Math.sin(t*3.7+s*2.3)*0.8+Math.sin(t*23+s))>-0.4;
 const LAMPS=[{x:120,broken:false},{x:318,broken:true},{x:600,broken:false},{x:760,broken:true}];
 const PUDDLES=[{x:70,w:22},{x:250,w:30},{x:520,w:26},{x:700,w:34},{x:820,w:18}];
-const NPCS=[{id:'mina',x:200},{id:'doc',x:462},{id:'gate',x:856}];
+/* 層ごとの住人と設備 */
+const AREAS={
+  out:{nm:'圏外 · 東京の外',floor:'地上 · 圏外',label:'東京の外のスラム街。遠くに東京の光が見える',
+    npcs:[{id:'mina',x:200},{id:'doc',x:462},{id:'lift',x:800},{id:'gate',x:856}]},
+  lower:{nm:'沈殿街 · 下層区',floor:'地下1層 · 沈殿街',label:'地下の街、沈殿街。屋台の灯りと配管、ホログラム広告の切れ端',
+    npcs:[{id:'lift',x:30},{id:'genji',x:322},{id:'ray',x:590},{id:'gate',x:856}]}
+};
+const AREA_ORDER=['out','lower'];
+const area=()=>AREAS[S.area]?S.area:'out';
+const following=()=>!!(S.st&&S.st.follow);
+const npcsHere=()=>AREAS[area()].npcs.filter(n=>!(n.id==='mina'&&following()));
+/* 人の見え方（知覚）に使う情報 */
+const PEOPLE={mina:{nm:'ミナ',sex:'f',age:'20代'},doc:{nm:'ドク・カゲロウ',sex:'m',age:'50代'},genji:{nm:'ゲンジ',sex:'m',age:'60代'},ray:{nm:'レイ',model:'RAY-07 ／ 運送用義体 ／ 稼働14年'}};
 const drops=[];{const R=rng(3);for(let i=0;i<90;i++)drops.push({x:R()*W,y:R()*H,v:150+R()*90,l:2+Math.round(R()*3)})}
+/* 沈殿街：配管、店の灯り、ホログラム広告の切れ端、柱 */
+const L_SHOPS=[],L_HOLO=[],L_PIPES=[];
+{const R=rng(41);let x=-20;while(x<720){const w=Math.round(40+R()*40);L_SHOPS.push({x,w,h:Math.round(40+R()*30),c:['#ffb547','#ff7ab8','#7ff8ee','#ffd9a0'][Math.floor(R()*4)],on:R()<0.7});x+=w+Math.round(6+R()*14)}
+  for(let i=0;i<14;i++)L_HOLO.push({x:Math.round(R()*700),y:Math.round(30+R()*40),w:Math.round(8+R()*20),h:Math.round(4+R()*8),c:['#ff3d8b','#3ef2e0','#b77bff','#ffb547'][Math.floor(R()*4)],s:R()*30});
+  for(let i=0;i<6;i++)L_PIPES.push({y:Math.round(4+i*5+R()*3),h:2+Math.round(R()*2),c:i%2?'#2a2036':'#221a2e'})}
+const fol={x:0,dir:1};
 
 let camX=0,player={x:S.x,dir:1,step:0,moving:false},keys={l:false,r:false};
 let gateLight='idle',gateLightUntil=0;
 
 function draw(t){
+  if(area()==='lower')drawLower(t);else drawOut(t);
+  const X=x=>Math.round(x-camX);
+  drawPeople(t);
+  perceive(t);
+  /* 話しかけられる印 */
+  const n=near();if(n&&mode==='play'){const sx=X(n.x),bob=Math.round(Math.sin(t*5)*1.5),y=markY(n)+bob;
+    ctx.fillStyle='#3ef2e0';ctx.fillRect(sx-3,y,7,1);ctx.fillRect(sx-2,y+1,5,1);ctx.fillRect(sx-1,y+2,3,1);ctx.fillRect(sx,y+3,1,1)}
+  tagsUp()}
+const markY=n=>n.id==='gate'?84:n.id==='lift'?GY-52:n.id==='doc'?GY-26:n.id==='ray'?GY-26:n.id==='genji'?GY-25:GY-22;
+function drawOut(t){
   const prog=camX/CAMMAX;
   /* 空 */
   const sky=['#07060d','#0a0815','#0e0b1d','#130e26','#1a1230','#24163a'];
@@ -377,29 +423,119 @@ function draw(t){
     const on=!l.broken||flick(t,l.x);ctx.fillStyle=on?'#ffe2a8':'#3a3020';ctx.fillRect(sx+7,GY-50,3,2);
     if(on){ctx.fillStyle='rgba(255,210,140,.09)';ctx.beginPath();ctx.moveTo(sx+7,GY-49);ctx.lineTo(sx-10,GY);ctx.lineTo(sx+28,GY);ctx.closePath();ctx.fill()}}
 
-  /* 人物 */
-  ctx.drawImage(MINA,X(200)-4,GY-14);
-  ctx.save();ctx.translate(X(462)+11,GY-18);ctx.scale(-1,1);ctx.drawImage(DOC,0,0);ctx.restore();
-  ctx.fillStyle='#ff4a5c';if(Math.floor(t*1.2)%4)ctx.fillRect(X(462)+5,GY-15,1,1);
-  const spr=player.moving&&Math.floor(player.step*8)%2?P_B:P_A;
-  const px=Math.round(player.x-camX)-5;
-  if(player.dir<0){ctx.save();ctx.translate(px+10,GY-16);ctx.scale(-1,1);ctx.drawImage(spr,0,0);ctx.restore()}else ctx.drawImage(spr,px,GY-16);
-
+  /* 昇降機（ゲートの手前） */
+  drawLift(X(800),t,S.reached.includes('lower'));
+  /* 澄み：水たまりに街灯の灯りが映り、暖かい光の粒が漂う */
+  if(clarityLv()>=1){for(const l of LAMPS){if(l.broken)continue;const sx=X(l.x);if(sx<-30||sx>W+30)continue;ctx.fillStyle='rgba(255,214,150,.22)';ctx.fillRect(sx+2,GY+3,10,1);ctx.fillRect(sx+4,GY+5,6,1)}
+    motes(t,'rgba(255,220,170,.55)')}
   /* 雨 */
   ctx.fillStyle='rgba(160,175,255,.32)';for(const d of drops)ctx.fillRect(Math.round(d.x),Math.round(d.y),1,d.l);
-
-  /* 話しかけられる印 */
-  const n=near();if(n&&mode==='play'){const sx=X(n.x),bob=Math.round(Math.sin(t*5)*1.5),y=(n.id==='gate'?84:n.id==='doc'?GY-26:GY-22)+bob;
-    ctx.fillStyle='#3ef2e0';ctx.fillRect(sx-3,y,7,1);ctx.fillRect(sx-2,y+1,5,1);ctx.fillRect(sx-1,y+2,3,1);ctx.fillRect(sx,y+3,1,1)}
 }
-function near(){let best=null,bd=24;for(const n of NPCS){const d=Math.abs(n.x-player.x);if(d<bd){bd=d;best=n}}return best}
+function motes(t,col){ctx.fillStyle=col;for(let i=0;i<14;i++){const x=((i*73+t*6*(1+i%3))%(W+20))-10,y=60+((i*37+Math.sin(t*0.7+i)*12)%70);ctx.fillRect(Math.round(x),Math.round(y),1,1)}}
+/* 昇降機の扉。lit=行き先が登録済み */
+function drawLift(sx,t,lit){if(sx<-40||sx>W+40)return;
+  ctx.fillStyle='#16131f';ctx.fillRect(sx-14,GY-44,28,44);ctx.fillStyle='#2b2640';ctx.fillRect(sx-14,GY-44,28,1);ctx.fillRect(sx-14,GY-44,1,44);ctx.fillRect(sx+13,GY-44,1,44);
+  ctx.fillStyle='#262236';ctx.fillRect(sx-11,GY-36,10,36);ctx.fillRect(sx+1,GY-36,10,36);ctx.fillStyle='#0c0a14';ctx.fillRect(sx,GY-36,1,36);
+  ctx.fillStyle=lit?(Math.floor(t*1.5)%2?'#ffb547':'#a8742a'):'#4a2a2a';ctx.fillRect(sx-4,GY-41,8,2);
+  ctx.fillStyle='#3a3550';ctx.fillRect(sx+15,GY-22,2,4);ctx.fillStyle=lit?'#3ef2e0':'#ff4a5c';ctx.fillRect(sx+15,GY-21,2,1)}
+function drawLower(t){
+  const prog=camX/CAMMAX,X=x=>Math.round(x-camX),cl=clarityLv();
+  /* 天井と奥の壁 */
+  const g0=ctx.createLinearGradient(0,0,0,GY);g0.addColorStop(0,'#160f1c');g0.addColorStop(0.45,'#2e1f34');g0.addColorStop(1,'#4a2e3e');ctx.fillStyle=g0;ctx.fillRect(0,0,W,GY);
+  const po=Math.round(camX*0.8);for(const p of L_PIPES){ctx.fillStyle=p.c;ctx.fillRect(0,p.y,W,p.h)}
+  ctx.fillStyle='#4a3850';for(let x=-(po%46);x<W;x+=46)ctx.fillRect(Math.round(x),0,3,34);
+  /* 奥の店並び */
+  const mo=Math.round(camX*0.5);
+  for(const b of L_SHOPS){const sx=b.x-mo;if(sx>W||sx+b.w<0)continue;ctx.fillStyle='#24182a';ctx.fillRect(sx,GY-b.h-20,b.w,b.h+20);
+    if(b.on){ctx.globalAlpha=0.3;ctx.fillStyle=b.c;ctx.fillRect(sx+3,GY-30,b.w-6,24);ctx.globalAlpha=1;ctx.fillStyle=b.c;ctx.fillRect(sx+3,GY-31,b.w-6,1)}
+    ctx.fillStyle='#3a2a40';ctx.fillRect(sx,GY-b.h-20,b.w,1)}
+  /* 街全体を照らす暖かい光 */
+  {const g1=ctx.createRadialGradient(W/2,GY-10,10,W/2,GY-10,260);g1.addColorStop(0,'rgba(255,170,110,.16)');g1.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g1;ctx.fillRect(0,0,W,H)}
+  for(const h of L_HOLO){const sx=h.x-mo;if(sx<-30||sx>W)continue;if(!flick(t,h.s))continue;ctx.globalAlpha=0.5;ctx.fillStyle=h.c;ctx.fillRect(sx,h.y,h.w,h.h);ctx.globalAlpha=0.9;ctx.fillRect(sx,h.y+Math.floor((t*20+h.s)%h.h),h.w,1);ctx.globalAlpha=1}
+  /* 柱 */
+  for(let x=-(camX%160)+60;x<W+20;x+=160){ctx.fillStyle='#1c1320';ctx.fillRect(Math.round(x),0,12,GY);ctx.fillStyle='#3a2a40';ctx.fillRect(Math.round(x),0,1,GY)}
+  /* 床（格子） */
+  ctx.fillStyle='#1c1420';ctx.fillRect(0,GY,W,H-GY);ctx.fillStyle='#5a4258';ctx.fillRect(0,GY,W,1);
+  ctx.fillStyle='#2a1e2e';for(let x=-(camX%8);x<W;x+=8)ctx.fillRect(Math.round(x),GY+2,1,H-GY-2);for(let y=GY+6;y<H;y+=6)ctx.fillRect(0,y,W,1);
+  /* 昇降機 */
+  drawLift(X(30),t,true);
+  /* ゲンジの屋台「灯」 */
+  {const sx=X(280);if(sx<W+10&&sx+90>-10){
+    ctx.fillStyle='rgba(255,190,110,.10)';ctx.beginPath();ctx.moveTo(sx+42,GY-46);ctx.lineTo(sx-10,GY);ctx.lineTo(sx+96,GY);ctx.closePath();ctx.fill();
+    for(let i=0;i<8;i++){ctx.fillStyle=i%2?'#e8e2d0':'#b8323c';ctx.fillRect(sx+4+i*10,GY-50,10,6)}
+    ctx.fillStyle='#2a1c1a';ctx.fillRect(sx+6,GY-44,2,44);ctx.fillRect(sx+78,GY-44,2,44);
+    ctx.fillStyle='#4a2e22';ctx.fillRect(sx,GY-16,86,16);ctx.fillStyle='#6a4430';ctx.fillRect(sx,GY-16,86,2);
+    ctx.fillStyle='#3a3a44';ctx.fillRect(sx+56,GY-22,12,6);
+    const lon=flick(t,7)||cl>=1;ctx.fillStyle=lon?'#ff5a3c':'#6a2a20';ctx.fillRect(sx+14,GY-40,6,8);ctx.fillStyle='rgba(255,90,60,.25)';if(lon)ctx.fillRect(sx+10,GY-44,14,16);
+    /* 湯気（澄みで濃くなる） */
+    const n=cl>=1?7:3;for(let i=0;i<n;i++){const k=((t*0.6+i/n)%1);ctx.fillStyle=`rgba(230,230,240,${(cl>=1?0.35:0.18)*(1-k)})`;ctx.fillRect(Math.round(sx+60+Math.sin(t*2+i)*3),Math.round(GY-24-k*26),2,2)}}}
+  /* 鋼組の溜まり場（レイ） */
+  {const sx=X(560);if(sx<W+10&&sx+80>-10){ctx.fillStyle='#1a1e2a';ctx.fillRect(sx,GY-14,22,14);ctx.fillRect(sx+44,GY-10,18,10);ctx.fillStyle='#5fb8ff';ctx.globalAlpha=0.6;ctx.fillRect(sx+2,GY-12,18,1);ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(95,184,255,.08)';ctx.fillRect(sx-6,GY-60,80,60)}}
+  /* 企業区へのゲート（白い光） */
+  {const gx0=X(872);if(gx0<W+10){
+    let lg=ctx.createLinearGradient(gx0,0,gx0+120,0);lg.addColorStop(0,'rgba(240,250,255,0.08)');lg.addColorStop(1,'rgba(240,250,255,0.85)');ctx.fillStyle=lg;ctx.fillRect(gx0+12,30,140,GY-30);
+    ctx.fillStyle='#2a2438';ctx.fillRect(gx0,30,12,GY-30);for(let y=40;y<GY;y+=6){ctx.fillStyle='#3a3350';ctx.fillRect(gx0+12,y,140,2)}
+    ctx.fillStyle='#0d0b18';ctx.fillRect(gx0+1,96,10,10);ctx.fillStyle=Math.floor(t*2)%2?'#ff4a5c':'#7a2030';ctx.fillRect(gx0+3,98,6,6)}}
+  /* 澄み：暖かい光の粒 */
+  if(cl>=1)motes(t,'rgba(255,200,150,.6)');
+  /* 上の層から漏れるしずく */
+  ctx.fillStyle='rgba(170,190,230,.35)';for(let i=0;i<drops.length;i+=4){const d=drops[i];ctx.fillRect(Math.round(d.x),Math.round(d.y),1,1)}
+  /* 地下の暗さ（奥へ行くほど明るい） */
+  ctx.fillStyle=`rgba(6,3,10,${0.1*(1-prog)})`;ctx.fillRect(0,0,W,H);
+}
+/* 人物：知覚に合わせて、本来の姿か汎用の人型かを描き分ける */
+function personSprite(id,base){const m=docMood();if(m>=3&&PEOPLE[id]&&PEOPLE[id].sex)return PEOPLE[id].sex==='f'?SIL_F:SIL_M;return base}
+function drawSpr(spr,x,flip,alpha=1){const sx=Math.round(x-camX-spr.width/2),sy=GY-spr.height;if(sx>W+10||sx<-20)return;ctx.globalAlpha=alpha;
+  if(flip){ctx.save();ctx.translate(sx+spr.width,sy);ctx.scale(-1,1);ctx.drawImage(spr,0,0);ctx.restore()}else ctx.drawImage(spr,sx,sy);ctx.globalAlpha=1}
+function drawPeople(t){const a=area();
+  if(a==='out'){if(!following())drawSpr(personSprite('mina',MINA),200,false);drawSpr(personSprite('doc',DOC),462,true);
+    if(docMood()<3){ctx.fillStyle='#ff4a5c';if(Math.floor(t*1.2)%4)ctx.fillRect(Math.round(462-camX)+5,GY-15,1,1)}}
+  else{drawSpr(personSprite('genji',GENJI),322,false);
+    /* レイ：全身義体なので、生身の目にはぼやけ、機械の目にははっきり映る */
+    const m=docMood(),jit=m<2?Math.round(Math.sin(t*9)*1):0;drawSpr(RAY,590+jit,true,m===0?0.5:m===1?0.7:1)}
+  if(following())drawSpr(personSprite('mina',MINA),fol.x,fol.dir<0);
+  const spr=player.moving&&Math.floor(player.step*8)%2?P_B:P_A;drawSpr(spr,player.x,player.dir<0)}
+/* 知覚のフィルター：機械化で色が抜け、走査線、線画になる。澄みで色が深まる */
+function perceive(t){const m=docMood(),c=clarityLv();
+  if(m>=2||c>=1){const img=ctx.getImageData(0,0,W,H),d=img.data;
+    if(m>=4){const lum=new Float32Array(W*H);for(let i=0,j=0;j<lum.length;i+=4,j++)lum[j]=d[i]*0.3+d[i+1]*0.59+d[i+2]*0.11;
+      for(let y=0;y<H;y++)for(let x=0;x<W;x++){const j=y*W+x,i=j*4,e=Math.abs(lum[j]-(x<W-1?lum[j+1]:lum[j]))+Math.abs(lum[j]-(y<H-1?lum[j+W]:lum[j]));
+        const v=e>14?Math.min(1,e/60):0;d[i]=8+54*v;d[i+1]=12+230*v;d[i+2]=16+208*v}}
+    else{const sat=m>=3?0.08:m>=2?0.55:1.14,tint=m>=3?0.85:m>=2?0.3:0;
+      for(let y=0;y<H;y++){const sl=m>=2&&y%2?0.8:1;for(let x=0;x<W;x++){const i=(y*W+x)*4,r=d[i],g=d[i+1],b=d[i+2],l=r*0.3+g*0.59+b*0.11;
+        let R=l+(r-l)*sat,G=l+(g-l)*sat,B=l+(b-l)*sat;if(tint){R=R*(1-tint)+l*0.3*tint;G=G*(1-tint)+l*1.1*tint;B=B*(1-tint)+l*1.05*tint}
+        d[i]=R*sl;d[i+1]=G*sl;d[i+2]=B*sl}}}
+    ctx.putImageData(img,0,0)}
+  /* 機械化：画面の端の HUD */
+  if(m>=1){ctx.fillStyle='rgba(62,242,224,.55)';const k=4;
+    ctx.fillRect(4,4,k*3,1);ctx.fillRect(4,4,1,k*3);ctx.fillRect(W-4-k*3,4,k*3,1);ctx.fillRect(W-5,4,1,k*3);ctx.fillRect(4,H-5,k*3,1);ctx.fillRect(4,H-4-k*3,1,k*3);ctx.fillRect(W-4-k*3,H-5,k*3,1);ctx.fillRect(W-5,H-4-k*3,1,k*3);
+    for(let x=-(camX%10);x<80;x+=10)ctx.fillRect(Math.round(120+x),8,1,x%20===0?3:2);ctx.fillRect(160,7,1,5);
+    if(Math.floor(t*2)%2){ctx.fillStyle='rgba(255,74,92,.8)';ctx.fillRect(W-14,8,2,2)}}}
+/* 機械化 2 以上：人の上にタグを出す */
+let tagsHTML='';
+function tagsUp(){const m=docMood(),el=$('#tags');let h='';
+  if(m>=2&&(mode==='play'||mode==='dialog')){const list=[];const add=(id,x,spr)=>list.push({id,x,y:GY-spr.height-3});
+    if(area()==='out'){if(!following())add('mina',200,MINA);add('doc',462,DOC)}else{add('genji',322,GENJI);add('ray',590,RAY)}
+    if(following())add('mina',fol.x,MINA);
+    const ids={};let n=0;
+    for(const p of list){const sx=p.x-camX;if(sx<-10||sx>W+10)continue;const P=PEOPLE[p.id];let tx;
+      if(P.model)tx=P.model;else if(m>=4){ids[p.id]=ids[p.id]||('対象'+'ABCD'[n++]);tx=ids[p.id]}else tx=m>=3?`${P.sex==='f'?'女性':'男性'}・${P.age}`:`${P.nm} ／ ${P.sex==='f'?'女性':'男性'}・${P.age}`;
+      h+=`<span style="left:${(sx/W*100).toFixed(2)}%;top:${(p.y/H*100).toFixed(2)}%">${esc(tx)}</span>`}}
+  if(h!==tagsHTML){tagsHTML=h;el.innerHTML=h}}
+/* 澄み：生身のまま層を進み、本人の実力が伸びるほど上がる（0〜3） */
+function clarityLv(){const f=flesh();if(f<40)return 0;const o=overall(S.cur),b=overall(S.base),grow=o&&b?o.avg-b.avg:0;
+  const v=Math.min(3,(S.reached||['out']).length-1+(grow>=5?1:0));return f>=70?v:Math.min(1,v)}
+function near(){let best=null,bd=24;for(const n of npcsHere()){const d=Math.abs(n.x-player.x);if(d<bd){bd=d;best=n}}
+  if(!best&&following())return{id:'mina',x:fol.x};return best}
 
 let mode='title',last=0,titlePan=0,stepIdx=0,lastBright=-1;
 function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
   if(mode==='play'){const dx=(keys.r?1:0)-(keys.l?1:0);player.moving=dx!==0;
     if(dx){player.dir=dx;player.x=clamp(player.x+dx*62*dt,12,846);player.step+=dt;const si=Math.floor(player.step*2.5);if(si!==stepIdx){stepIdx=si;sfx('step')}}
     camX=clamp(Math.round(player.x-130),0,CAMMAX);
-    const br=Math.round(camX/CAMMAX*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
+    const ft=player.x-20*player.dir;fol.x+=(ft-fol.x)*Math.min(1,dt*3);if(Math.abs(ft-fol.x)>1)fol.dir=ft>fol.x?1:-1;
+    const pr=camX/CAMMAX,br=Math.round((area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='title'){titlePan+=dt*14;camX=Math.round((Math.sin(titlePan/120)*0.5+0.5)*CAMMAX*0.55)}
   for(const d of drops){d.y+=d.v*dt;d.x-=d.v*dt*0.22;if(d.y>H){d.y=-4;d.x=Math.random()*(W+40)}if(d.x<0)d.x+=W}
   if(gateLight!=='idle'&&ts>gateLightUntil)gateLight='idle';
@@ -412,17 +548,23 @@ function hud(){const o=overall(S.cur);
   $('#specChip').textContent=o?`${o.tier.code} · ${Math.round(o.avg)}${ib?` +${ib}`:''} · ${DIFF[diffNow()]}`:'未スキャン';
   $('#crChip').textContent=`${S.cr.toLocaleString()} CR`;
   if(typeof sndBtnUp==='function')sndBtnUp();
-  $('#areaChip').textContent='圏外 · 東京の外'}
+  $('#areaChip').textContent=AREAS[area()].nm;cv.setAttribute('aria-label',AREAS[area()].label)}
 let toastT=0;
 function toast(msg,ms=4200){const el=$('#toast');el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,ms)}
 
 /* ===== 会話 ===== */
 let D=null,typeT=0;
-const WHO={me:'あなた',mina:'ミナ',doc:'ドク・カゲロウ',gate:'SENTRY'};
+const WHO={me:'あなた',mina:'ミナ',doc:'ドク・カゲロウ',gate:'SENTRY',genji:'ゲンジ',ray:'レイ',kago:'カゴ'};
+/* 名前欄：機械化が進むと、名前の代わりに「女性・20代」などの識別になる */
+function whoName(id){const P=PEOPLE[id],m=docMood();if(!P)return WHO[id];
+  if(P.model)return m>=2?'RAY-07':'レイ';
+  const g=`${P.sex==='f'?'女性':'男性'}・${P.age}`;return m>=4?'対象':m>=3?g:m>=2?`${P.nm} ／ ${g}`:P.nm}
+/* 文章の出し分け：{n:ふつう, c:澄み, m:機械} */
+const pickText=x=>typeof x==='string'?x:(docMood()>=2&&x.m)?x.m:(clarityLv()>=1&&x.c)?x.c:x.n;
 function talk(lines,onEnd){mode='dialog';D={lines,i:0,onEnd,typing:false,full:''};show()}
 function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who;
-  $('#dlgWho').textContent=WHO[L.who];$('#dlgCh').innerHTML='';$('#dlgMore').hidden=true;
-  D.full=L.text;D.n=0;D.typing=true;clearInterval(typeT);const el=$('#dlgTxt');el.textContent='';
+  $('#dlgWho').textContent=whoName(L.who);$('#dlgCh').innerHTML='';$('#dlgMore').hidden=true;
+  D.full=pickText(L.text);D.n=0;D.typing=true;clearInterval(typeT);const el=$('#dlgTxt');el.textContent='';
   typeT=setInterval(()=>{D.n+=1;el.textContent=D.full.slice(0,D.n);if(D.n%2===0&&/[^\s…・。、]/.test(D.full[D.n-1]||''))sfx('text');if(D.n>=D.full.length)doneTyping()},26)}
 function doneTyping(){clearInterval(typeT);D.typing=false;$('#dlgTxt').textContent=D.full;const L=D.lines[D.i];
   if(L.choices){D.sel=0;$('#dlgCh').innerHTML=L.choices.map((c,i)=>`<button class="nbtn ${i===0?'sel':''}" type="button" data-i="${i}">${esc(c.label)}</button>`).join('');
@@ -437,11 +579,12 @@ $('#dlg').addEventListener('click',advance);
 
 /* ===== 会話の中身 ===== */
 const L=(who,text,choices)=>({who,text,choices});
-function interact(){const n=near();if(!n)return;({mina:talkMina,doc:talkDoc,gate:talkGate})[n.id]()}
+function interact(){const n=near();if(!n)return;({mina:talkMina,doc:talkDoc,gate:area()==='lower'?talkGate2:talkGate,lift:liftTalk,genji:talkGenji,ray:talkRay})[n.id]()}
 function talkMina(){const o=overall(S.cur);
   if(!o){S.mina=Math.max(S.mina,1);save();return talk([L('mina','見ない顔だね。ここは圏外。東京の光が届かない場所だよ。'),L('mina','東京に入りたいなら、まず脳を測ってもらいな。この先の闇医者、ドク・カゲロウのとこ。'),L('mina','スペックがわからない奴には、仕事も回せないからさ。')])}
   let ls;
-  if(S.passed){ls=[L('mina','ゲート、通ったんだってね。……やるじゃん。'),L('mina',flesh()<100?`生身率 ${flesh()}%、か。向こうじゃ珍しくもないけど、自分を見失うんじゃないよ。`:'生身のままで通ったのか。向こうの連中、驚くだろうね。'),L('mina','下層区の話は、そのうちね。それまで小遣い稼ぎでもしてく？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}])];return talk(ls)}
+  if(following())return talkMinaFollow();
+  if(S.passed){ls=[L('mina','ゲート、通ったんだってね。……やるじゃん。'),L('mina','……ねえ。次にゲートをくぐるとき、声かけて。話があるんだ。',[{label:'仕事をもらう',fn:jobBoard},{label:'わかった'}])];return talk(ls)}
   if(S.mina<2){S.mina=2;save();ls=[L('mina',`${o.tier.name}、ね。まあ、ここから上がればいいだけだよ。`),L('mina','スペックがわかったなら仕事を回せる。運び、侵入、映像解析、錠前破り。どれも脳を使う仕事さ。'),L('mina','稼いだクレジットは、そのうちドクのインプラント代になる。ゲートの判定も、奥で確かめてきな。')]}
   else if(S.gate===1){S.gate=2;save();ls=[L('mina','ゲート、通れなかったでしょ。顔に書いてある。'),L('mina','稼いで、鍛えて、もう一度。ここではみんなそうしてる。')]}
   else{const pool=['また来たね。仕事ならあるよ。','圏外じゃ、脳しか売るものがないからね。',flesh()>0?'ドクのとこのインプラント、最初は400だってさ。貯めときな。':'全部入れたんだ。……目の色、変わったね。',`今の手持ちは ${S.cr} クレジットか。まだまだだね。`];ls=[L('mina',pool[Math.floor(Math.random()*pool.length)])]}
@@ -488,14 +631,16 @@ function doBuy(id,after){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IMP
 function talkGate(){const o=overall(S.cur);
   if(!o){gateLight='deny';gateLightUntil=performance.now()+2500;sfx('deny');return talk([L('gate','未登録の脳を検出。ブレインスキャンの記録がありません。'),L('gate','通行を許可できません。')])}
   const cur=effective(),req=gateReq();
+  if(S.st.join)return talk([L('gate','通行許可済みの脳です。下層区へどうぞ。',[{label:'下層区へ進む',fn:()=>travel('lower','gate')},{label:'やめておく'}])]);
   talk([L('gate','スキャン記録を照合中……'),L('gate',`実効スペック ${cur} ／ 通行基準 ${req}（初回スキャンの +10%）`)],()=>{
     if(cur>=req){gateLight='ok';gateLightUntil=performance.now()+4000;sfx('allow');const again=S.passed;S.passed=1;save();
-      talk(again?[L('gate','通行許可済みの脳です。どうぞ。')]:[L('gate','基準を満たしています。通行を許可します。'),L('me','光が、近い。')],clearPanel)}
+      if(!S.st.join)return talk(again?[L('gate','通行許可済みの脳です。どうぞ。')]:[L('gate','基準を満たしています。通行を許可します。'),L('me','光が、近い。')],minaJoin);
+      talk([L('gate','通行許可済みの脳です。下層区へどうぞ。',[{label:'下層区へ進む',fn:()=>travel('lower','gate')},{label:'やめておく'}])])}
     else{gateLight='deny';gateLightUntil=performance.now()+4000;sfx('deny');S.gate=1;save();
       talk([L('gate','基準に届きません。通行を拒否します。'),L('me','……今の自分じゃ、足りないってことか。'),L('me','ミナのところに戻ろう。')])}})}
 function clearPanel(){const o=overall(S.cur),b=overall(S.base);
-  openPanel(`<div class="eyebrow">GATE CLEARED · 圏外 → 下層区</div><h3 style="color:var(--cyan)">ゲート通過</h3>
-  <p>遮断機が上がる。光の向こうに、下層区のネオンが滲んでいる。</p>
+  openPanel(`<div class="eyebrow">TO BE CONTINUED · 沈殿街 → 企業区</div><h3 style="color:var(--cyan)">ソウの行方</h3>
+  <p>ソウは企業区にいる。白い光の向こうで、型番で呼ばれながら。</p>
   <div class="stats">
     <div class="stat"><span>実効スペック</span><b>${effective()}</b></div>
     <div class="stat"><span>初回スキャン</span><b>${Math.round(b.avg)}</b></div>
@@ -503,10 +648,92 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>生身率</span><b>${flesh()}%</b></div>
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
-  <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">下層区は次の版で</p>
-  <p class="muted">試作版 v0.5 はここまでです。圏外に戻って、仕事や再スキャンを続けることもできます。</p>
-  <div class="prow"><button class="nbtn" id="ok" type="button">圏外に戻る</button></div>`);
+  <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
+  <p class="muted">試作版 v0.6 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
+  <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
+/* ===== ミナの同行と沈殿街 ===== */
+function minaJoin(){S.st={...S.st,join:1,follow:1};save();fol.x=player.x-40;fol.dir=1;
+  talk([L('mina','……待って！'),L('mina','……通れたんだ。'),L('me','ミナ？'),
+    L('mina','あたしも行く。……沈殿街に、探してる奴がいるんだ。'),
+    L('me','ミナも、ゲートを通れるのか？'),
+    L('mina','基準なら、とっくに越えてたよ。圏外で仕事をこなしながら、ずっと鍛えてたから。'),
+    L('mina','でも……一人でくぐる勇気が、なかった。あの向こうに、置いてきたものがあるから。'),
+    L('mina','あんたが通るのを見て、決めた。……一緒に行かせて。')],()=>travel('lower','gate'))}
+function travel(to,via){if(!AREAS[to])return;mode='fade';$('#fade').classList.add('on');keys.l=keys.r=false;
+  setTimeout(()=>{S.area=to;if(!S.reached.includes(to))S.reached=[...S.reached,to];
+    player.x=to==='lower'?(via==='lift'?54:96):(via==='lift'?778:820);player.dir=1;fol.x=player.x-24;fol.dir=1;
+    camX=clamp(Math.round(player.x-130),0,CAMMAX);S.x=Math.round(player.x);save();hud();
+    $('#fade').classList.remove('on');setTimeout(()=>{mode='play';arrive(to)},380)},380)}
+function arrive(to){if(to==='lower'&&!S.st.arrive){S.st={...S.st,arrive:1};save();
+  talk([L('me',{n:'階段を降りきると、地下なのに、上より明るい街が広がっていた。',c:'階段を降りきると、湯気と出汁の匂いがした。地下なのに、上より明るい。',m:'地下1層に到達。照度、地上の2.4倍。気温21℃、湿度88%。'}),
+    L('mina','……変わってない。'),L('mina','あたしが変わったのか。'),
+    L('mina','ここが沈殿街。上から落ちてきたものが、溜まる場所。……あたしが生まれた街。'),
+    L('mina','弟を探してる。ソウっていうんだ。十年前、あたしだけ検査に落ちて、ここを出された。'),
+    L('mina','屋台のゲンさんなら、何か知ってるかも。奥には鋼組の連中もいる。……行こう。')])}}
+/* 昇降機「縦坑」と案内AIカゴ */
+function kagoHello(){const m=docMood();return m>=4?'同型機を確認。移送先を指定せよ。':m>=3?'乗客を確認。行き先を入力してください。':'ご乗車ありがとうございます、お客様。行き先をどうぞ。'}
+function liftTalk(){if(!S.reached.includes('lower'))return talk([L('kago','ゲートの認証記録がありません。'),L('kago','この昇降機は、認証を受けた層にだけ停止します。')]);liftPanel()}
+function liftPanel(){const here=area();
+  openPanel(`<div class="eyebrow">SHAFT · 縦坑</div><h3>昇降機</h3><p class="muted">カゴ「${esc(kagoHello())}」</p>
+  <div class="floors">${AREA_ORDER.filter(a=>S.reached.includes(a)).map(a=>`<button class="nbtn${a===here?' ghost':''}" type="button" data-f="${a}"${a===here?' disabled':''}><span>${AREAS[a].floor}</span><span>${a===here?'現在地':'▶'}</span></button>`).join('')}</div>
+  <div class="prow"><button class="nbtn ghost" id="back" type="button">降りる</button></div>`);
+  $('#panel').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>liftRide(b.dataset.f));
+  $('#back').onclick=()=>closePanel();($('#panel').querySelector('[data-f]:not([disabled])')||$('#back')).focus()}
+function liftRide(to){const from=area(),fl={out:'1F',lower:'B1'};
+  openPanel(`<div class="eyebrow">SHAFT · 縦坑</div><div class="lift-ind" id="ind">${fl[from]}</div><p class="c muted" style="max-width:none;text-align:center">${to==='lower'?'▼ 下降中':'▲ 上昇中'}</p>`);
+  sfx('lift');timers.push(setTimeout(()=>{const el=$('#ind');if(el)el.textContent='· · ·'},600));
+  timers.push(setTimeout(()=>{const el=$('#ind');if(el)el.textContent=fl[to]},1250));
+  timers.push(setTimeout(()=>closePanel(()=>travel(to,'lift')),1700))}
+/* 同行中のミナ */
+function talkMinaFollow(){const m=docMood(),ls=[];
+  if(m>=3&&!S.st.m3){S.st={...S.st,m3:1};save();ls.push(L('mina','……ねえ。'),L('mina','今、あたしのこと、名前で見てないでしょ。'))}
+  else if(m>=4&&!S.st.m4){S.st={...S.st,m4:1};save();ls.push(L('mina','ソウもね、最後に会ったとき、そういう目をしてた。'))}
+  else if(area()==='lower'&&!S.st.done)ls.push(L('mina',!S.st.genji?'屋台のゲンさんに話を聞こう。あの人、昔からこの街のことは何でも知ってる。':'鋼組の運び屋なら、ソウの仕事を知ってるかも。奥にいるはず。'));
+  else if(S.st.done)ls.push(L('mina','ソウは企業区にいる。……絶対、会いに行く。'));
+  else ls.push(L('mina',area()==='out'?'昇降機なら、沈殿街まですぐだよ。':'仕事なら、ここでも回せるよ。'));
+  ls.push(L('mina','で、どうする？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
+/* 生身派「灯」：ゲンジ */
+const fac=()=>{const f=flesh();return f>=70?'open':f>=40?'mid':'closed'};
+function talkGenji(){const fc=fac(),practice={label:'練習場を使う',fn:practicePanel},bye={label:'やめておく'};
+  if(!S.st.genji){S.st={...S.st,genji:1};save();
+    const sou=[L('mina','ソウのこと、何か知らない？'),L('genji','……あいつは三年前、「上へ行く」って言ってな。鋼組の仕事を始めた。'),L('genji','体をいじって、運び屋になったって噂だ。それきり、この屋台には顔を出さねえ。'),L('mina','……そっか。'),
+      L('me',{n:'ミナが黙ってうつむいた。',c:'ミナの声が、少しだけ震えていた。湯気の向こうで、ゲンジが目をそらす。',m:'対象の心拍が上昇。動揺と推定。'})];
+    if(fc==='closed')return talk([L('genji','……機械とは話さねえ。帰んな。'),L('mina','ゲンさん、あたしだよ。ミナ。'),L('genji','……ミナ坊か。でかくなったな。'),...sou,L('genji','悪いがな、連れのそいつに練習場は貸せねえ。ここは生身の店だ。')],afterClue);
+    const head=fc==='open'?[L('genji',{n:'いらっしゃい。……見ねえ顔だな。',c:'いらっしゃい。……見ねえ顔だな。冷えるだろ、座りな。',m:'いらっしゃい。……見ねえ顔だな。'}),L('genji','……そっちは、ミナ坊か？'),L('mina','……久しぶり、ゲンさん。'),L('genji','十年ぶりか。でかくなったな。')]
+      :[L('genji','……あんた、半分は機械か。まあいい、座りな。'),L('genji','そっちは……ミナ坊か？'),L('mina','久しぶり、ゲンさん。')];
+    const tail=fc==='open'?[L('genji','あんた、生身だな。目でわかる。'),L('genji','奥に練習場がある。脳ってのは、使えば使っただけ応える。測れねえもんも、な。',[practice,bye])]
+      :[L('genji','奥に練習場がある。使いたきゃ使え。……機械の分まで面倒は見ねえがな。',[practice,bye])];
+    return talk([...head,...sou,...tail],afterClue)}
+  if(fc==='closed')return talk([L('genji','ここは生身の店だ。……ミナ坊の連れでも、それは変わらねえ。')]);
+  talk([L('genji',fc==='open'?{n:'よう。今日も練習か？',c:'よう。今日も練習か？ 一杯食ってけ、出汁がうまく取れた。',m:'よう。今日も練習か？'}:'練習場か。……好きにしな。',[practice,bye])])}
+/* サイボーグ側「鋼組」：レイ */
+function talkRay(){const fc=fac();
+  if(!S.st.ray){S.st={...S.st,ray:1};save();
+    const first=fc==='open'?[L('ray','……旧式か。この辺じゃ珍しい。'),L('ray','用がないなら、道を空けろ。')]
+      :fc==='mid'?[L('ray','半端な体だな。生身にも、こっちにも、なりきれてない。')]
+      :[L('ray','いい体だ。どこの店で入れた？'),L('ray','……ドク・カゲロウか。あの爺さん、腕は確かだ。')];
+    const sou=[L('mina','ソウって運び屋、知らない？ あたしの弟なんだ。'),L('ray','ソウ……？ ああ、SO-U だろう。企業区の配送をやってる。'),L('ray','名前？ あいつはもう、型番で呼ばれてる。'),L('mina','……型番。')];
+    const tail=fc==='closed'?[L('ray','あいつ、最後に会ったとき言ってた。「姉ちゃんの顔、もう思い出せない」ってな。'),L('mina','…………'),L('ray','悪いな。機械同士だと、つい口が軽くなる。')]
+      :fc==='mid'?[L('ray','企業区のゲートは、今は閉まってる。開いたら、自分で確かめに行け。')]
+      :[L('ray','これ以上は、旧式に話すことじゃない。')];
+    return talk([...first,...sou,...tail],afterClue)}
+  talk([L('ray',fc==='open'?'……まだいたのか、旧式。':fc==='mid'?'迷ってる顔だな。どっちに転ぶか、見ものだ。':'調子はどうだ。換えたところ、馴染んだか？')])}
+function afterClue(){if(S.st.genji&&S.st.ray&&!S.st.done){S.st={...S.st,done:1};save();
+  talk([L('mina','ソウは企業区にいる。……型番で呼ばれて、あたしの顔も忘れて。'),L('mina','それでも、会いに行く。あんたも、来てくれる？'),
+    L('me',{n:'ミナは奥のゲートを見つめている。',c:'ミナは奥のゲートを見つめている。握った手が白くなっていた。',m:'対象、ゲート方向を注視。決意と推定。'}),
+    L('mina','奥のゲートが企業区への入口。……今は閉まってるみたいだけど。')])}}
+function talkGate2(){
+  talk([L('gate','企業区ゲート。現在、通行の受付を停止しています。')],()=>{if(S.st.done)clearPanel();else talk([L('mina','まずはソウの手がかりを探そう。屋台のゲンさんか、鋼組の運び屋なら何か知ってるかも。')])})}
+/* ゲンジの練習場：スキャンと同じ4テストを、記録せずに何度でも */
+let practice=false;
+function practicePanel(){practice=true;
+  openPanel(`<div class="eyebrow">PRACTICE · 屋台「灯」の奥</div><h3>練習場</h3>
+  <p class="muted">スキャンと同じ4つのテストを、何度でも練習できます。結果は記録されません。本人の実力が伸びたら、ドクの再スキャンで点数が上がります。</p>
+  <div class="jobs">${TESTS.map((t,i)=>{const v=S.cur&&S.cur[t.id];return `<div class="job"><span class="tag">${t.tag}</span><span class="nm">${t.nm}</span><button class="nbtn" type="button" data-t="${i}">練習する</button><span class="ex">スキャン値 ${v!=null?spec(t.id,v).raw:'未計測'}</span></div>`}).join('')}</div>
+  <div class="prow"><button class="nbtn ghost" id="back" type="button">屋台に戻る</button></div>`);
+  $('#panel').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>testIntro(+b.dataset.t));
+  $('#back').onclick=()=>{practice=false;closePanel()};$('#panel').querySelector('[data-t]').focus()}
 function useRecord(rec){applyScan(rec);talk([L('doc','診断サイトの記録か。手間が省けた。'),L('doc','……ふむ。数字は嘘をつかない。')],()=>resultPanel(true))}
 
 /* ===== パネル ===== */
@@ -516,21 +743,27 @@ function openPanel(html){mode='panel';clearTimers();$('#frame').classList.add('i
 function closePanel(after){clearTimers();document.activeElement&&document.activeElement.blur();$('#panel').hidden=true;$('#panel').innerHTML='';cv.hidden=false;$('#frame').classList.remove('is-panel');mode='play';hud();after&&after()}
 
 let scanData={},scanI=0;
-function scanIntro(){scanData={};scanI=0;
+function scanIntro(){practice=false;scanData={};scanI=0;
   openPanel(`<div class="eyebrow">BRAIN SCAN · ドク・カゲロウ診療所</div><h3>ブレインスキャン</h3>
   <p class="muted">脳をパソコンに見立てて、4つのパーツを測ります。結果がこのゲームでのあなたの初期スペックになります。</p>
   <ul class="plist">${TESTS.map(t=>`<li><span class="tag">${t.tag}</span><span>${t.nm}</span></li>`).join('')}</ul>
   <div class="prow"><button class="nbtn" id="go" type="button" data-se="scan">スキャン開始</button><button class="nbtn ghost" id="back" type="button">やめる</button></div>`);
   $('#go').onclick=()=>testIntro(0);$('#back').onclick=()=>closePanel();$('#go').focus()}
 function testIntro(i){scanI=i;const t=TESTS[i];
-  openPanel(`<div class="eyebrow">${t.tag} · ${i+1} / 4</div><h3>${t.nm}</h3><p>${t.desc}</p>
-  <div class="prow"><button class="nbtn" id="go" type="button">開始</button><button class="nbtn ghost" id="back" type="button">中断する</button></div>`);
-  $('#go').onclick=()=>({cpu:runCpu,ram:runRam,gpu:runGpu,alu:runAlu})[t.id]();$('#back').onclick=()=>closePanel();$('#go').focus()}
-function testDone(id,val){clearTimers();scanData[id]=val;const s=spec(id,val),t=TESTS[scanI],last=scanI===3;
+  openPanel(`<div class="eyebrow">${practice?'PRACTICE · 練習':`${t.tag} · ${i+1} / 4`}</div><h3>${t.nm}</h3><p>${t.desc}</p>
+  <div class="prow"><button class="nbtn" id="go" type="button">開始</button><button class="nbtn ghost" id="back" type="button">${practice?'練習場に戻る':'中断する'}</button></div>`);
+  $('#go').onclick=()=>({cpu:runCpu,ram:runRam,gpu:runGpu,alu:runAlu})[t.id]();$('#back').onclick=()=>practice?practicePanel():closePanel();$('#go').focus()}
+function testDone(id,val){clearTimers();if(practice)return practiceDone(id,val);scanData[id]=val;const s=spec(id,val),t=TESTS[scanI],last=scanI===3;
   openPanel(`<div class="eyebrow">${t.tag} · 計測結果</div><h3 class="mono" style="color:var(--cyan)">${s.main}</h3>
   <p>${esc(like(id,val))}に相当</p><p class="muted mono">${s.raw}</p>
   <div class="prow"><button class="nbtn" id="nx" type="button">${last?'診断結果を見る':'次へ：'+TESTS[scanI+1].nm}</button><button class="nbtn ghost" id="again" type="button">やり直す</button></div>`);
   $('#nx').onclick=()=>{if(last){applyScan(scanData);resultPanel(true)}else testIntro(scanI+1)};$('#again').onclick=()=>testIntro(scanI);$('#nx').focus()}
+function practiceDone(id,val){const s=spec(id,val),t=TESTS[scanI],cur=S.cur&&S.cur[id],better=cur!=null&&score(id,val)>score(id,cur);
+  openPanel(`<div class="eyebrow">PRACTICE · ${t.tag} · 練習結果</div><h3 class="mono" style="color:var(--cyan)">${s.main}</h3>
+  <p>${esc(like(id,val))}に相当</p><p class="muted mono">${s.raw}${cur!=null?` ／ スキャン値 ${spec(id,cur).raw}`:''}</p>
+  ${better?'<p style="color:var(--amber)">スキャン値より良い結果。ドクの再スキャンで、点数に出るかもしれない。</p>':''}
+  <div class="prow"><button class="nbtn" id="again" type="button">もう一度</button><button class="nbtn ghost" id="nx" type="button">練習場に戻る</button></div>`);
+  $('#again').onclick=()=>testIntro(scanI);$('#nx').onclick=practicePanel;$('#again').focus()}
 function applyScan(r){S.cur={...r};if(!S.base)S.base={...r};S.scans++;save();hud()}
 
 function resultPanel(fresh){const o=overall(S.cur),b=overall(S.base),d=diffNow();if(!o)return;
@@ -568,7 +801,7 @@ function settingsPanel(){if(mode==='title')return;const was=mode;const o=overall
   bindVol($('#panel'));
   const imp=$('#imp');if(imp)imp.onclick=()=>{applyScan(rec);toast('診断サイトの記録を読み込みました');settingsPanel()};
   $('#rs').onclick=()=>{$('#rsRow').innerHTML='<span class="note">スキャン結果も消えます。</span><button class="nbtn pink" id="rsy" type="button">消して最初から</button><button class="nbtn ghost" id="rsn" type="button">やめる</button>';
-    $('#rsy').onclick=()=>{S={...fresh(),snd:S.snd};save();sndApply();player.x=S.x;player.dir=1;closePanel();$('#title').hidden=false;mode='title';titleButtons();hud()};$('#rsn').onclick=settingsPanel};
+    $('#rsy').onclick=()=>{S={...fresh(),snd:S.snd};save();sndApply();player.x=S.x;fol.x=S.x;player.dir=1;closePanel();$('#title').hidden=false;mode='title';titleButtons();hud()};$('#rsn').onclick=settingsPanel};
   $('#cl').onclick=()=>closePanel();$('#cl').focus()}
 /* 音量（設定画面と、上のバーの「音量」ボタンで共通） */
 const pct=v=>Math.round((v??0)*100);
@@ -823,7 +1056,7 @@ cv.addEventListener('pointerdown',()=>{if(mode==='dialog')advance()});
 /* ===== タイトル ===== */
 function titleButtons(){const has=S.started;$('#titleBtns').innerHTML=(has?'<button class="nbtn" id="cont" type="button">つづきから</button><button class="nbtn ghost" id="newg" type="button">はじめから</button>':'<button class="nbtn" id="newg" type="button">はじめる</button>');
   const c=$('#cont');if(c)c.onclick=startGame;$('#newg').onclick=()=>{if(has){S={...fresh(),snd:S.snd};save();player.x=S.x;hud()}startGame()};($('#cont')||$('#newg')).focus({preventScroll:true})}
-function startGame(){sndStart();if(!SND)toast('音のファイル（sound.js）を読み込めなかったため、音なしで動いています',6000);document.activeElement&&document.activeElement.blur();$('#title').hidden=true;mode='play';player.x=S.x;camX=clamp(Math.round(player.x-130),0,CAMMAX);
+function startGame(){sndStart();if(!SND)toast('音のファイル（sound.js）を読み込めなかったため、音なしで動いています',6000);document.activeElement&&document.activeElement.blur();$('#title').hidden=true;mode='play';player.x=S.x;fol.x=player.x-20;camX=clamp(Math.round(player.x-130),0,CAMMAX);
   if(!S.started){S.started=true;save();talk([L('me','……東京の光が、今夜もあんなに遠い。'),L('me','あの光の中に入るには、脳のスペックがいる。'),L('me','まずは、誰かに話を聞こう。')])}}
 setInterval(()=>{if(mode!=='title'){S.x=Math.round(player.x);save()}},3000);
 
