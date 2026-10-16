@@ -64,6 +64,6 @@ CPU・RAM・GPU・ALU に1つずつ、それぞれ Lv1〜Lv3 まで強化でき�
 - 音は `sound.js`（Web Audio API、音声ファイルなし）にまとまっている。雨音は入れない。index.html から読み込み、`NGSound.init()` をタイトルの「はじめる」「つづきから」のクリック内で呼んで `NGSound.start()` する
 - `NGSound.setBrightness(カメラ位置 / 最大)`：ゲートに近づくほど BGM が明るくなる
 - `NGSound.setCyber(1 - 生身率)`：インプラントを入れるほど効果音が機械的になる。セーブを読み込んだときにも反映する
-- 効果音の割り当て：会話の文字送り=text（2文字に1回くらい）、歩行=step（数歩に1回）、選択肢・ボタン=ui、壊れたネオンのそば=neon（ときどき）、スキャン開始=scan、ゲート拒否=deny、ゲート許可=allow、仕事成功=success、失敗=fail、被弾・ミス=hit、報酬=credit、パスコード入力=key、インプラント装着=implant
+- 効果音の割り当て：会話の文字送り=text（2文字に1回くらい）、歩行=step（数歩に1回）、選択肢・ボタン=ui、スキャン開始=scan、ゲート拒否=deny、ゲート許可=allow、仕事成功=success、失敗=fail、被弾・ミス=hit、報酬=credit、パスコード入力=key、インプラント装着=implant
 - 設定画面に BGM・効果音の音量とミュートを追加し、セーブに保存する
 - パネル（スキャンや仕事）を開いている間も BGM は鳴らしたままでよい

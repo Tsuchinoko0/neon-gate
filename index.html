@@ -394,13 +394,11 @@ function draw(t){
 }
 function near(){let best=null,bd=24;for(const n of NPCS){const d=Math.abs(n.x-player.x);if(d<bd){bd=d;best=n}}return best}
 
-let mode='title',last=0,titlePan=0,stepIdx=0,neonT=0,lastBright=-1;
-const NEON_AT=[...LAMPS.filter(l=>l.broken).map(l=>l.x),446]; /* 壊れた街灯と診療所の看板 */
+let mode='title',last=0,titlePan=0,stepIdx=0,lastBright=-1;
 function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
   if(mode==='play'){const dx=(keys.r?1:0)-(keys.l?1:0);player.moving=dx!==0;
     if(dx){player.dir=dx;player.x=clamp(player.x+dx*62*dt,12,846);player.step+=dt;const si=Math.floor(player.step*2.5);if(si!==stepIdx){stepIdx=si;sfx('step')}}
     camX=clamp(Math.round(player.x-130),0,CAMMAX);
-    neonT+=dt;if(neonT>1){neonT=0;if(NEON_AT.some(x=>Math.abs(player.x-x)<45)&&Math.random()<0.35)sfx('neon')}
     const br=Math.round(camX/CAMMAX*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='title'){titlePan+=dt*14;camX=Math.round((Math.sin(titlePan/120)*0.5+0.5)*CAMMAX*0.55)}
   for(const d of drops){d.y+=d.v*dt;d.x-=d.v*dt*0.22;if(d.y>H){d.y=-4;d.x=Math.random()*(W+40)}if(d.x<0)d.x+=W}
