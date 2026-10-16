@@ -103,6 +103,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .job .nm{font-size:17px}
 .job .ex{grid-column:2;font-size:12px;color:var(--muted);font-family:var(--f-data)}
 .job .nbtn{grid-column:3;grid-row:1/3}
+.job .act{grid-column:3;grid-row:1/3;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.nbtn:disabled,.nbtn:disabled:hover{opacity:.45;cursor:default;background:transparent;color:var(--muted);border-color:var(--line)}
 .mcv{display:block;width:100%;max-width:640px;margin:0 auto;aspect-ratio:200/112;image-rendering:pixelated;image-rendering:crisp-edges;border:1px solid var(--line);background:#000;touch-action:none}
 .panel .c{max-width:none;text-align:center}
 .status{font-family:var(--f-data);color:var(--amber);min-height:1.6em}
@@ -151,7 +153,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.2 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.3 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -223,12 +225,23 @@ const DIFF={easy:'EASY',normal:'NORMAL',hard:'HARD'};
 const autoDiff=avg=>avg<40?'easy':avg<70?'normal':'hard';
 function diffNow(){const o=overall(S.cur);return S.diff!=='auto'?S.diff:(o?autoDiff(o.avg):'normal')}
 function gateReq(){const b=overall(S.base);if(!b)return null;return Math.min(100,Math.max(Math.ceil(b.avg*1.1),Math.ceil(b.avg)+3))}
-const implantBonus=()=>0; /* 試作版ではインプラント未実装 */
+/* インプラント：スキャン値には入らず、実効スペックと仕事にだけ効く */
+const IMPLANTS=[
+  {id:'reflex',stat:'cpu',job:'drone',nm:'反射ブースター',desc:'脊髄に入れる信号増幅器。体が考えるより先に動く。',eff:'ドローン回避：照準から発射までが 0.15 秒長く見える'},
+  {id:'buffer',stat:'ram',job:'pass',nm:'記憶バッファ',desc:'海馬の横に差す小さな外部記憶。忘れた1つを拾ってくれる。',eff:'パスコード侵入：ミスできる回数 +1'},
+  {id:'optic',stat:'gpu',job:'cam',nm:'光学センサー',desc:'網膜に重ねる色解析レンズ。似た色の差を強調する。',eff:'監視カメラ解析：まぎらわしい色の差が 1.25 倍はっきりする'},
+  {id:'copro',stat:'alu',job:'lock',nm:'演算コプロセッサ',desc:'前頭葉に並べる計算チップ。暗算を肩代わりする。',eff:'暗号ロック解除：制限時間 +8 秒'}
+];
+const IMP_PRICE=400,IMP_SPEC=4,IMP_FLESH=10;
+const hasImp=id=>!!(S.imp&&S.imp[id]);
+const impCount=()=>IMPLANTS.filter(m=>hasImp(m.id)).length;
+const implantBonus=()=>impCount()*IMP_SPEC;
+const flesh=()=>100-impCount()*IMP_FLESH;
 function effective(){const o=overall(S.cur);return o?Math.round(o.avg+implantBonus()):null}
 
 /* ===== セーブ ===== */
 const KEY='neongate';
-const fresh=()=>({v:1,base:null,cur:null,scans:0,diff:'auto',mina:0,gate:0,x:36,started:false,cr:0,jobs:{}});
+const fresh=()=>({v:1,base:null,cur:null,scans:0,diff:'auto',mina:0,gate:0,x:36,started:false,cr:0,jobs:{},imp:{},earned:0,passed:0});
 let S=fresh();
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.v===1)S=Object.assign(fresh(),s)}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -358,7 +371,8 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
 
 /* ===== HUD ===== */
 function hud(){const o=overall(S.cur);
-  $('#specChip').textContent=o?`${o.tier.code} · ${Math.round(o.avg)} · ${DIFF[diffNow()]}`:'未スキャン';
+  const ib=implantBonus();
+  $('#specChip').textContent=o?`${o.tier.code} · ${Math.round(o.avg)}${ib?` +${ib}`:''} · ${DIFF[diffNow()]}`:'未スキャン';
   $('#crChip').textContent=`${S.cr.toLocaleString()} CR`;
   $('#areaChip').textContent='圏外 · 東京の外'}
 let toastT=0;
@@ -389,21 +403,57 @@ function interact(){const n=near();if(!n)return;({mina:talkMina,doc:talkDoc,gate
 function talkMina(){const o=overall(S.cur);
   if(!o){S.mina=Math.max(S.mina,1);save();return talk([L('mina','見ない顔だね。ここは圏外。東京の光が届かない場所だよ。'),L('mina','東京に入りたいなら、まず脳を測ってもらいな。この先の闇医者、ドク・カゲロウのとこ。'),L('mina','スペックがわからない奴には、仕事も回せないからさ。')])}
   let ls;
+  if(S.passed){ls=[L('mina','ゲート、通ったんだってね。……やるじゃん。'),L('mina',flesh()<100?`生身率 ${flesh()}%、か。向こうじゃ珍しくもないけど、自分を見失うんじゃないよ。`:'生身のままで通ったのか。向こうの連中、驚くだろうね。'),L('mina','下層区の話は、そのうちね。それまで小遣い稼ぎでもしてく？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}])];return talk(ls)}
   if(S.mina<2){S.mina=2;save();ls=[L('mina',`${o.tier.name}、ね。まあ、ここから上がればいいだけだよ。`),L('mina','スペックがわかったなら仕事を回せる。運び、侵入、映像解析、錠前破り。どれも脳を使う仕事さ。'),L('mina','稼いだクレジットは、そのうちドクのインプラント代になる。ゲートの判定も、奥で確かめてきな。')]}
   else if(S.gate===1){S.gate=2;save();ls=[L('mina','ゲート、通れなかったでしょ。顔に書いてある。'),L('mina','稼いで、鍛えて、もう一度。ここではみんなそうしてる。')]}
-  else{const pool=['また来たね。仕事ならあるよ。','圏外じゃ、脳しか売るものがないからね。','ドクのとこ、そのうちインプラントが入るってさ。貯めときな。',`今の手持ちは ${S.cr} クレジットか。まだまだだね。`];ls=[L('mina',pool[Math.floor(Math.random()*pool.length)])]}
+  else{const pool=['また来たね。仕事ならあるよ。','圏外じゃ、脳しか売るものがないからね。',impCount()<IMPLANTS.length?'ドクのとこにインプラントが入ったってさ。1つ400。貯めときな。':'全部入れたんだ。……目の色、変わったね。',`今の手持ちは ${S.cr} クレジットか。まだまだだね。`];ls=[L('mina',pool[Math.floor(Math.random()*pool.length)])]}
   ls.push(L('mina','で、どうする？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
 function talkDoc(){const o=overall(S.cur),rec=siteRecord();
   if(!o){const ch=[{label:'スキャンを受ける',fn:scanIntro}];if(rec)ch.push({label:'診断サイトの記録を渡す',fn:()=>useRecord(rec)});ch.push({label:'やめておく'});
     return talk([L('doc','客か。……ふん、旧式の匂いがするな。'),L('doc','脳を見せろ。スキャンは4つ。反応、記憶、識別、演算だ。3分で終わる。'),L('doc','どうする？',ch)])}
-  talk([L('doc','また来たか。測り直すか？ 伸びていれば数字に出る。'),L('doc','インプラントは入荷待ちだ。クレジットを貯めておけ。',[{label:'再スキャン',fn:scanIntro},{label:'結果を見る',fn:()=>resultPanel(false)},{label:'やめておく'}])])}
+  const n=impCount(),first=!S.docShop;if(first){S.docShop=1;save()}
+  const ls=first?[L('doc','インプラントが入荷した。反射、記憶、視覚、演算。1つ400だ。'),L('doc','スキャンの数字は変わらんぞ。測るのはお前の脳そのものだからな。だが、ゲートの機械は拡張込みで見る。')]
+    :n>=IMPLANTS.length?[L('doc','もう入れる場所はない。あとは生身を鍛えるしかないな。')]:[L('doc','また来たか。測り直すか、入れるか。伸びていれば数字に出る。')];
+  ls.push(L('doc','どうする？',[{label:'再スキャン',fn:scanIntro},{label:'インプラント',fn:shopPanel},{label:'結果を見る',fn:()=>resultPanel(false)},{label:'やめておく'}]));talk(ls)}
+function shopPanel(sel){
+  openPanel(`<div class="eyebrow">IMPLANT · ドク・カゲロウ診療所</div><h3>インプラント</h3>
+  <p class="muted">1つ ${IMP_PRICE} CR。入れると実効スペック +${IMP_SPEC}、対応する仕事が少し楽になる。スキャン値には入らない。1つごとに生身率 -${IMP_FLESH}%。</p>
+  <div class="stats"><div class="stat"><span>所持クレジット</span><b>${S.cr.toLocaleString()} CR</b></div><div class="stat"><span>生身率</span><b>${flesh()}%</b></div><div class="stat"><span>実効スペック</span><b>${effective()??'—'}</b></div></div>
+  <div class="jobs">${IMPLANTS.map(m=>{const own=hasImp(m.id),poor=S.cr<IMP_PRICE;
+    const act0=own?'<span class="tag">導入済み</span>':sel===m.id?`<button class="nbtn pink" type="button" data-y="${m.id}">${IMP_PRICE} CR 払う</button><button class="nbtn ghost" type="button" data-n="1">やめる</button>`:`<button class="nbtn" type="button" data-b="${m.id}"${poor?' disabled':''}>${poor?'CR不足':'入れる'}</button>`;
+    const act=`<span class="act">${act0}</span>`;
+    return `<div class="job"><span class="tag">${TESTS.find(t=>t.id===m.stat).tag}</span><span class="nm">${m.nm}</span>${act}<span class="ex">${m.desc}<br>${m.eff}</span></div>`}).join('')}</div>
+  <div class="prow"><button class="nbtn ghost" id="back" type="button">診療所に戻る</button></div>`);
+  const pn=$('#panel');
+  pn.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>shopPanel(b.dataset.b));
+  pn.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>shopPanel());
+  pn.querySelectorAll('[data-y]').forEach(b=>b.onclick=()=>buyImplant(b.dataset.y));
+  $('#back').onclick=()=>closePanel();(pn.querySelector('[data-y]')||pn.querySelector('[data-b]:not([disabled])')||$('#back')).focus()}
+function buyImplant(id){const m=IMPLANTS.find(x=>x.id===id);if(hasImp(id)||S.cr<IMP_PRICE)return shopPanel();
+  S.cr-=IMP_PRICE;S.imp={...S.imp,[id]:1};save();
+  closePanel(()=>talk([L('doc',`${m.nm}だな。……横になれ。`),L('me','……頭の奥で、何かが静かにつながった。'),L('doc',`終わりだ。生身率 ${flesh()}%。慣れるまで少し気持ち悪いぞ。`)],()=>toast(`${m.nm}を導入：実効スペック +${IMP_SPEC}／生身率 ${flesh()}%`)))}
 function talkGate(){const o=overall(S.cur);
   if(!o){gateLight='deny';gateLightUntil=performance.now()+2500;return talk([L('gate','未登録の脳を検出。ブレインスキャンの記録がありません。'),L('gate','通行を許可できません。')])}
   const cur=effective(),req=gateReq();
   talk([L('gate','スキャン記録を照合中……'),L('gate',`実効スペック ${cur} ／ 通行基準 ${req}（初回スキャンの +10%）`)],()=>{
-    if(cur>=req){gateLight='ok';gateLightUntil=performance.now()+4000;talk([L('gate','基準を満たしています。通行を許可します。'),L('me','光が、近い。')],()=>toast('ゲートの先の下層区は、次の版で追加します',6000))}
+    if(cur>=req){gateLight='ok';gateLightUntil=performance.now()+4000;const again=S.passed;S.passed=1;save();
+      talk(again?[L('gate','通行許可済みの脳です。どうぞ。')]:[L('gate','基準を満たしています。通行を許可します。'),L('me','光が、近い。')],clearPanel)}
     else{gateLight='deny';gateLightUntil=performance.now()+4000;S.gate=1;save();
       talk([L('gate','基準に届きません。通行を拒否します。'),L('me','……今の自分じゃ、足りないってことか。'),L('me','ミナのところに戻ろう。')])}})}
+function clearPanel(){const o=overall(S.cur),b=overall(S.base);
+  openPanel(`<div class="eyebrow">GATE CLEARED · 圏外 → 下層区</div><h3 style="color:var(--cyan)">ゲート通過</h3>
+  <p>遮断機が上がる。光の向こうに、下層区のネオンが滲んでいる。</p>
+  <div class="stats">
+    <div class="stat"><span>実効スペック</span><b>${effective()}</b></div>
+    <div class="stat"><span>初回スキャン</span><b>${Math.round(b.avg)}</b></div>
+    <div class="stat"><span>生身 · 拡張</span><b>${Math.round(o.avg)} + ${implantBonus()}</b></div>
+    <div class="stat"><span>生身率</span><b>${flesh()}%</b></div>
+    <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
+  </div>
+  <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">下層区は次の版で</p>
+  <p class="muted">試作版 v0.3 はここまでです。圏外に戻って、仕事や再スキャンを続けることもできます。</p>
+  <div class="prow"><button class="nbtn" id="ok" type="button">圏外に戻る</button></div>`);
+  $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 function useRecord(rec){applyScan(rec);talk([L('doc','診断サイトの記録か。手間が省けた。'),L('doc','……ふむ。数字は嘘をつかない。')],()=>resultPanel(true))}
 
 /* ===== パネル ===== */
@@ -437,12 +487,14 @@ function resultPanel(fresh){const o=overall(S.cur),b=overall(S.base),d=diffNow()
   <div class="stats">
     <div class="stat"><span>総合スコア</span><b>${Math.round(o.avg)}</b></div>
     <div class="stat"><span>初回スキャンから</span><b>${growth>=0?'+':''}${growth}</b></div>
-    <div class="stat"><span>生身率</span><b>100%</b></div>
+    <div class="stat"><span>実効スペック（拡張 +${implantBonus()}）</span><b>${effective()}</b></div>
+    <div class="stat"><span>生身率</span><b>${flesh()}%</b></div>
     <div class="stat"><span>難易度${S.diff==='auto'?'（自動）':''}</span><b>${DIFF[d]}</b></div>
   </div>
   <div class="sheet">${TESTS.map(t=>{const s=spec(t.id,S.cur[t.id]),sc=score(t.id,S.cur[t.id]);
     return `<div class="srow"><span class="tag">${t.tag}</span><span>${t.nm}</span><span class="v">${s.main}</span>
     <div class="meter" role="img" aria-label="性能 ${Math.round(sc)}"><i style="width:${sc}%"></i></div><span class="ex">${esc(like(t.id,S.cur[t.id]))} · ${s.raw}</span></div>`}).join('')}</div>
+  <p class="note">総合スコアは生身の脳だけの値です。インプラントは入っていません。ゲートは実効スペック（生身＋拡張）で判定します。</p>
   <p class="note">難易度は総合スコアから自動で決まります（39以下 EASY／40〜69 NORMAL／70以上 HARD）。設定からいつでも変えられます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">診療所に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel(fresh?()=>talk([L('doc',`${o.tier.name}……ここから上がるかはお前次第だ。`),L('doc','東京に入りたけりゃ、奥のゲートで判定を受けろ。')]):null);$('#ok').focus()}
@@ -531,6 +583,13 @@ const JOBS=[
     ok:'倉庫が丸裸だって。いい仕事。',ng:'全部は開かなかったか。開けた分は払うよ。'}
 ];
 const jobOf=id=>JOBS.find(j=>j.id===id);
+const r2=v=>Math.round(v*100)/100;
+function jp(id,d){const p={...JP[id][d]},m=IMPLANTS.find(x=>x.job===id);if(!m||!hasImp(m.id))return p;
+  if(id==='drone'){p.w0=r2(p.w0+0.15);p.w1=r2(p.w1+0.15)}
+  else if(id==='pass')p.lives++;
+  else if(id==='cam'){p.d0=r2(p.d0*1.25);p.dm=r2(p.dm*1.25)}
+  else if(id==='lock')p.T+=8;
+  return p}
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 function timeBar(end,T,onEnd){timers.push(setInterval(()=>{const left=Math.max(0,end()-performance.now());$('#tbar').style.width=(left/(T*10))+'%';$('#tleft').textContent=(left/1000).toFixed(1)+' 秒';if(left<=0)onEnd()},100))}
 const shake=el=>{el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')};
@@ -545,12 +604,12 @@ function jobBoard(){const d=diffNow();
   $('#back').onclick=()=>closePanel();$('#panel').querySelector('[data-j]').focus()}
 function jobIntro(id){const j=jobOf(id),d=diffNow();
   openPanel(`<div class="eyebrow">${j.tag} · 依頼主：${j.client}</div><h3>${j.nm}</h3><p>${j.desc}</p>
-  <ul class="plist"><li><span class="tag">操作</span><span>${j.ctl}</span></li><li><span class="tag">${DIFF[d]}</span><span>${j.rule(JP[id][d])}</span></li></ul>
+  <ul class="plist"><li><span class="tag">操作</span><span>${j.ctl}</span></li><li><span class="tag">${DIFF[d]}</span><span>${j.rule(jp(id,d))}</span></li>${(m=>m&&hasImp(m.id)?`<li><span class="tag">拡張</span><span>${m.nm}が効いている（${m.eff.split('：')[1]}）</span></li>`:'')(IMPLANTS.find(x=>x.job===id))}</ul>
   <div class="prow"><button class="nbtn" id="go" type="button">開始</button><button class="nbtn ghost" id="back" type="button">仕事リストへ</button></div>`);
   $('#go').onclick=()=>j.run()(d);$('#back').onclick=jobBoard;$('#go').focus()}
 function jobDone(id,d,r){clearTimers();const j=jobOf(id),cr=Math.round(r.raw*MULT[d]);
   const prev=S.jobs[id]||{best:0,n:0},rec=prev.n>0&&r.score>prev.best;
-  S.jobs[id]={best:Math.max(prev.best,r.score),n:prev.n+1};S.cr+=cr;save();hud();
+  S.jobs[id]={best:Math.max(prev.best,r.score),n:prev.n+1};S.cr+=cr;S.earned=(S.earned||0)+cr;save();hud();
   openPanel(`<div class="eyebrow">${j.tag} · ${j.nm} · ${r.ok?'JOB COMPLETE':'JOB FAILED'}</div>
   <h3 style="color:${r.ok?'var(--cyan)':'var(--red)'}">${r.ok?'仕事完了':'仕事失敗'}</h3>
   <p class="mono">${esc(r.detail)}${rec?' · 自己ベスト更新':''}</p>
@@ -561,7 +620,7 @@ function jobDone(id,d,r){clearTimers();const j=jobOf(id),cr=Math.round(r.raw*MUL
 
 /* CPU：ドローン回避（5列。照準線が出た列にレーザーが落ちる） */
 const DRONE=sprite(["r.......r","rrr...rrr",".ggggggg.","..gGeGg..","...g.g..."],{r:'#5c6378',g:'#2c2750',G:'#8e8aa6',e:'#ff4a5c'});
-function runDrone(d){const P=JP.drone[d],DUR=30,NL=5,CW=200,CH=112,LW=CW/NL,BEAM=0.22;
+function runDrone(d){const P=jp('drone',d),DUR=30,NL=5,CW=200,CH=112,LW=CW/NL,BEAM=0.22;
   openPanel(`<div class="hud"><span>CPU · ドローン回避 · 回避 <b id="sc">0</b></span><span id="sh"></span></div><div class="timer"><i id="tbar"></i></div>
   <canvas class="mcv" id="dcv" width="${CW}" height="${CH}" role="img" aria-label="5列の道。上から警備ドローンが照準を合わせてくる"></canvas>
   <div class="prow" style="justify-content:space-between"><button class="kbtn" id="dl" type="button" aria-label="左の列へ">◀</button><span class="note">赤い線の列から逃げろ</span><button class="kbtn" id="dr" type="button" aria-label="右の列へ">▶</button></div>`);
@@ -605,7 +664,7 @@ function runDrone(d){const P=JP.drone[d],DUR=30,NL=5,CW=200,CH=112,LW=CW/NL,BEAM
   draw();requestAnimationFrame(ts=>{last=ts;requestAnimationFrame(step)})}
 
 /* RAM：パスコード侵入（光った順にキーを押す） */
-function runPass(d){const P=JP.pass[d],LAYERS=5;let layer=0,lives=P.lives,raw=0,seq=[],inp=[],phase='wait';
+function runPass(d){const P=jp('pass',d),LAYERS=5;let layer=0,lives=P.lives,raw=0,seq=[],inp=[],phase='wait';
   openPanel(`<div class="hud"><span>RAM · パスコード侵入 · 第 <b id="ly">1</b> / ${LAYERS} 層</span><span id="lv"></span></div>
   <p class="status c" id="st"></p><div class="keypad" id="kp">${[1,2,3,4,5,6,7,8,9].map(k=>`<button type="button" data-k="${k}">${k}</button>`).join('')}</div>
   <p class="note c">光った順にキーを押す。キーボードの 1〜9 でも入力できます</p>`);
@@ -632,7 +691,7 @@ function runPass(d){const P=JP.pass[d],LAYERS=5;let layer=0,lives=P.lives,raw=0,
 const FIG=["..hhhh..",".hhhhhh.",".hssssh.","..ssss..","..jjjj..",".jjjjjj.","jjjjjjjj","sjjjjjjs","sjjjjjjs",".jjjjjj.","..pppp..","..p..p..","..p..p..",".bb..bb."];
 const HAIR=['#2b2438','#5a3a2a','#c9c6d8','#1a1630','#7a2a4a','#2a5a58'],SKIN=['#d9a07a','#b97f5a','#f0c5a0','#8a5a3c'];
 const figURL=(j,h,s)=>sprite(FIG,{h,s,j,p:'#191828',b:'#0b0a12'}).toDataURL();
-function runCam(d){const P=JP.cam[d];let found=0,end=performance.now()+P.T*1000,over=false;
+function runCam(d){const P=jp('cam',d);let found=0,end=performance.now()+P.T*1000,over=false;
   openPanel(`<div class="hud"><span>GPU · 監視カメラ解析 · 特定 <b id="sc">0</b> / ${P.q}</span><span id="tleft">${P.T.toFixed(1)} 秒</span></div><div class="timer"><i id="tbar"></i></div>
   <div class="target">対象の上着<i id="tg"></i></div><div class="feeds" id="fd"></div>
   <p class="note c">同じ色の上着の人物をタップ。間違えると2秒減ります</p>`);
@@ -647,7 +706,7 @@ function runCam(d){const P=JP.cam[d];let found=0,end=performance.now()+P.T*1000,
   timeBar(()=>end,P.T,()=>{if(over)return;over=true;const ok=found>=P.q;jobDone('cam',d,{ok,score:found,raw:found*10+(ok?40:0),detail:`特定 ${found} 人 / ノルマ ${P.q} 人`})});board()}
 
 /* ALU：暗号ロック解除（□ に入る数を答える。3問で1錠） */
-function runLock(d){const P=JP.lock[d];let tum=0,locks=0,total=0,ans=0,end=performance.now()+P.T*1000,over=false;
+function runLock(d){const P=jp('lock',d);let tum=0,locks=0,total=0,ans=0,end=performance.now()+P.T*1000,over=false;
   openPanel(`<div class="hud"><span>ALU · 暗号ロック解除 · 解錠 <b id="sc">0</b> / ${P.q}</span><span id="tleft">${P.T.toFixed(1)} 秒</span></div><div class="timer"><i id="tbar"></i></div>
   <div class="tum" id="tm"></div><div class="q" id="q"></div>
   <form id="f" class="prow" style="justify-content:center"><input id="lk-in" class="ans" inputmode="numeric" autocomplete="off" aria-label="□ に入る数"><button class="nbtn">回す</button></form>
