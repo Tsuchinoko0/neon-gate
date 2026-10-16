@@ -338,6 +338,13 @@
     },
     /* パスコードなどのキー入力 */
     key(t) { tone('sine', 880 + Math.random() * 40, t, 0.06, 0.06); noise(t, 0.02, 0.04, 'highpass', 4000, 0.5); },
+    /* 昇降機（縦坑）：低いうなりが上がって、到着のチャイム */
+    lift(t) {
+      tone('sawtooth', 55, t, 1.4, 0.07, { to: 110, slide: 1.2, lp: 420, attack: 0.2 });
+      noise(t, 1.2, 0.03, 'lowpass', 300, 1);
+      tone('sine', 1319, t + 1.3, 0.5, 0.05, { echo: 0.3 });
+      tone('sine', 1047, t + 1.45, 0.6, 0.05, { echo: 0.3 });
+    },
     /* インプラント装着 */
     implant(t) {
       tone('sawtooth', 70, t, 1.0, 0.1, { to: 140, slide: 0.9, lp: 700, attack: 0.1 });
@@ -350,7 +357,7 @@
   /* 効果音ごとの「BGMをどこまで下げるか」と「下げておく時間（秒）」 */
   const DUCK = {
     text: [0.85, 0.05], step: [0.8, 0.05], key: [0.75, 0.06], ui: [0.6, 0.12],
-    scan: [0.35, 1.1], implant: [0.35, 1.0], allow: [0.4, 0.8], deny: [0.4, 0.6]
+    scan: [0.35, 1.1], implant: [0.35, 1.0], lift: [0.4, 1.6], allow: [0.4, 0.8], deny: [0.4, 0.6]
   };
   function se(name) {
     if (!ctx || !SE[name]) return;
