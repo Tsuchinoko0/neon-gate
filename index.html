@@ -37,6 +37,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 .chip.spec{color:var(--cyan);border-color:rgba(62,242,224,.35)}
 .chip.cr{color:var(--pink);border-color:rgba(255,61,139,.35)}
 .bar .sp{flex:1}
+.bar{position:relative}
+.sndpop{position:absolute;right:0;top:calc(100% + 6px);z-index:20;width:min(340px,100%);background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--cyan);padding:12px 14px;display:grid;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.sndpop .vol{flex-direction:column;align-items:stretch}
+.sndpop .vol label{display:grid;grid-template-columns:4.5em minmax(0,1fr) 3.2em}
+.sndpop .vol input{width:100%}
+.vol output{min-width:3.2em;text-align:right;color:var(--cyan);font-variant-numeric:tabular-nums}
 .tbtn{background:var(--panel);border:1px solid var(--line);padding:4px 12px;border-radius:2px;font-family:var(--f-data);font-size:12px}
 .tbtn:hover{border-color:var(--cyan)}
 
@@ -166,7 +172,9 @@ button{font:inherit;color:inherit;cursor:pointer}
     <span class="chip spec" id="specChip">未スキャン</span>
     <span class="chip cr" id="crChip">0 CR</span>
     <span class="sp"></span>
+    <button class="tbtn" id="sndBtn" type="button" aria-expanded="false" aria-controls="sndPop">音量</button>
     <button class="tbtn" id="setBtn" type="button">設定</button>
+    <div class="sndpop" id="sndPop" hidden></div>
   </div>
 
   <div class="frame" id="frame">
@@ -405,6 +413,7 @@ function hud(){const o=overall(S.cur);
   const ib=implantBonus();
   $('#specChip').textContent=o?`${o.tier.code} · ${Math.round(o.avg)}${ib?` +${ib}`:''} · ${DIFF[diffNow()]}`:'未スキャン';
   $('#crChip').textContent=`${S.cr.toLocaleString()} CR`;
+  if(typeof sndBtnUp==='function')sndBtnUp();
   $('#areaChip').textContent='圏外 · 東京の外'}
 let toastT=0;
 function toast(msg,ms=4200){const el=$('#toast');el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,ms)}
@@ -552,21 +561,37 @@ function settingsPanel(){if(mode==='title')return;const was=mode;const o=overall
   <div><p>難易度</p><p class="note">スキャン結果で自動に決まります。高スペックの人も挑戦できるよう、HARDでは仕事の制限時間が短くなり、報酬が上がります。</p></div>
   <div class="seg" role="radiogroup" aria-label="難易度">${opts.map(([k,l])=>`<button type="button" role="radio" aria-checked="${S.diff===k}" class="nbtn ${S.diff===k?'sel':''}" data-k="${k}">${l}</button>`).join('')}</div>
   ${rec?`<div><p>脳スペック診断の記録</p><p class="note">診断サイトの記録が見つかりました。ゲームのスキャン結果として読み込めます。</p></div><div class="prow"><button class="nbtn pink" id="imp" type="button">記録を読み込む</button></div>`:''}
-  <div><p>音</p><p class="note">BGM と効果音の音量。設定はセーブに保存されます。</p><p class="note" id="sndSt">状態：${esc(sndStatus())}</p></div>
-  <div class="vol"><label>BGM <input type="range" min="0" max="100" step="5" id="vb" value="${Math.round((S.snd.bgm??0.6)*100)}"></label><label>効果音 <input type="range" min="0" max="100" step="5" id="vs" value="${Math.round((S.snd.se??0.8)*100)}"></label><button class="nbtn ${S.snd.muted?'pink':'ghost'}" id="mu" type="button" aria-pressed="${!!S.snd.muted}">${S.snd.muted?'ミュート中':'ミュート'}</button><button class="nbtn ghost" id="sndT" type="button" data-se="">テスト音</button></div>
+  <div><p>音</p><p class="note">BGM と効果音の音量。設定はセーブに保存されます。</p></div>
+  ${volHTML()}
   <div><p>セーブデータ</p><p class="note">スキャン結果と進み具合を、このブラウザに保存しています。</p></div>
   <div class="prow" id="rsRow"><button class="nbtn ghost" id="rs" type="button">最初からやり直す</button></div>
   <div class="prow"><button class="nbtn" id="cl" type="button">閉じる</button></div>`);
   $('#panel').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{S.diff=b.dataset.k;save();hud();settingsPanel()});
-  const setSnd=(k,v)=>{S.snd={...S.snd,[k]:v};save();sndApply()};
-  $('#vb').oninput=e=>setSnd('bgm',e.target.value/100);$('#vs').oninput=e=>setSnd('se',e.target.value/100);$('#vs').onchange=()=>sfx('credit');
-  $('#mu').onclick=()=>{setSnd('muted',!S.snd.muted);settingsPanel()};
-  $('#sndT').onclick=()=>{sndStart();sfx('allow');setTimeout(()=>{const el=$('#sndSt');if(el)el.textContent='状態：'+sndStatus()},300)};
+  bindVol($('#panel'));
   const imp=$('#imp');if(imp)imp.onclick=()=>{applyScan(rec);toast('診断サイトの記録を読み込みました');settingsPanel()};
   $('#rs').onclick=()=>{$('#rsRow').innerHTML='<span class="note">スキャン結果も消えます。</span><button class="nbtn pink" id="rsy" type="button">消して最初から</button><button class="nbtn ghost" id="rsn" type="button">やめる</button>';
     $('#rsy').onclick=()=>{S={...fresh(),snd:S.snd};save();sndApply();player.x=S.x;player.dir=1;closePanel();$('#title').hidden=false;mode='title';titleButtons();hud()};$('#rsn').onclick=settingsPanel};
   $('#cl').onclick=()=>closePanel();$('#cl').focus()}
-$('#setBtn').onclick=()=>{if(mode==='panel'&&!$('#panel').querySelector('#cl'))return;if(mode==='dialog')endDialog();settingsPanel()};
+/* 音量（設定画面と、上のバーの「音量」ボタンで共通） */
+const pct=v=>Math.round((v??0)*100);
+function volHTML(){const o=S.snd;
+  return `<div class="vol"><label>BGM <input type="range" min="0" max="100" step="5" data-v="bgm" value="${pct(o.bgm??0.6)}" aria-label="BGM の音量"><output>${pct(o.bgm??0.6)}%</output></label>
+  <label>効果音 <input type="range" min="0" max="100" step="5" data-v="se" value="${pct(o.se??0.8)}" aria-label="効果音の音量"><output>${pct(o.se??0.8)}%</output></label>
+  <span class="prow"><button class="nbtn ${o.muted?'pink':'ghost'}" type="button" data-mute aria-pressed="${!!o.muted}">${o.muted?'ミュート中':'ミュート'}</button><button class="nbtn ghost" type="button" data-test data-se="">テスト音</button></span></div>
+  <p class="note" data-st>状態：${esc(sndStatus())}</p>`}
+function bindVol(root){const st=()=>{const el=root.querySelector('[data-st]');if(el)el.textContent='状態：'+sndStatus();sndBtnUp()};
+  const setSnd=(k,v)=>{S.snd={...S.snd,[k]:v};save();sndStart();sndApply();st()};
+  root.querySelectorAll('[data-v]').forEach(r=>{r.oninput=()=>{r.nextElementSibling.textContent=r.value+'%';setSnd(r.dataset.v,r.value/100)};if(r.dataset.v==='se')r.onchange=()=>sfx('credit')});
+  root.querySelector('[data-mute]').onclick=e=>{setSnd('muted',!S.snd.muted);const b=e.currentTarget;b.textContent=S.snd.muted?'ミュート中':'ミュート';b.classList.toggle('pink',S.snd.muted);b.classList.toggle('ghost',!S.snd.muted);b.setAttribute('aria-pressed',S.snd.muted)};
+  root.querySelector('[data-test]').onclick=()=>{sndStart();sfx('allow');setTimeout(st,300)}}
+function sndBtnUp(){const b=$('#sndBtn');b.textContent=S.snd.muted?'音量 · ミュート':`音量 · ${pct(S.snd.bgm??0.6)}%`}
+function sndPop(open){const pop=$('#sndPop'),b=$('#sndBtn');open=open??pop.hidden;pop.hidden=!open;b.setAttribute('aria-expanded',open);
+  if(open){sndStart();pop.innerHTML=`<div class="eyebrow">SOUND · 音量</div>${volHTML()}<p class="note">設定画面からも変えられます。</p>`;bindVol(pop);pop.querySelector('input').focus()}}
+$('#sndBtn').onclick=()=>sndPop();
+document.addEventListener('pointerdown',e=>{if(!$('#sndPop').hidden&&!e.target.closest('#sndPop,#sndBtn'))sndPop(false)});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sndPop').hidden){sndPop(false);$('#sndBtn').focus()}});
+sndBtnUp();
+$('#setBtn').onclick=()=>{sndPop(false);if(mode==='panel'&&!$('#panel').querySelector('#cl'))return;if(mode==='dialog')endDialog();settingsPanel()};
 
 /* ===== スキャン：4テスト ===== */
 function runCpu(){const times=[];let phase='wait',start=0;

@@ -32,6 +32,7 @@
   - 効果音は `sfx(名前)`。ボタンは自動で ui（`data-se` で別の音・無音にできる）。割り当ては IMPLANTS.md の「音」のとおり
   - 設定画面に BGM・効果音の音量とミュート。`S.snd` に保存（最初からやり直しても音の設定は残す）
   - 操作のたびに止まった音を再開（`sndResume`）。iPhone の消音スイッチ対策に `navigator.audioSession.type='playback'`。設定画面に音の状態とテスト音ボタン
+  - 上のバーの「音量」ボタン（タイトル画面でも使える）で、BGM・効果音・ミュートをその場で変えられる。設定画面と同じ部品（`volHTML()`・`bindVol()`）
 - ゲートを通ると「下層区は次の版で」の区切り画面を出す（`S.passed`）
 - セーブは localStorage の `neongate`
 - 操作：← → / A D で移動、Space・Enter・Z で話す。スマホは画面下のボタン
