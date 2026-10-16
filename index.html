@@ -122,6 +122,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 .tum{display:flex;gap:8px;justify-content:center;align-items:center;font-family:var(--f-data);font-size:13px;color:var(--muted)}
 .tum i{display:block;width:14px;height:22px;border:1px solid var(--line);background:var(--panel2)}
 .tum i.on{background:var(--cyan);border-color:var(--cyan)}
+.feeds button.glow{box-shadow:inset 0 0 0 2px var(--cyan),0 0 16px rgba(62,242,224,.75)}
+.pips{font-family:var(--f-data);font-size:12px;color:var(--cyan);letter-spacing:.1em;margin-left:8px}
+.vol{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-family:var(--f-data);font-size:13px}
+.vol label{display:flex;align-items:center;gap:8px}
+.vol input{accent-color:var(--cyan);width:140px}
 .earn{font-family:var(--f-data);font-size:clamp(30px,7vw,46px);font-weight:600;color:var(--pink);margin:0;text-shadow:0 0 12px rgba(255,61,139,.45)}
 
 .sheet{display:grid;gap:8px}
@@ -153,7 +158,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.3 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.4 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -186,6 +191,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
+<script src="sound.js"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -225,26 +231,36 @@ const DIFF={easy:'EASY',normal:'NORMAL',hard:'HARD'};
 const autoDiff=avg=>avg<40?'easy':avg<70?'normal':'hard';
 function diffNow(){const o=overall(S.cur);return S.diff!=='auto'?S.diff:(o?autoDiff(o.avg):'normal')}
 function gateReq(){const b=overall(S.base);if(!b)return null;return Math.min(100,Math.max(Math.ceil(b.avg*1.1),Math.ceil(b.avg)+3))}
-/* インプラント：スキャン値には入らず、実効スペックと仕事にだけ効く */
+/* インプラント：スキャン値には入らず、実効スペックと仕事にだけ効く。部位ごとに Lv1〜3 */
+const GLOW=0.3;
 const IMPLANTS=[
-  {id:'reflex',stat:'cpu',job:'drone',nm:'反射ブースター',desc:'脊髄に入れる信号増幅器。体が考えるより先に動く。',eff:'ドローン回避：照準から発射までが 0.15 秒長く見える'},
-  {id:'buffer',stat:'ram',job:'pass',nm:'記憶バッファ',desc:'海馬の横に差す小さな外部記憶。忘れた1つを拾ってくれる。',eff:'パスコード侵入：ミスできる回数 +1'},
-  {id:'optic',stat:'gpu',job:'cam',nm:'光学センサー',desc:'網膜に重ねる色解析レンズ。似た色の差を強調する。',eff:'監視カメラ解析：まぎらわしい色の差が 1.25 倍はっきりする'},
-  {id:'copro',stat:'alu',job:'lock',nm:'演算コプロセッサ',desc:'前頭葉に並べる計算チップ。暗算を肩代わりする。',eff:'暗号ロック解除：制限時間 +8 秒'}
+  {id:'reflex',stat:'cpu',job:'drone',nm:'反射ブースター',desc:'脊髄に入れる信号増幅器。体が考えるより先に動く。',eff:lv=>`ドローン回避：シールド +${lv}`},
+  {id:'buffer',stat:'ram',job:'pass',nm:'記憶バッファ',desc:'海馬の横に差す小さな外部記憶。見たものをもう一度呼び出せる。',eff:lv=>`パスコード侵入：見直せる回数 +${lv}`},
+  {id:'optic',stat:'gpu',job:'cam',nm:'光学センサー',desc:'網膜に重ねる色解析レンズ。標的を一瞬だけ光らせる。',eff:lv=>`監視カメラ解析：標的が ${Math.round(lv*GLOW*10)/10} 秒光る`},
+  {id:'copro',stat:'alu',job:'lock',nm:'演算コプロセッサ',desc:'前頭葉に並べる計算チップ。暗算を肩代わりする。',eff:lv=>`暗号ロック解除：制限時間 +${lv*5} 秒`}
 ];
-const IMP_PRICE=400,IMP_SPEC=4,IMP_FLESH=10;
-const hasImp=id=>!!(S.imp&&S.imp[id]);
-const impCount=()=>IMPLANTS.filter(m=>hasImp(m.id)).length;
-const implantBonus=()=>impCount()*IMP_SPEC;
-const flesh=()=>100-impCount()*IMP_FLESH;
+const IMP_LV=[{price:400,spec:4,flesh:10},{price:800,spec:3,flesh:10},{price:1400,spec:2,flesh:5}],IMP_MAX=IMP_LV.length;
+const impLv=id=>clamp(Math.floor(+(S.imp&&S.imp[id])||0),0,IMP_MAX);
+const totalLv=()=>IMPLANTS.reduce((n,m)=>n+impLv(m.id),0);
+const sumLv=(id,k)=>IMP_LV.slice(0,impLv(id)).reduce((n,x)=>n+x[k],0);
+const implantBonus=()=>IMPLANTS.reduce((n,m)=>n+sumLv(m.id,'spec'),0);
+const flesh=()=>Math.max(0,100-IMPLANTS.reduce((n,m)=>n+sumLv(m.id,'flesh'),0));
 function effective(){const o=overall(S.cur);return o?Math.round(o.avg+implantBonus()):null}
 
 /* ===== セーブ ===== */
 const KEY='neongate';
-const fresh=()=>({v:1,base:null,cur:null,scans:0,diff:'auto',mina:0,gate:0,x:36,started:false,cr:0,jobs:{},imp:{},earned:0,passed:0});
+const fresh=()=>({v:1,base:null,cur:null,scans:0,diff:'auto',mina:0,gate:0,x:36,started:false,cr:0,jobs:{},imp:{},earned:0,passed:0,snd:{bgm:0.6,se:0.8,muted:false}});
 let S=fresh();
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.v===1)S=Object.assign(fresh(),s)}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+/* ===== 音（sound.js） ===== */
+const SND=window.NGSound||null;
+const sfx=n=>{try{SND&&SND.se(n)}catch(e){}};
+function sndApply(){if(!SND)return;const o=S.snd||{};try{SND.setVolume('bgm',o.bgm??0.6);SND.setVolume('se',o.se??0.8);SND.setMuted(!!o.muted);SND.setCyber(1-flesh()/100)}catch(e){}}
+function sndStart(){if(!SND)return;try{if(SND.init()){sndApply();SND.start()}}catch(e){}}
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;
+  if(b.dataset.se!==undefined){if(b.dataset.se)sfx(b.dataset.se);return}
+  if(b.closest('#kp,#fd,.grid,#dlgCh,form,.keys')||b.matches('#pad,#dl,#dr,#kA'))return;sfx('ui')});
 function siteRecord(){try{const r=JSON.parse(localStorage.getItem('brainspec')||'null');if(r&&TESTS.every(t=>typeof r[t.id]==='number'))return{cpu:r.cpu,ram:r.ram,gpu:r.gpu,alu:r.alu}}catch(e){}return null}
 
 /* ===== 画面 ===== */
@@ -358,11 +374,14 @@ function draw(t){
 }
 function near(){let best=null,bd=24;for(const n of NPCS){const d=Math.abs(n.x-player.x);if(d<bd){bd=d;best=n}}return best}
 
-let mode='title',last=0,titlePan=0;
+let mode='title',last=0,titlePan=0,stepIdx=0,neonT=0,lastBright=-1;
+const NEON_AT=[...LAMPS.filter(l=>l.broken).map(l=>l.x),446]; /* 壊れた街灯と診療所の看板 */
 function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
   if(mode==='play'){const dx=(keys.r?1:0)-(keys.l?1:0);player.moving=dx!==0;
-    if(dx){player.dir=dx;player.x=clamp(player.x+dx*62*dt,12,846);player.step+=dt}
-    camX=clamp(Math.round(player.x-130),0,CAMMAX)}
+    if(dx){player.dir=dx;player.x=clamp(player.x+dx*62*dt,12,846);player.step+=dt;const si=Math.floor(player.step*2.5);if(si!==stepIdx){stepIdx=si;sfx('step')}}
+    camX=clamp(Math.round(player.x-130),0,CAMMAX);
+    neonT+=dt;if(neonT>1){neonT=0;if(NEON_AT.some(x=>Math.abs(player.x-x)<45)&&Math.random()<0.35)sfx('neon')}
+    const br=Math.round(camX/CAMMAX*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='title'){titlePan+=dt*14;camX=Math.round((Math.sin(titlePan/120)*0.5+0.5)*CAMMAX*0.55)}
   for(const d of drops){d.y+=d.v*dt;d.x-=d.v*dt*0.22;if(d.y>H){d.y=-4;d.x=Math.random()*(W+40)}if(d.x<0)d.x+=W}
   if(gateLight!=='idle'&&ts>gateLightUntil)gateLight='idle';
@@ -385,12 +404,12 @@ function talk(lines,onEnd){mode='dialog';D={lines,i:0,onEnd,typing:false,full:''
 function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who;
   $('#dlgWho').textContent=WHO[L.who];$('#dlgCh').innerHTML='';$('#dlgMore').hidden=true;
   D.full=L.text;D.n=0;D.typing=true;clearInterval(typeT);const el=$('#dlgTxt');el.textContent='';
-  typeT=setInterval(()=>{D.n+=1;el.textContent=D.full.slice(0,D.n);if(D.n>=D.full.length)doneTyping()},26)}
+  typeT=setInterval(()=>{D.n+=1;el.textContent=D.full.slice(0,D.n);if(D.n%2===0&&/[^\s…・。、]/.test(D.full[D.n-1]||''))sfx('text');if(D.n>=D.full.length)doneTyping()},26)}
 function doneTyping(){clearInterval(typeT);D.typing=false;$('#dlgTxt').textContent=D.full;const L=D.lines[D.i];
   if(L.choices){D.sel=0;$('#dlgCh').innerHTML=L.choices.map((c,i)=>`<button class="nbtn ${i===0?'sel':''}" type="button" data-i="${i}">${esc(c.label)}</button>`).join('');
     $('#dlgCh').querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();pick(+b.dataset.i)})}
   else $('#dlgMore').hidden=false}
-function pick(i){const c=D.lines[D.i].choices[i];document.activeElement&&document.activeElement.blur();endDialog();c.fn&&c.fn()}
+function pick(i){const c=D.lines[D.i].choices[i];sfx('ui');document.activeElement&&document.activeElement.blur();endDialog();c.fn&&c.fn()}
 function advance(){if(!D)return;if(D.typing)return doneTyping();if(D.lines[D.i].choices)return;D.i++;if(D.i>=D.lines.length){const f=D.onEnd;endDialog();f&&f()}else show()}
 function endDialog(){clearInterval(typeT);$('#dlg').hidden=true;D=null;if(mode==='dialog')mode='play'}
 function moveSel(d){if(!D||!D.lines[D.i].choices||D.typing)return;const n=D.lines[D.i].choices.length;D.sel=(D.sel+d+n)%n;
@@ -406,39 +425,54 @@ function talkMina(){const o=overall(S.cur);
   if(S.passed){ls=[L('mina','ゲート、通ったんだってね。……やるじゃん。'),L('mina',flesh()<100?`生身率 ${flesh()}%、か。向こうじゃ珍しくもないけど、自分を見失うんじゃないよ。`:'生身のままで通ったのか。向こうの連中、驚くだろうね。'),L('mina','下層区の話は、そのうちね。それまで小遣い稼ぎでもしてく？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}])];return talk(ls)}
   if(S.mina<2){S.mina=2;save();ls=[L('mina',`${o.tier.name}、ね。まあ、ここから上がればいいだけだよ。`),L('mina','スペックがわかったなら仕事を回せる。運び、侵入、映像解析、錠前破り。どれも脳を使う仕事さ。'),L('mina','稼いだクレジットは、そのうちドクのインプラント代になる。ゲートの判定も、奥で確かめてきな。')]}
   else if(S.gate===1){S.gate=2;save();ls=[L('mina','ゲート、通れなかったでしょ。顔に書いてある。'),L('mina','稼いで、鍛えて、もう一度。ここではみんなそうしてる。')]}
-  else{const pool=['また来たね。仕事ならあるよ。','圏外じゃ、脳しか売るものがないからね。',impCount()<IMPLANTS.length?'ドクのとこにインプラントが入ったってさ。1つ400。貯めときな。':'全部入れたんだ。……目の色、変わったね。',`今の手持ちは ${S.cr} クレジットか。まだまだだね。`];ls=[L('mina',pool[Math.floor(Math.random()*pool.length)])]}
+  else{const pool=['また来たね。仕事ならあるよ。','圏外じゃ、脳しか売るものがないからね。',flesh()>0?'ドクのとこのインプラント、最初は400だってさ。貯めときな。':'全部入れたんだ。……目の色、変わったね。',`今の手持ちは ${S.cr} クレジットか。まだまだだね。`];ls=[L('mina',pool[Math.floor(Math.random()*pool.length)])]}
   ls.push(L('mina','で、どうする？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
 function talkDoc(){const o=overall(S.cur),rec=siteRecord();
   if(!o){const ch=[{label:'スキャンを受ける',fn:scanIntro}];if(rec)ch.push({label:'診断サイトの記録を渡す',fn:()=>useRecord(rec)});ch.push({label:'やめておく'});
     return talk([L('doc','客か。……ふん、旧式の匂いがするな。'),L('doc','脳を見せろ。スキャンは4つ。反応、記憶、識別、演算だ。3分で終わる。'),L('doc','どうする？',ch)])}
-  const n=impCount(),first=!S.docShop;if(first){S.docShop=1;save()}
-  const ls=first?[L('doc','インプラントが入荷した。反射、記憶、視覚、演算。1つ400だ。'),L('doc','スキャンの数字は変わらんぞ。測るのはお前の脳そのものだからな。だが、ゲートの機械は拡張込みで見る。')]
-    :n>=IMPLANTS.length?[L('doc','もう入れる場所はない。あとは生身を鍛えるしかないな。')]:[L('doc','また来たか。測り直すか、入れるか。伸びていれば数字に出る。')];
+  const md=docMood(),first=!S.docShop;if(first){S.docShop=1;save()}
+  let ls;
+  if(md===0)ls=first?[L('doc','インプラントが入荷した。反射、記憶、視覚、演算。Lv3まで強化できる。最初は400だ。'),L('doc','スキャンの数字は変わらんぞ。測るのはお前の脳そのものだからな。だが、ゲートの機械は拡張込みで見る。')]:[L('doc','また来たか。測り直すか、入れるか。伸びていれば数字に出る。')];
+  else if(md===4)ls=DOC_TALK[4].map(t=>L('doc',t));
+  else{const pool=DOC_TALK[md];ls=[L('doc',pool[Math.floor(Math.random()*pool.length)])]}
   ls.push(L('doc','どうする？',[{label:'再スキャン',fn:scanIntro},{label:'インプラント',fn:shopPanel},{label:'結果を見る',fn:()=>resultPanel(false)},{label:'やめておく'}]));talk(ls)}
-function shopPanel(sel){
+/* ドクの心情：0=生身100%（皮肉っぽい商売人）→ 4=生身0%（変わっちまったな） */
+const docMood=()=>{const f=flesh();return f>=100?0:f>=70?1:f>=40?2:f>0?3:4};
+const DOC_TALK={
+  1:['調子はどうだ。拒絶反応が出たら、すぐ来い。','次はどれだ。金さえあれば何でも入れる。……それが俺の仕事だ。'],
+  2:['最近、お前の目を見ると、機械が見返してくる気がする。','入れるのは簡単だ。抜くのは、もうできねえがな。'],
+  3:['……俺はこうやって、何人も生身を削ってきた。','お前、ここに初めて来たときの自分を覚えてるか。'],
+  4:['……変わっちまったな。','初めて来たときの、あの旧式の匂い。もう、どこにもねえ。']
+};
+function shopPanel(){
   openPanel(`<div class="eyebrow">IMPLANT · ドク・カゲロウ診療所</div><h3>インプラント</h3>
-  <p class="muted">1つ ${IMP_PRICE} CR。入れると実効スペック +${IMP_SPEC}、対応する仕事が少し楽になる。スキャン値には入らない。1つごとに生身率 -${IMP_FLESH}%。</p>
+  <p class="muted">部位ごとに Lv3 まで強化できる。Lv1 400 CR（実効 +4・生身率 -10%）／Lv2 800 CR（+3・-10%）／Lv3 1400 CR（+2・-5%）。スキャン値には入らない。</p>
   <div class="stats"><div class="stat"><span>所持クレジット</span><b>${S.cr.toLocaleString()} CR</b></div><div class="stat"><span>生身率</span><b>${flesh()}%</b></div><div class="stat"><span>実効スペック</span><b>${effective()??'—'}</b></div></div>
-  <div class="jobs">${IMPLANTS.map(m=>{const own=hasImp(m.id),poor=S.cr<IMP_PRICE;
-    const act0=own?'<span class="tag">導入済み</span>':sel===m.id?`<button class="nbtn pink" type="button" data-y="${m.id}">${IMP_PRICE} CR 払う</button><button class="nbtn ghost" type="button" data-n="1">やめる</button>`:`<button class="nbtn" type="button" data-b="${m.id}"${poor?' disabled':''}>${poor?'CR不足':'入れる'}</button>`;
-    const act=`<span class="act">${act0}</span>`;
-    return `<div class="job"><span class="tag">${TESTS.find(t=>t.id===m.stat).tag}</span><span class="nm">${m.nm}</span>${act}<span class="ex">${m.desc}<br>${m.eff}</span></div>`}).join('')}</div>
+  <div class="jobs">${IMPLANTS.map(m=>{const lv=impLv(m.id),nx=IMP_LV[lv],poor=nx&&S.cr<nx.price;
+    const act=!nx?'<span class="tag">最大</span>':`<button class="nbtn" type="button" data-b="${m.id}"${poor?' disabled':''}>${lv?`Lv${lv+1} に強化`:'入れる'} · ${nx.price}</button>`;
+    return `<div class="job"><span class="tag">${TESTS.find(t=>t.id===m.stat).tag}</span><span class="nm">${m.nm}<span class="pips">${'■'.repeat(lv)}${'□'.repeat(IMP_MAX-lv)}</span></span><span class="act">${act}</span><span class="ex">${m.desc}<br>${lv?`いま Lv${lv}：${m.eff(lv)}`:'未導入'}${nx?`<br>次 Lv${lv+1}：${m.eff(lv+1)} · 実効 +${nx.spec} · 生身率 -${nx.flesh}%`:''}</span></div>`}).join('')}</div>
   <div class="prow"><button class="nbtn ghost" id="back" type="button">診療所に戻る</button></div>`);
   const pn=$('#panel');
-  pn.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>shopPanel(b.dataset.b));
-  pn.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>shopPanel());
-  pn.querySelectorAll('[data-y]').forEach(b=>b.onclick=()=>buyImplant(b.dataset.y));
-  $('#back').onclick=()=>closePanel();(pn.querySelector('[data-y]')||pn.querySelector('[data-b]:not([disabled])')||$('#back')).focus()}
-function buyImplant(id){const m=IMPLANTS.find(x=>x.id===id);if(hasImp(id)||S.cr<IMP_PRICE)return shopPanel();
-  S.cr-=IMP_PRICE;S.imp={...S.imp,[id]:1};save();
-  closePanel(()=>talk([L('doc',`${m.nm}だな。……横になれ。`),L('me','……頭の奥で、何かが静かにつながった。'),L('doc',`終わりだ。生身率 ${flesh()}%。慣れるまで少し気持ち悪いぞ。`)],()=>toast(`${m.nm}を導入：実効スペック +${IMP_SPEC}／生身率 ${flesh()}%`)))}
+  pn.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>closePanel(()=>buyTalk(b.dataset.b)));
+  $('#back').onclick=()=>closePanel();(pn.querySelector('[data-b]:not([disabled])')||$('#back')).focus()}
+/* 購入前のドクのひとこと（生身率が低いほど、ためらいがにじむ） */
+function buyTalk(id){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IMP_LV[lv];if(!nx||S.cr<nx.price)return shopPanel();
+  const f=flesh(),yes=t=>({label:`入れる（${nx.price} CR）`,fn:()=>doBuy(id,t)}),no=fn=>({label:'やめておく',fn});
+  if(f>=100)return talk([L('doc','待て。'),L('doc','一つでも入れたら、もう完全な生身には戻れねえ。脳に金属を通すってのは、そういうことだ。'),
+    L('doc','……それでも入れるか？',[yes(['……終わりだ。しばらく頭の奥で音が鳴る。じきに慣れる。']),no(()=>talk([L('doc','それでいい。迷ううちは、まだ生身でいろ。')]))])]);
+  if(f-nx.flesh<=0)return talk([L('doc','これで最後だ。……もう、お前の中に生身は残らねえ。',[yes(['……終わりだ。','……変わっちまったな。']),no(shopPanel)])]);
+  if(f>=70)return talk([L('doc',`${m.nm}${lv?`の Lv${lv+1}`:''}か。${nx.price}だ。`,[yes(['毎度。']),no(shopPanel)])]);
+  talk([L('doc',f>=40?'……本当にいいんだな。':'本当にいいのか。……いや、聞くだけ野暮か。',[yes(['……終わりだ。']),no(shopPanel)])])}
+function doBuy(id,after){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IMP_LV[lv];if(!nx||S.cr<nx.price)return shopPanel();
+  S.cr-=nx.price;S.imp={...S.imp,[id]:lv+1};save();hud();sfx('implant');sndApply();
+  talk(after.map(t=>L('doc',t)),()=>{toast(`${m.nm} Lv${lv+1}：実効スペック +${nx.spec}／生身率 ${flesh()}%`);shopPanel()})}
 function talkGate(){const o=overall(S.cur);
-  if(!o){gateLight='deny';gateLightUntil=performance.now()+2500;return talk([L('gate','未登録の脳を検出。ブレインスキャンの記録がありません。'),L('gate','通行を許可できません。')])}
+  if(!o){gateLight='deny';gateLightUntil=performance.now()+2500;sfx('deny');return talk([L('gate','未登録の脳を検出。ブレインスキャンの記録がありません。'),L('gate','通行を許可できません。')])}
   const cur=effective(),req=gateReq();
   talk([L('gate','スキャン記録を照合中……'),L('gate',`実効スペック ${cur} ／ 通行基準 ${req}（初回スキャンの +10%）`)],()=>{
-    if(cur>=req){gateLight='ok';gateLightUntil=performance.now()+4000;const again=S.passed;S.passed=1;save();
+    if(cur>=req){gateLight='ok';gateLightUntil=performance.now()+4000;sfx('allow');const again=S.passed;S.passed=1;save();
       talk(again?[L('gate','通行許可済みの脳です。どうぞ。')]:[L('gate','基準を満たしています。通行を許可します。'),L('me','光が、近い。')],clearPanel)}
-    else{gateLight='deny';gateLightUntil=performance.now()+4000;S.gate=1;save();
+    else{gateLight='deny';gateLightUntil=performance.now()+4000;sfx('deny');S.gate=1;save();
       talk([L('gate','基準に届きません。通行を拒否します。'),L('me','……今の自分じゃ、足りないってことか。'),L('me','ミナのところに戻ろう。')])}})}
 function clearPanel(){const o=overall(S.cur),b=overall(S.base);
   openPanel(`<div class="eyebrow">GATE CLEARED · 圏外 → 下層区</div><h3 style="color:var(--cyan)">ゲート通過</h3>
@@ -451,7 +485,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">下層区は次の版で</p>
-  <p class="muted">試作版 v0.3 はここまでです。圏外に戻って、仕事や再スキャンを続けることもできます。</p>
+  <p class="muted">試作版 v0.4 はここまでです。圏外に戻って、仕事や再スキャンを続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">圏外に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 function useRecord(rec){applyScan(rec);talk([L('doc','診断サイトの記録か。手間が省けた。'),L('doc','……ふむ。数字は嘘をつかない。')],()=>resultPanel(true))}
@@ -467,7 +501,7 @@ function scanIntro(){scanData={};scanI=0;
   openPanel(`<div class="eyebrow">BRAIN SCAN · ドク・カゲロウ診療所</div><h3>ブレインスキャン</h3>
   <p class="muted">脳をパソコンに見立てて、4つのパーツを測ります。結果がこのゲームでのあなたの初期スペックになります。</p>
   <ul class="plist">${TESTS.map(t=>`<li><span class="tag">${t.tag}</span><span>${t.nm}</span></li>`).join('')}</ul>
-  <div class="prow"><button class="nbtn" id="go" type="button">スキャン開始</button><button class="nbtn ghost" id="back" type="button">やめる</button></div>`);
+  <div class="prow"><button class="nbtn" id="go" type="button" data-se="scan">スキャン開始</button><button class="nbtn ghost" id="back" type="button">やめる</button></div>`);
   $('#go').onclick=()=>testIntro(0);$('#back').onclick=()=>closePanel();$('#go').focus()}
 function testIntro(i){scanI=i;const t=TESTS[i];
   openPanel(`<div class="eyebrow">${t.tag} · ${i+1} / 4</div><h3>${t.nm}</h3><p>${t.desc}</p>
@@ -497,7 +531,8 @@ function resultPanel(fresh){const o=overall(S.cur),b=overall(S.base),d=diffNow()
   <p class="note">総合スコアは生身の脳だけの値です。インプラントは入っていません。ゲートは実効スペック（生身＋拡張）で判定します。</p>
   <p class="note">難易度は総合スコアから自動で決まります（39以下 EASY／40〜69 NORMAL／70以上 HARD）。設定からいつでも変えられます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">診療所に戻る</button></div>`);
-  $('#ok').onclick=()=>closePanel(fresh?()=>talk([L('doc',`${o.tier.name}……ここから上がるかはお前次第だ。`),L('doc','東京に入りたけりゃ、奥のゲートで判定を受けろ。')]):null);$('#ok').focus()}
+  const grewRaw=fresh&&S.scans>1&&totalLv()===0&&o.avg>b.avg;
+  $('#ok').onclick=()=>closePanel(!fresh?null:grewRaw?()=>talk([L('doc','数字が伸びてる。……機械に頼らずにな。大したもんだ。')]):()=>talk([L('doc',`${o.tier.name}……ここから上がるかはお前次第だ。`),L('doc','東京に入りたけりゃ、奥のゲートで判定を受けろ。')]));$('#ok').focus()}
 
 function settingsPanel(){if(mode==='title')return;const was=mode;const o=overall(S.cur),rec=siteRecord();
   const opts=[['auto',`自動${o?`（${DIFF[autoDiff(o.avg)]}）`:''}`],['easy','EASY'],['normal','NORMAL'],['hard','HARD']];
@@ -505,13 +540,18 @@ function settingsPanel(){if(mode==='title')return;const was=mode;const o=overall
   <div><p>難易度</p><p class="note">スキャン結果で自動に決まります。高スペックの人も挑戦できるよう、HARDでは仕事の制限時間が短くなり、報酬が上がります。</p></div>
   <div class="seg" role="radiogroup" aria-label="難易度">${opts.map(([k,l])=>`<button type="button" role="radio" aria-checked="${S.diff===k}" class="nbtn ${S.diff===k?'sel':''}" data-k="${k}">${l}</button>`).join('')}</div>
   ${rec?`<div><p>脳スペック診断の記録</p><p class="note">診断サイトの記録が見つかりました。ゲームのスキャン結果として読み込めます。</p></div><div class="prow"><button class="nbtn pink" id="imp" type="button">記録を読み込む</button></div>`:''}
+  <div><p>音</p><p class="note">BGM と効果音の音量。設定はセーブに保存されます。</p></div>
+  <div class="vol"><label>BGM <input type="range" min="0" max="100" step="5" id="vb" value="${Math.round((S.snd.bgm??0.6)*100)}"></label><label>効果音 <input type="range" min="0" max="100" step="5" id="vs" value="${Math.round((S.snd.se??0.8)*100)}"></label><button class="nbtn ${S.snd.muted?'pink':'ghost'}" id="mu" type="button" aria-pressed="${!!S.snd.muted}">${S.snd.muted?'ミュート中':'ミュート'}</button></div>
   <div><p>セーブデータ</p><p class="note">スキャン結果と進み具合を、このブラウザに保存しています。</p></div>
   <div class="prow" id="rsRow"><button class="nbtn ghost" id="rs" type="button">最初からやり直す</button></div>
   <div class="prow"><button class="nbtn" id="cl" type="button">閉じる</button></div>`);
   $('#panel').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{S.diff=b.dataset.k;save();hud();settingsPanel()});
+  const setSnd=(k,v)=>{S.snd={...S.snd,[k]:v};save();sndApply()};
+  $('#vb').oninput=e=>setSnd('bgm',e.target.value/100);$('#vs').oninput=e=>setSnd('se',e.target.value/100);$('#vs').onchange=()=>sfx('credit');
+  $('#mu').onclick=()=>{setSnd('muted',!S.snd.muted);settingsPanel()};
   const imp=$('#imp');if(imp)imp.onclick=()=>{applyScan(rec);toast('診断サイトの記録を読み込みました');settingsPanel()};
   $('#rs').onclick=()=>{$('#rsRow').innerHTML='<span class="note">スキャン結果も消えます。</span><button class="nbtn pink" id="rsy" type="button">消して最初から</button><button class="nbtn ghost" id="rsn" type="button">やめる</button>';
-    $('#rsy').onclick=()=>{S=fresh();save();player.x=S.x;player.dir=1;closePanel();$('#title').hidden=false;mode='title';titleButtons();hud()};$('#rsn').onclick=settingsPanel};
+    $('#rsy').onclick=()=>{S={...fresh(),snd:S.snd};save();sndApply();player.x=S.x;player.dir=1;closePanel();$('#title').hidden=false;mode='title';titleButtons();hud()};$('#rsn').onclick=settingsPanel};
   $('#cl').onclick=()=>closePanel();$('#cl').focus()}
 $('#setBtn').onclick=()=>{if(mode==='panel'&&!$('#panel').querySelector('#cl'))return;if(mode==='dialog')endDialog();settingsPanel()};
 
@@ -520,7 +560,7 @@ function runCpu(){const times=[];let phase='wait',start=0;
   openPanel(`<div class="hud"><span>CPU · 反応速度</span><span id="cnt">0 / 5</span></div><button class="pad wait" id="pad" type="button"></button>`);
   const pad=$('#pad'),set=(c,h)=>{pad.className='pad '+c;pad.innerHTML=h};
   function arm(){phase='wait';set('wait','待って…<small>シアンに光ったらタップ</small>');timers.push(setTimeout(()=>{phase='go';start=performance.now();set('go','いま！')},1200+Math.random()*2600))}
-  function hit(){if(phase==='wait'){clearTimers();phase='early';set('early','フライング<small>タップでやり直し</small>')}
+  function hit(){if(phase==='wait'){clearTimers();phase='early';sfx('hit');set('early','フライング<small>タップでやり直し</small>')}
     else if(phase==='early'||phase==='between')arm();
     else if(phase==='go'){const ms=performance.now()-start;times.push(ms);$('#cnt').textContent=`${times.length} / 5`;
       if(times.length>=5)return testDone('cpu',Math.round(times.reduce((a,b)=>a+b)/5));phase='between';set('wait',`<span class="mono">${Math.round(ms)} ms</span><small>タップで次へ</small>`)}}
@@ -535,7 +575,7 @@ function runRam(){let len=3,best=2,lives=2;
       const inp=$('#ram-in');inp.focus();
       $('#f').onsubmit=e=>{e.preventDefault();
         if(inp.value.replace(/\D/g,'')===d){best=len;len++;if(len>14)return testDone('ram',best);round()}
-        else{lives--;if(lives<=0)return testDone('ram',best);openPanel(`${head()}<p>不正解。正解は <b class="mono">${d}</b> でした。同じ桁数でもう一度。</p>`);timers.push(setTimeout(round,1600))}}},len*550+700))}
+        else{lives--;sfx('hit');if(lives<=0)return testDone('ram',best);openPanel(`${head()}<p>不正解。正解は <b class="mono">${d}</b> でした。同じ桁数でもう一度。</p>`);timers.push(setTimeout(round,1600))}}},len*550+700))}
   round()}
 function runGpu(){let level=0,end=performance.now()+30000;
   openPanel(`<div class="hud"><span>GPU · 正解 <b id="sc">0</b></span><span id="tleft">30.0 秒</span></div><div class="timer"><i id="tbar"></i></div><div class="grid" id="g"></div><p class="note">間違えると1秒減ります</p>`);
@@ -543,7 +583,7 @@ function runGpu(){let level=0,end=performance.now()+30000;
   function board(){const n=Math.min(7,3+Math.floor(level/4)),delta=Math.max(4,24-level*1.1),h=Math.floor(Math.random()*360),l=46+Math.random()*10,odd=Math.floor(Math.random()*n*n);
     g.style.gridTemplateColumns=`repeat(${n},1fr)`;
     g.innerHTML=Array.from({length:n*n},(_,i)=>`<button type="button" aria-label="タイル${i+1}" data-o="${i===odd?1:0}" style="background:hsl(${h} 62% ${i===odd?l+delta:l}%)"></button>`).join('')}
-  g.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.o==='1'){level++;$('#sc').textContent=level;board()}else{end-=1000;g.classList.remove('flash');void g.offsetWidth;g.classList.add('flash')}};
+  g.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.o==='1'){level++;$('#sc').textContent=level;board()}else{end-=1000;sfx('hit');g.classList.remove('flash');void g.offsetWidth;g.classList.add('flash')}};
   timers.push(setInterval(()=>{const left=Math.max(0,end-performance.now());$('#tbar').style.width=(left/300)+'%';$('#tleft').textContent=(left/1000).toFixed(1)+' 秒';if(left<=0)testDone('gpu',level)},100));board()}
 function runAlu(){let n=0,ans=0;const end=performance.now()+30000;
   openPanel(`<div class="hud"><span>ALU · 正解 <b id="sc">0</b></span><span id="tleft">30.0 秒</span></div><div class="timer"><i id="tbar"></i></div><div class="q" id="q"></div>
@@ -553,7 +593,7 @@ function runAlu(){let n=0,ans=0;const end=performance.now()+30000;
     if(k===0){a=r(5,20+lv*4);b=r(5,20+lv*4);op='+';ans=a+b}else if(k===1){a=r(10,30+lv*4);b=r(2,a-1);op='−';ans=a-b}else{a=r(2,6+Math.floor(lv/2));b=r(2,9);op='×';ans=a*b}
     $('#q').textContent=`${a} ${op} ${b}`}
   const inp=$('#alu-in');
-  $('#f').onsubmit=e=>{e.preventDefault();if(inp.value.trim()==='')return;if(parseInt(inp.value,10)===ans){n++;$('#sc').textContent=n}else{inp.classList.remove('flash');void inp.offsetWidth;inp.classList.add('flash')}inp.value='';next()};
+  $('#f').onsubmit=e=>{e.preventDefault();if(inp.value.trim()==='')return;if(parseInt(inp.value,10)===ans){n++;$('#sc').textContent=n}else{sfx('hit');inp.classList.remove('flash');void inp.offsetWidth;inp.classList.add('flash')}inp.value='';next()};
   timers.push(setInterval(()=>{const left=Math.max(0,end-performance.now());$('#tbar').style.width=(left/300)+'%';$('#tleft').textContent=(left/1000).toFixed(1)+' 秒';if(left<=0)testDone('alu',n)},100));next();inp.focus()}
 
 /* ===== 仕事（ミニゲーム4種） ===== */
@@ -571,11 +611,11 @@ const JOBS=[
     ok:'荷物は無事。いい足してるね。',ng:'荷物は落としたけど、運んだ分は払うってさ。'},
   {id:'pass',tag:'RAM',nm:'パスコード侵入',client:'ジャンク屋の盗聴屋',unit:'層',run:()=>runPass,
     desc:'盗聴したキー入力が光って見える。光った順番を覚えて、同じ順に打ち込め。5層突破で完了。',
-    ctl:'キーをタップ、またはキーボードの 1〜9',rule:p=>`全5層 · 最初は ${p.len} 桁で1層ごとに+1 · ミス ${p.lives} 回で切断`,
+    ctl:'キーをタップ、またはキーボードの 1〜9',rule:p=>`全5層 · 最初は ${p.len} 桁で1層ごとに+1 · ミス ${p.lives} 回で切断${p.review?` · 見直し ${p.review} 回`:''}`,
     ok:'全部抜けたの？ 依頼主が腰抜かしてたよ。',ng:'検知されたか。抜けた層の分は払うよ。'},
   {id:'cam',tag:'GPU',nm:'監視カメラ解析',client:'探偵崩れのオヤジ',unit:'人',run:()=>runCam,
     desc:'監視映像の群衆から、指定された色の上着を着た人物を探す。似た色に惑わされるな。',
-    ctl:'映像をタップ',rule:p=>`制限 ${p.T} 秒 · ノルマ ${p.q} 人 · 見間違えると2秒減`,
+    ctl:'映像をタップ',rule:p=>`制限 ${p.T} 秒 · ノルマ ${p.q} 人 · 見間違えると2秒減${p.glow?` · 標的が ${p.glow} 秒光る`:''}`,
     ok:'目がいいね。オヤジが次も頼みたいって。',ng:'ノルマには届かなかったか。見つけた分は払うよ。'},
   {id:'lock',tag:'ALU',nm:'暗号ロック解除',client:'倉庫荒らしの兄弟',unit:'錠',run:()=>runLock,
     desc:'暗号錠のタンブラーは数式で回る。□ に入る数を答えろ。タンブラー3つで1錠。',
@@ -584,11 +624,8 @@ const JOBS=[
 ];
 const jobOf=id=>JOBS.find(j=>j.id===id);
 const r2=v=>Math.round(v*100)/100;
-function jp(id,d){const p={...JP[id][d]},m=IMPLANTS.find(x=>x.job===id);if(!m||!hasImp(m.id))return p;
-  if(id==='drone'){p.w0=r2(p.w0+0.15);p.w1=r2(p.w1+0.15)}
-  else if(id==='pass')p.lives++;
-  else if(id==='cam'){p.d0=r2(p.d0*1.25);p.dm=r2(p.dm*1.25)}
-  else if(id==='lock')p.T+=8;
+function jp(id,d){const p={...JP[id][d],review:0,glow:0},m=IMPLANTS.find(x=>x.job===id),lv=m?impLv(m.id):0;
+  if(id==='drone')p.sh+=lv;else if(id==='pass')p.review=lv;else if(id==='cam')p.glow=r2(lv*GLOW);else if(id==='lock')p.T+=5*lv;
   return p}
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 function timeBar(end,T,onEnd){timers.push(setInterval(()=>{const left=Math.max(0,end()-performance.now());$('#tbar').style.width=(left/(T*10))+'%';$('#tleft').textContent=(left/1000).toFixed(1)+' 秒';if(left<=0)onEnd()},100))}
@@ -604,7 +641,7 @@ function jobBoard(){const d=diffNow();
   $('#back').onclick=()=>closePanel();$('#panel').querySelector('[data-j]').focus()}
 function jobIntro(id){const j=jobOf(id),d=diffNow();
   openPanel(`<div class="eyebrow">${j.tag} · 依頼主：${j.client}</div><h3>${j.nm}</h3><p>${j.desc}</p>
-  <ul class="plist"><li><span class="tag">操作</span><span>${j.ctl}</span></li><li><span class="tag">${DIFF[d]}</span><span>${j.rule(jp(id,d))}</span></li>${(m=>m&&hasImp(m.id)?`<li><span class="tag">拡張</span><span>${m.nm}が効いている（${m.eff.split('：')[1]}）</span></li>`:'')(IMPLANTS.find(x=>x.job===id))}</ul>
+  <ul class="plist"><li><span class="tag">操作</span><span>${j.ctl}</span></li><li><span class="tag">${DIFF[d]}</span><span>${j.rule(jp(id,d))}</span></li>${(m=>m&&impLv(m.id)?`<li><span class="tag">拡張</span><span>${m.nm} Lv${impLv(m.id)}が効いている（${m.eff(impLv(m.id)).split('：')[1]}）</span></li>`:'')(IMPLANTS.find(x=>x.job===id))}</ul>
   <div class="prow"><button class="nbtn" id="go" type="button">開始</button><button class="nbtn ghost" id="back" type="button">仕事リストへ</button></div>`);
   $('#go').onclick=()=>j.run()(d);$('#back').onclick=jobBoard;$('#go').focus()}
 function jobDone(id,d,r){clearTimers();const j=jobOf(id),cr=Math.round(r.raw*MULT[d]);
@@ -616,6 +653,7 @@ function jobDone(id,d,r){clearTimers();const j=jobOf(id),cr=Math.round(r.raw*MUL
   <div><p class="earn">+${cr} CR</p><p class="note">${DIFF[d]} 報酬 ×${MULT[d]} · 所持 ${S.cr.toLocaleString()} CR</p></div>
   <p class="muted">ミナ「${esc(r.ok?j.ok:cr>0?j.ng:'……今日はタダ働きだね。次がある。')}」</p>
   <div class="prow"><button class="nbtn" id="again" type="button">もう一度</button><button class="nbtn ghost" id="list" type="button">仕事リストへ</button><button class="nbtn ghost" id="out" type="button">街に戻る</button></div>`);
+  sfx(r.ok?'success':'fail');if(cr>0)timers.push(setTimeout(()=>sfx('credit'),r.ok?650:800));
   $('#again').onclick=()=>jobIntro(id);$('#list').onclick=jobBoard;$('#out').onclick=()=>closePanel();$('#again').focus()}
 
 /* CPU：ドローン回避（5列。照準線が出た列にレーザーが落ちる） */
@@ -644,7 +682,7 @@ function runDrone(d){const P=jp('drone',d),DUR=30,NL=5,CW=200,CH=112,LW=CW/NL,BE
   function step(ts){if(!alive)return;const dt=Math.min(0.05,(ts-last)/1000||0);last=ts;t+=dt;
     if(t>=nextSpawn)spawn();
     for(const h of hz){
-      if(t>=h.fire&&t<h.fire+BEAM&&!h.hit&&h.lane===lane){h.hit=true;if(t>=inv){shields--;inv=t+0.8;hitFx=t+0.15;shUp();if(shields<=0)return finish(false)}}
+      if(t>=h.fire&&t<h.fire+BEAM&&!h.hit&&h.lane===lane){h.hit=true;if(t>=inv){shields--;sfx('hit');inv=t+0.8;hitFx=t+0.15;shUp();if(shields<=0)return finish(false)}}
       if(t>=h.fire+BEAM&&!h.done){h.done=true;if(!h.hit){dodged++;$('#sc').textContent=dodged}}}
     hz=hz.filter(h=>t<h.fire+BEAM+0.4);
     vx+=(lane*LW+LW/2-vx)*Math.min(1,dt*28);
@@ -667,24 +705,29 @@ function runDrone(d){const P=jp('drone',d),DUR=30,NL=5,CW=200,CH=112,LW=CW/NL,BE
 function runPass(d){const P=jp('pass',d),LAYERS=5;let layer=0,lives=P.lives,raw=0,seq=[],inp=[],phase='wait';
   openPanel(`<div class="hud"><span>RAM · パスコード侵入 · 第 <b id="ly">1</b> / ${LAYERS} 層</span><span id="lv"></span></div>
   <p class="status c" id="st"></p><div class="keypad" id="kp">${[1,2,3,4,5,6,7,8,9].map(k=>`<button type="button" data-k="${k}">${k}</button>`).join('')}</div>
-  <p class="note c">光った順にキーを押す。キーボードの 1〜9 でも入力できます</p>`);
+  ${P.review?`<div class="prow" style="justify-content:center"><button class="nbtn ghost" id="rv" type="button" disabled>もう一度見る（残り <b id="rvn">${P.review}</b>）</button></div>`:''}
+  <p class="note c">光った順にキーを押す。キーボードの 1〜9 でも入力できます${P.review?'。R で見直し':''}</p>`);
   const kp=$('#kp'),st=$('#st'),key=k=>kp.querySelector(`[data-k="${k}"]`);
   const hudUp=()=>{$('#ly').textContent=Math.min(layer+1,LAYERS);$('#lv').textContent='ミス残り '+'◆'.repeat(lives)+'◇'.repeat(P.lives-lives)};
-  function play(){phase='show';inp=[];seq=[];let p=0;for(let i=0;i<P.len+layer;i++){let k;do k=rnd(1,9);while(k===p);seq.push(k);p=k}
-    kp.querySelectorAll('button').forEach(b=>b.className='');st.textContent=`盗聴中…… ${seq.length} 桁`;
+  let reviews=P.review;const rvUp=()=>{const r=$('#rv');if(r){$('#rvn').textContent=reviews;r.disabled=phase!=='input'||reviews<=0}};
+  function play(){seq=[];let p=0;for(let i=0;i<P.len+layer;i++){let k;do k=rnd(1,9);while(k===p);seq.push(k);p=k}show()}
+  function show(again){phase='show';inp=[];rvUp();
+    kp.querySelectorAll('button').forEach(b=>b.className='');st.textContent=again?'記憶バッファから再生中……':`盗聴中…… ${seq.length} 桁`;
     let at=600;seq.forEach(k=>{timers.push(setTimeout(()=>key(k).classList.add('lit'),at));timers.push(setTimeout(()=>key(k).classList.remove('lit'),at+P.ms));at+=P.ms*1.35});
-    timers.push(setTimeout(()=>{phase='input';st.textContent=`入力 0 / ${seq.length}`},at))}
+    timers.push(setTimeout(()=>{phase='input';st.textContent=`入力 0 / ${seq.length}`;rvUp()},at))}
   function press(k){if(phase!=='input')return;const b=key(k);
-    if(k===seq[inp.length]){inp.push(k);b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');timers.push(setTimeout(()=>b.classList.remove('hit'),200));st.textContent=`入力 ${inp.length} / ${seq.length}`;
-      if(inp.length===seq.length){phase='wait';raw+=6*seq.length;layer++;
+    if(k===seq[inp.length]){inp.push(k);sfx('key');b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');timers.push(setTimeout(()=>b.classList.remove('hit'),200));st.textContent=`入力 ${inp.length} / ${seq.length}`;
+      if(inp.length===seq.length){phase='wait';rvUp();raw+=6*seq.length;layer++;
         if(layer>=LAYERS){st.textContent='全層突破。アクセス権を奪取';timers.push(setTimeout(()=>finish(true),900))}
         else{st.textContent=`第 ${layer} 層 突破`;timers.push(setTimeout(()=>{hudUp();play()},900))}}}
-    else{phase='wait';b.classList.add('bad');key(seq[inp.length]).classList.add('lit');lives--;hudUp();
+    else{phase='wait';rvUp();sfx('hit');b.classList.add('bad');key(seq[inp.length]).classList.add('lit');lives--;hudUp();
       if(lives<=0){st.textContent='侵入検知。回線を切断された';timers.push(setTimeout(()=>finish(false),1400))}
       else{st.textContent='コード不一致。次の入力を待つ……';timers.push(setTimeout(play,1400))}}}
   function finish(ok){jobDone('pass',d,{ok,score:layer,raw:raw+(ok?50:0),detail:`突破 ${layer} / ${LAYERS} 層`})}
+  const review=()=>{if(phase!=='input'||reviews<=0)return;reviews--;show(true)};
+  if($('#rv'))$('#rv').onclick=review;
   kp.onclick=e=>{const b=e.target.closest('button');if(b)press(+b.dataset.k)};
-  on(window,'keydown',e=>{if(/^[1-9]$/.test(e.key)){e.preventDefault();if(!e.repeat)press(+e.key)}});
+  on(window,'keydown',e=>{if(/^[1-9]$/.test(e.key)){e.preventDefault();if(!e.repeat)press(+e.key)}else if((e.key==='r'||e.key==='R')&&!e.repeat)review()});
   hudUp();play()}
 
 /* GPU：監視カメラ解析（指定色の上着を着た人物を探す） */
@@ -701,8 +744,9 @@ function runCam(d){const P=jp('cam',d);let found=0,end=performance.now()+P.T*100
     $('#tg').style.background=col(h,s,l);fd.style.gridTemplateColumns=`repeat(${n},1fr)`;
     fd.innerHTML=Array.from({length:n*n},(_,i)=>{let c=col(h,s,l);
       if(i!==odd){const m=(0.6+Math.random()*0.4)*(Math.random()<0.5?-1:1);c=Math.random()<0.5?col(h+m*delta*1.6,s,l):col(h,s,l+m*delta*0.7)}
-      return `<button type="button" aria-label="カメラ${i+1}" data-o="${i===odd?1:0}"><img alt="" src="${figURL(c,HAIR[rnd(0,HAIR.length-1)],SKIN[rnd(0,SKIN.length-1)])}"></button>`}).join('')}
-  fd.onclick=e=>{const b=e.target.closest('button');if(!b||over)return;if(b.dataset.o==='1'){found++;$('#sc').textContent=found;board()}else{end-=2000;shake(fd)}};
+      return `<button type="button" aria-label="カメラ${i+1}" data-o="${i===odd?1:0}"><img alt="" src="${figURL(c,HAIR[rnd(0,HAIR.length-1)],SKIN[rnd(0,SKIN.length-1)])}"></button>`}).join('');
+    if(P.glow){const tb=fd.querySelector('[data-o="1"]');tb.classList.add('glow');timers.push(setTimeout(()=>tb.classList.remove('glow'),P.glow*1000))}}
+  fd.onclick=e=>{const b=e.target.closest('button');if(!b||over)return;if(b.dataset.o==='1'){found++;$('#sc').textContent=found;board()}else{end-=2000;sfx('hit');shake(fd)}};
   timeBar(()=>end,P.T,()=>{if(over)return;over=true;const ok=found>=P.q;jobDone('cam',d,{ok,score:found,raw:found*10+(ok?40:0),detail:`特定 ${found} 人 / ノルマ ${P.q} 人`})});board()}
 
 /* ALU：暗号ロック解除（□ に入る数を答える。3問で1錠） */
@@ -720,7 +764,7 @@ function runLock(d){const P=jp('lock',d);let tum=0,locks=0,total=0,ans=0,end=per
     $('#q').textContent=q}
   const inp=$('#lk-in');
   $('#f').onsubmit=e=>{e.preventDefault();if(over||inp.value.trim()==='')return;
-    if(parseInt(inp.value,10)===ans){total++;tum++;if(tum>=3){tum=0;locks++;$('#sc').textContent=locks}tumUp()}else{end-=3000;shake(inp)}
+    if(parseInt(inp.value,10)===ans){total++;tum++;if(tum>=3){tum=0;locks++;$('#sc').textContent=locks}tumUp()}else{end-=3000;sfx('hit');shake(inp)}
     inp.value='';next()};
   timeBar(()=>end,P.T,()=>{if(over)return;over=true;const ok=locks>=P.q;jobDone('lock',d,{ok,score:locks,raw:total*8+locks*20+(ok?40:0),detail:`解錠 ${locks} 錠 / ノルマ ${P.q} 錠 · タンブラー ${total} 個`})});
   tumUp();next();inp.focus()}
@@ -742,8 +786,8 @@ cv.addEventListener('pointerdown',()=>{if(mode==='dialog')advance()});
 
 /* ===== タイトル ===== */
 function titleButtons(){const has=S.started;$('#titleBtns').innerHTML=(has?'<button class="nbtn" id="cont" type="button">つづきから</button><button class="nbtn ghost" id="newg" type="button">はじめから</button>':'<button class="nbtn" id="newg" type="button">はじめる</button>');
-  const c=$('#cont');if(c)c.onclick=startGame;$('#newg').onclick=()=>{if(has){S=fresh();save();player.x=S.x;hud()}startGame()};($('#cont')||$('#newg')).focus({preventScroll:true})}
-function startGame(){document.activeElement&&document.activeElement.blur();$('#title').hidden=true;mode='play';player.x=S.x;camX=clamp(Math.round(player.x-130),0,CAMMAX);
+  const c=$('#cont');if(c)c.onclick=startGame;$('#newg').onclick=()=>{if(has){S={...fresh(),snd:S.snd};save();player.x=S.x;hud()}startGame()};($('#cont')||$('#newg')).focus({preventScroll:true})}
+function startGame(){sndStart();document.activeElement&&document.activeElement.blur();$('#title').hidden=true;mode='play';player.x=S.x;camX=clamp(Math.round(player.x-130),0,CAMMAX);
   if(!S.started){S.started=true;save();talk([L('me','……東京の光が、今夜もあんなに遠い。'),L('me','あの光の中に入るには、脳のスペックがいる。'),L('me','まずは、誰かに話を聞こう。')])}}
 setInterval(()=>{if(mode!=='title'){S.x=Math.round(player.x);save()}},3000);
 
