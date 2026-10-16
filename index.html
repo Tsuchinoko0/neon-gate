@@ -35,6 +35,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .chip{border:1px solid var(--line);background:var(--panel);padding:3px 9px;border-radius:2px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .chip.area{color:var(--amber);border-color:rgba(255,181,71,.35)}
 .chip.spec{color:var(--cyan);border-color:rgba(62,242,224,.35)}
+.chip.cr{color:var(--pink);border-color:rgba(255,61,139,.35)}
 .bar .sp{flex:1}
 .tbtn{background:var(--panel);border:1px solid var(--line);padding:4px 12px;border-radius:2px;font-family:var(--f-data);font-size:12px}
 .tbtn:hover{border-color:var(--cyan)}
@@ -96,6 +97,31 @@ button{font:inherit;color:inherit;cursor:pointer}
 @keyframes fl{50%{transform:translateX(6px)}}
 .note{font-size:12px;color:var(--muted);margin:0;font-family:var(--f-data)}
 
+/* 仕事 */
+.jobs{display:grid}
+.job{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:0 12px;align-items:center;padding-block:10px;border-top:1px solid var(--line)}
+.job .nm{font-size:17px}
+.job .ex{grid-column:2;font-size:12px;color:var(--muted);font-family:var(--f-data)}
+.job .nbtn{grid-column:3;grid-row:1/3}
+.mcv{display:block;width:100%;max-width:640px;margin:0 auto;aspect-ratio:200/112;image-rendering:pixelated;image-rendering:crisp-edges;border:1px solid var(--line);background:#000;touch-action:none}
+.panel .c{max-width:none;text-align:center}
+.status{font-family:var(--f-data);color:var(--amber);min-height:1.6em}
+.frame.is-panel~.ctrl{visibility:hidden}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:300px;margin:0 auto}
+.keypad button{aspect-ratio:1.4;background:var(--panel2);border:1px solid var(--line);font-family:var(--f-data);font-size:24px;font-weight:600;color:var(--muted);border-radius:2px;touch-action:manipulation}
+.keypad button.lit{background:var(--cyan);border-color:var(--cyan);color:var(--void);box-shadow:0 0 18px rgba(62,242,224,.6)}
+.keypad button.hit{color:var(--cyan);border-color:var(--cyan)}
+.keypad button.bad{background:var(--red);border-color:var(--red);color:#fff}
+.target{display:flex;align-items:center;justify-content:center;gap:12px;font-family:var(--f-data);font-size:13px;color:var(--muted)}
+.target i{display:block;width:48px;height:28px;border:2px solid var(--ink)}
+.feeds{display:grid;gap:4px;width:100%;max-width:360px;margin:0 auto}
+.feeds button{aspect-ratio:1;padding:0;border:1px solid #1d1a33;border-radius:1px;background:#0d0b18 repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 1px,transparent 1px 3px);display:flex;align-items:center;justify-content:center}
+.feeds img{height:78%;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none}
+.tum{display:flex;gap:8px;justify-content:center;align-items:center;font-family:var(--f-data);font-size:13px;color:var(--muted)}
+.tum i{display:block;width:14px;height:22px;border:1px solid var(--line);background:var(--panel2)}
+.tum i.on{background:var(--cyan);border-color:var(--cyan)}
+.earn{font-family:var(--f-data);font-size:clamp(30px,7vw,46px);font-weight:600;color:var(--pink);margin:0;text-shadow:0 0 12px rgba(255,61,139,.45)}
+
 .sheet{display:grid;gap:8px}
 .srow{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding-block:8px;border-top:1px solid var(--line)}
 .srow .v{font-family:var(--f-data);font-weight:600;white-space:nowrap}
@@ -125,12 +151,13 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.1 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.2 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
     <span class="chip area" id="areaChip">圏外 · 東京の外</span>
     <span class="chip spec" id="specChip">未スキャン</span>
+    <span class="chip cr" id="crChip">0 CR</span>
     <span class="sp"></span>
     <button class="tbtn" id="setBtn" type="button">設定</button>
   </div>
@@ -201,7 +228,7 @@ function effective(){const o=overall(S.cur);return o?Math.round(o.avg+implantBon
 
 /* ===== セーブ ===== */
 const KEY='neongate';
-const fresh=()=>({v:1,base:null,cur:null,scans:0,diff:'auto',mina:0,gate:0,x:36,started:false});
+const fresh=()=>({v:1,base:null,cur:null,scans:0,diff:'auto',mina:0,gate:0,x:36,started:false,cr:0,jobs:{}});
 let S=fresh();
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.v===1)S=Object.assign(fresh(),s)}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -332,6 +359,7 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
 /* ===== HUD ===== */
 function hud(){const o=overall(S.cur);
   $('#specChip').textContent=o?`${o.tier.code} · ${Math.round(o.avg)} · ${DIFF[diffNow()]}`:'未スキャン';
+  $('#crChip').textContent=`${S.cr.toLocaleString()} CR`;
   $('#areaChip').textContent='圏外 · 東京の外'}
 let toastT=0;
 function toast(msg,ms=4200){const el=$('#toast');el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,ms)}
@@ -360,12 +388,15 @@ const L=(who,text,choices)=>({who,text,choices});
 function interact(){const n=near();if(!n)return;({mina:talkMina,doc:talkDoc,gate:talkGate})[n.id]()}
 function talkMina(){const o=overall(S.cur);
   if(!o){S.mina=Math.max(S.mina,1);save();return talk([L('mina','見ない顔だね。ここは圏外。東京の光が届かない場所だよ。'),L('mina','東京に入りたいなら、まず脳を測ってもらいな。この先の闇医者、ドク・カゲロウのとこ。'),L('mina','スペックがわからない奴には、仕事も回せないからさ。')])}
-  if(S.gate){return talk([L('mina','ゲート、通れなかったでしょ。顔に書いてある。'),L('mina','稼いで、鍛えて、もう一度。ここではみんなそうしてる。'),L('mina','仕事の準備ができたら声かけるよ。今日はもう休みな。')],()=>toast('試作版はここまで。仕事（ミニゲーム）とインプラントは次の版で追加します',6000))}
-  talk([L('mina',`${o.tier.name}、ね。まあ、ここから上がればいいだけだよ。`),L('mina','奥のゲートで、自分が今どこにいるか確かめてきな。')])}
+  let ls;
+  if(S.mina<2){S.mina=2;save();ls=[L('mina',`${o.tier.name}、ね。まあ、ここから上がればいいだけだよ。`),L('mina','スペックがわかったなら仕事を回せる。運び、侵入、映像解析、錠前破り。どれも脳を使う仕事さ。'),L('mina','稼いだクレジットは、そのうちドクのインプラント代になる。ゲートの判定も、奥で確かめてきな。')]}
+  else if(S.gate===1){S.gate=2;save();ls=[L('mina','ゲート、通れなかったでしょ。顔に書いてある。'),L('mina','稼いで、鍛えて、もう一度。ここではみんなそうしてる。')]}
+  else{const pool=['また来たね。仕事ならあるよ。','圏外じゃ、脳しか売るものがないからね。','ドクのとこ、そのうちインプラントが入るってさ。貯めときな。',`今の手持ちは ${S.cr} クレジットか。まだまだだね。`];ls=[L('mina',pool[Math.floor(Math.random()*pool.length)])]}
+  ls.push(L('mina','で、どうする？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
 function talkDoc(){const o=overall(S.cur),rec=siteRecord();
   if(!o){const ch=[{label:'スキャンを受ける',fn:scanIntro}];if(rec)ch.push({label:'診断サイトの記録を渡す',fn:()=>useRecord(rec)});ch.push({label:'やめておく'});
     return talk([L('doc','客か。……ふん、旧式の匂いがするな。'),L('doc','脳を見せろ。スキャンは4つ。反応、記憶、識別、演算だ。3分で終わる。'),L('doc','どうする？',ch)])}
-  talk([L('doc','また来たか。測り直すか？ 伸びていれば数字に出る。'),L('doc','インプラントは在庫切れだ。次の入荷まで待て。',[{label:'再スキャン',fn:scanIntro},{label:'結果を見る',fn:()=>resultPanel(false)},{label:'やめておく'}])])}
+  talk([L('doc','また来たか。測り直すか？ 伸びていれば数字に出る。'),L('doc','インプラントは入荷待ちだ。クレジットを貯めておけ。',[{label:'再スキャン',fn:scanIntro},{label:'結果を見る',fn:()=>resultPanel(false)},{label:'やめておく'}])])}
 function talkGate(){const o=overall(S.cur);
   if(!o){gateLight='deny';gateLightUntil=performance.now()+2500;return talk([L('gate','未登録の脳を検出。ブレインスキャンの記録がありません。'),L('gate','通行を許可できません。')])}
   const cur=effective(),req=gateReq();
@@ -376,7 +407,8 @@ function talkGate(){const o=overall(S.cur);
 function useRecord(rec){applyScan(rec);talk([L('doc','診断サイトの記録か。手間が省けた。'),L('doc','……ふむ。数字は嘘をつかない。')],()=>resultPanel(true))}
 
 /* ===== パネル ===== */
-let timers=[];const clearTimers=()=>{timers.forEach(t=>{clearTimeout(t);clearInterval(t)});timers=[]};
+let timers=[],offs=[];const clearTimers=()=>{timers.forEach(t=>{clearTimeout(t);clearInterval(t)});timers=[];offs.forEach(f=>f());offs=[]};
+const on=(el,ev,fn)=>{el.addEventListener(ev,fn);offs.push(()=>el.removeEventListener(ev,fn))};
 function openPanel(html){mode='panel';clearTimers();$('#frame').classList.add('is-panel');cv.hidden=true;$('#dlg').hidden=true;const p=$('#panel');p.hidden=false;p.innerHTML=html;return p}
 function closePanel(after){clearTimers();document.activeElement&&document.activeElement.blur();$('#panel').hidden=true;$('#panel').innerHTML='';cv.hidden=false;$('#frame').classList.remove('is-panel');mode='play';hud();after&&after()}
 
@@ -418,7 +450,7 @@ function resultPanel(fresh){const o=overall(S.cur),b=overall(S.base),d=diffNow()
 function settingsPanel(){if(mode==='title')return;const was=mode;const o=overall(S.cur),rec=siteRecord();
   const opts=[['auto',`自動${o?`（${DIFF[autoDiff(o.avg)]}）`:''}`],['easy','EASY'],['normal','NORMAL'],['hard','HARD']];
   openPanel(`<div class="eyebrow">SETTINGS</div><h3>設定</h3>
-  <div><p>難易度</p><p class="note">スキャン結果で自動に決まります。高スペックの人も挑戦できるよう、HARDでは仕事の制限時間が短くなります（仕事は次の版で追加）。</p></div>
+  <div><p>難易度</p><p class="note">スキャン結果で自動に決まります。高スペックの人も挑戦できるよう、HARDでは仕事の制限時間が短くなり、報酬が上がります。</p></div>
   <div class="seg" role="radiogroup" aria-label="難易度">${opts.map(([k,l])=>`<button type="button" role="radio" aria-checked="${S.diff===k}" class="nbtn ${S.diff===k?'sel':''}" data-k="${k}">${l}</button>`).join('')}</div>
   ${rec?`<div><p>脳スペック診断の記録</p><p class="note">診断サイトの記録が見つかりました。ゲームのスキャン結果として読み込めます。</p></div><div class="prow"><button class="nbtn pink" id="imp" type="button">記録を読み込む</button></div>`:''}
   <div><p>セーブデータ</p><p class="note">スキャン結果と進み具合を、このブラウザに保存しています。</p></div>
@@ -471,6 +503,168 @@ function runAlu(){let n=0,ans=0;const end=performance.now()+30000;
   const inp=$('#alu-in');
   $('#f').onsubmit=e=>{e.preventDefault();if(inp.value.trim()==='')return;if(parseInt(inp.value,10)===ans){n++;$('#sc').textContent=n}else{inp.classList.remove('flash');void inp.offsetWidth;inp.classList.add('flash')}inp.value='';next()};
   timers.push(setInterval(()=>{const left=Math.max(0,end-performance.now());$('#tbar').style.width=(left/300)+'%';$('#tleft').textContent=(left/1000).toFixed(1)+' 秒';if(left<=0)testDone('alu',n)},100));next();inp.focus()}
+
+/* ===== 仕事（ミニゲーム4種） ===== */
+const MULT={easy:0.8,normal:1,hard:1.25};
+const JP={
+  drone:{easy:{sh:4,w0:1.1,w1:0.7},normal:{sh:3,w0:0.85,w1:0.5},hard:{sh:2,w0:0.65,w1:0.38}},
+  pass:{easy:{len:3,ms:650,lives:3},normal:{len:4,ms:500,lives:2},hard:{len:5,ms:400,lives:1}},
+  cam:{easy:{T:40,d0:32,dm:7,q:8},normal:{T:35,d0:26,dm:5,q:10},hard:{T:30,d0:20,dm:3.5,q:12}},
+  lock:{easy:{T:50,s:1,div:false,q:3},normal:{T:40,s:1.4,div:true,q:3},hard:{T:35,s:1.9,div:true,q:4}}
+};
+const JOBS=[
+  {id:'drone',tag:'CPU',nm:'ドローン回避',client:'運び屋組合',unit:'回避',run:()=>runDrone,
+    desc:'企業の警備ドローンの下を、荷物を抱えて30秒走り抜ける。赤い照準線が出たら、その列から逃げろ。',
+    ctl:'← → / A D で列を移動。スマホは画面の左右をタップ',rule:p=>`30秒生き延びれば成功 · シールド ${p.sh} · 照準から発射まで ${p.w0}〜${p.w1} 秒`,
+    ok:'荷物は無事。いい足してるね。',ng:'荷物は落としたけど、運んだ分は払うってさ。'},
+  {id:'pass',tag:'RAM',nm:'パスコード侵入',client:'ジャンク屋の盗聴屋',unit:'層',run:()=>runPass,
+    desc:'盗聴したキー入力が光って見える。光った順番を覚えて、同じ順に打ち込め。5層突破で完了。',
+    ctl:'キーをタップ、またはキーボードの 1〜9',rule:p=>`全5層 · 最初は ${p.len} 桁で1層ごとに+1 · ミス ${p.lives} 回で切断`,
+    ok:'全部抜けたの？ 依頼主が腰抜かしてたよ。',ng:'検知されたか。抜けた層の分は払うよ。'},
+  {id:'cam',tag:'GPU',nm:'監視カメラ解析',client:'探偵崩れのオヤジ',unit:'人',run:()=>runCam,
+    desc:'監視映像の群衆から、指定された色の上着を着た人物を探す。似た色に惑わされるな。',
+    ctl:'映像をタップ',rule:p=>`制限 ${p.T} 秒 · ノルマ ${p.q} 人 · 見間違えると2秒減`,
+    ok:'目がいいね。オヤジが次も頼みたいって。',ng:'ノルマには届かなかったか。見つけた分は払うよ。'},
+  {id:'lock',tag:'ALU',nm:'暗号ロック解除',client:'倉庫荒らしの兄弟',unit:'錠',run:()=>runLock,
+    desc:'暗号錠のタンブラーは数式で回る。□ に入る数を答えろ。タンブラー3つで1錠。',
+    ctl:'数字を入力して Enter',rule:p=>`制限 ${p.T} 秒 · ノルマ ${p.q} 錠 · 間違えると3秒減`,
+    ok:'倉庫が丸裸だって。いい仕事。',ng:'全部は開かなかったか。開けた分は払うよ。'}
+];
+const jobOf=id=>JOBS.find(j=>j.id===id);
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+function timeBar(end,T,onEnd){timers.push(setInterval(()=>{const left=Math.max(0,end()-performance.now());$('#tbar').style.width=(left/(T*10))+'%';$('#tleft').textContent=(left/1000).toFixed(1)+' 秒';if(left<=0)onEnd()},100))}
+const shake=el=>{el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')};
+
+function jobBoard(){const d=diffNow();
+  openPanel(`<div class="eyebrow">JOB BOARD · 情報屋ミナの仲介</div><h3>仕事リスト</h3>
+  <p class="muted">脳のパーツごとに向いた仕事がある。稼いだクレジットは、いずれインプラントの代金になる。</p>
+  <div class="stats"><div class="stat"><span>所持クレジット</span><b>${S.cr.toLocaleString()} CR</b></div><div class="stat"><span>難易度 · 報酬倍率</span><b>${DIFF[d]} ×${MULT[d]}</b></div></div>
+  <div class="jobs">${JOBS.map(j=>{const r=S.jobs[j.id];return `<div class="job"><span class="tag">${j.tag}</span><span class="nm">${j.nm}</span><button class="nbtn" type="button" data-j="${j.id}">受ける</button><span class="ex">${j.client} · ${r?`ベスト ${r.best} ${j.unit} · ${r.n} 回`:'未経験'}</span></div>`}).join('')}</div>
+  <div class="prow"><button class="nbtn ghost" id="back" type="button">街に戻る</button></div>`);
+  $('#panel').querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>jobIntro(b.dataset.j));
+  $('#back').onclick=()=>closePanel();$('#panel').querySelector('[data-j]').focus()}
+function jobIntro(id){const j=jobOf(id),d=diffNow();
+  openPanel(`<div class="eyebrow">${j.tag} · 依頼主：${j.client}</div><h3>${j.nm}</h3><p>${j.desc}</p>
+  <ul class="plist"><li><span class="tag">操作</span><span>${j.ctl}</span></li><li><span class="tag">${DIFF[d]}</span><span>${j.rule(JP[id][d])}</span></li></ul>
+  <div class="prow"><button class="nbtn" id="go" type="button">開始</button><button class="nbtn ghost" id="back" type="button">仕事リストへ</button></div>`);
+  $('#go').onclick=()=>j.run()(d);$('#back').onclick=jobBoard;$('#go').focus()}
+function jobDone(id,d,r){clearTimers();const j=jobOf(id),cr=Math.round(r.raw*MULT[d]);
+  const prev=S.jobs[id]||{best:0,n:0},rec=prev.n>0&&r.score>prev.best;
+  S.jobs[id]={best:Math.max(prev.best,r.score),n:prev.n+1};S.cr+=cr;save();hud();
+  openPanel(`<div class="eyebrow">${j.tag} · ${j.nm} · ${r.ok?'JOB COMPLETE':'JOB FAILED'}</div>
+  <h3 style="color:${r.ok?'var(--cyan)':'var(--red)'}">${r.ok?'仕事完了':'仕事失敗'}</h3>
+  <p class="mono">${esc(r.detail)}${rec?' · 自己ベスト更新':''}</p>
+  <div><p class="earn">+${cr} CR</p><p class="note">${DIFF[d]} 報酬 ×${MULT[d]} · 所持 ${S.cr.toLocaleString()} CR</p></div>
+  <p class="muted">ミナ「${esc(r.ok?j.ok:cr>0?j.ng:'……今日はタダ働きだね。次がある。')}」</p>
+  <div class="prow"><button class="nbtn" id="again" type="button">もう一度</button><button class="nbtn ghost" id="list" type="button">仕事リストへ</button><button class="nbtn ghost" id="out" type="button">街に戻る</button></div>`);
+  $('#again').onclick=()=>jobIntro(id);$('#list').onclick=jobBoard;$('#out').onclick=()=>closePanel();$('#again').focus()}
+
+/* CPU：ドローン回避（5列。照準線が出た列にレーザーが落ちる） */
+const DRONE=sprite(["r.......r","rrr...rrr",".ggggggg.","..gGeGg..","...g.g..."],{r:'#5c6378',g:'#2c2750',G:'#8e8aa6',e:'#ff4a5c'});
+function runDrone(d){const P=JP.drone[d],DUR=30,NL=5,CW=200,CH=112,LW=CW/NL,BEAM=0.22;
+  openPanel(`<div class="hud"><span>CPU · ドローン回避 · 回避 <b id="sc">0</b></span><span id="sh"></span></div><div class="timer"><i id="tbar"></i></div>
+  <canvas class="mcv" id="dcv" width="${CW}" height="${CH}" role="img" aria-label="5列の道。上から警備ドローンが照準を合わせてくる"></canvas>
+  <div class="prow" style="justify-content:space-between"><button class="kbtn" id="dl" type="button" aria-label="左の列へ">◀</button><span class="note">赤い線の列から逃げろ</span><button class="kbtn" id="dr" type="button" aria-label="右の列へ">▶</button></div>`);
+  const c=$('#dcv').getContext('2d');c.imageSmoothingEnabled=false;
+  let lane=2,vx=lane*LW+LW/2,t=0,last=0,alive=true,shields=P.sh,inv=0,hitFx=0,dodged=0,nextSpawn=1,hz=[];
+  offs.push(()=>alive=false);
+  const shUp=()=>$('#sh').textContent='シールド '+'◆'.repeat(Math.max(0,shields))+'◇'.repeat(P.sh-Math.max(0,shields));shUp();
+  const move=dx=>{if(alive)lane=clamp(lane+dx,0,NL-1)};
+  on(window,'keydown',e=>{if(e.repeat)return;if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A'){e.preventDefault();move(-1)}else if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){e.preventDefault();move(1)}});
+  const cvs=$('#dcv');on(cvs,'pointerdown',e=>{e.preventDefault();const r=cvs.getBoundingClientRect();move(e.clientX-r.left<r.width/2?-1:1)});
+  on($('#dl'),'pointerdown',e=>{e.preventDefault();move(-1)});on($('#dr'),'pointerdown',e=>{e.preventDefault();move(1)});
+  function spawn(){const p=t/DUR,warn=P.w0+(P.w1-P.w0)*p;
+    const busy=new Set(hz.filter(h=>t<h.fire+BEAM).map(h=>h.lane));
+    let k=1;if(p>0.3&&Math.random()<0.5)k=2;if(p>0.65&&Math.random()<0.4)k=3;k=Math.min(k,NL-2-busy.size);
+    for(let i=0;i<k;i++){const free=[...Array(NL).keys()].filter(l=>!busy.has(l));if(!free.length)break;
+      const l=i===0&&!busy.has(lane)&&Math.random()<0.6?lane:free[Math.floor(Math.random()*free.length)];
+      busy.add(l);hz.push({lane:l,t0:t,fire:t+warn,hit:false})}
+    nextSpawn=t+Math.max(0.45,1.05-0.5*p)*(0.85+Math.random()*0.3)}
+  function finish(ok){if(!alive)return;alive=false;draw();
+    timers.push(setTimeout(()=>jobDone('drone',d,{ok,score:dodged,raw:dodged*4+(ok?60:0),detail:`${ok?'走破':'撃墜'} · 回避 ${dodged} 回 · 残りシールド ${Math.max(0,shields)}`}),700))}
+  function step(ts){if(!alive)return;const dt=Math.min(0.05,(ts-last)/1000||0);last=ts;t+=dt;
+    if(t>=nextSpawn)spawn();
+    for(const h of hz){
+      if(t>=h.fire&&t<h.fire+BEAM&&!h.hit&&h.lane===lane){h.hit=true;if(t>=inv){shields--;inv=t+0.8;hitFx=t+0.15;shUp();if(shields<=0)return finish(false)}}
+      if(t>=h.fire+BEAM&&!h.done){h.done=true;if(!h.hit){dodged++;$('#sc').textContent=dodged}}}
+    hz=hz.filter(h=>t<h.fire+BEAM+0.4);
+    vx+=(lane*LW+LW/2-vx)*Math.min(1,dt*28);
+    $('#tbar').style.width=Math.max(0,(1-t/DUR)*100)+'%';
+    if(t>=DUR)return finish(true);
+    draw();requestAnimationFrame(step)}
+  function draw(){
+    for(let i=0;i<NL;i++){c.fillStyle=i%2?'#0d0b1a':'#0a0816';c.fillRect(i*LW,0,LW,CH)}
+    c.fillStyle='#1d1838';for(let i=1;i<NL;i++)for(let y=(t*90)%14-14;y<CH;y+=14)c.fillRect(i*LW,Math.round(y),1,6);
+    for(const h of hz){const cx=h.lane*LW+LW/2;
+      if(t<h.fire){const k=(t-h.t0)/(h.fire-h.t0);if(Math.floor(t*(6+k*16))%2===0){c.fillStyle=`rgba(255,74,92,${0.3+0.5*k})`;c.fillRect(cx-1,9,2,CH-9)}}
+      else if(t<h.fire+BEAM){c.fillStyle='rgba(255,61,139,.4)';c.fillRect(cx-6,6,12,CH);c.fillStyle='#ffd6ea';c.fillRect(cx-2,6,4,CH)}
+      const dy=t<h.fire+BEAM?Math.min(2,-6+(t-h.t0)*30):2-(t-h.fire-BEAM)*40;
+      c.drawImage(DRONE,Math.round(cx-4),Math.round(dy))}
+    if(t>=inv||Math.floor(t*14)%2){const spr=Math.floor(t*8)%2?P_B:P_A;c.drawImage(spr,Math.round(vx-5),CH-19)}
+    if(t<hitFx){c.fillStyle='rgba(255,74,92,.35)';c.fillRect(0,0,CW,CH)}}
+  draw();requestAnimationFrame(ts=>{last=ts;requestAnimationFrame(step)})}
+
+/* RAM：パスコード侵入（光った順にキーを押す） */
+function runPass(d){const P=JP.pass[d],LAYERS=5;let layer=0,lives=P.lives,raw=0,seq=[],inp=[],phase='wait';
+  openPanel(`<div class="hud"><span>RAM · パスコード侵入 · 第 <b id="ly">1</b> / ${LAYERS} 層</span><span id="lv"></span></div>
+  <p class="status c" id="st"></p><div class="keypad" id="kp">${[1,2,3,4,5,6,7,8,9].map(k=>`<button type="button" data-k="${k}">${k}</button>`).join('')}</div>
+  <p class="note c">光った順にキーを押す。キーボードの 1〜9 でも入力できます</p>`);
+  const kp=$('#kp'),st=$('#st'),key=k=>kp.querySelector(`[data-k="${k}"]`);
+  const hudUp=()=>{$('#ly').textContent=Math.min(layer+1,LAYERS);$('#lv').textContent='ミス残り '+'◆'.repeat(lives)+'◇'.repeat(P.lives-lives)};
+  function play(){phase='show';inp=[];seq=[];let p=0;for(let i=0;i<P.len+layer;i++){let k;do k=rnd(1,9);while(k===p);seq.push(k);p=k}
+    kp.querySelectorAll('button').forEach(b=>b.className='');st.textContent=`盗聴中…… ${seq.length} 桁`;
+    let at=600;seq.forEach(k=>{timers.push(setTimeout(()=>key(k).classList.add('lit'),at));timers.push(setTimeout(()=>key(k).classList.remove('lit'),at+P.ms));at+=P.ms*1.35});
+    timers.push(setTimeout(()=>{phase='input';st.textContent=`入力 0 / ${seq.length}`},at))}
+  function press(k){if(phase!=='input')return;const b=key(k);
+    if(k===seq[inp.length]){inp.push(k);b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');timers.push(setTimeout(()=>b.classList.remove('hit'),200));st.textContent=`入力 ${inp.length} / ${seq.length}`;
+      if(inp.length===seq.length){phase='wait';raw+=6*seq.length;layer++;
+        if(layer>=LAYERS){st.textContent='全層突破。アクセス権を奪取';timers.push(setTimeout(()=>finish(true),900))}
+        else{st.textContent=`第 ${layer} 層 突破`;timers.push(setTimeout(()=>{hudUp();play()},900))}}}
+    else{phase='wait';b.classList.add('bad');key(seq[inp.length]).classList.add('lit');lives--;hudUp();
+      if(lives<=0){st.textContent='侵入検知。回線を切断された';timers.push(setTimeout(()=>finish(false),1400))}
+      else{st.textContent='コード不一致。次の入力を待つ……';timers.push(setTimeout(play,1400))}}}
+  function finish(ok){jobDone('pass',d,{ok,score:layer,raw:raw+(ok?50:0),detail:`突破 ${layer} / ${LAYERS} 層`})}
+  kp.onclick=e=>{const b=e.target.closest('button');if(b)press(+b.dataset.k)};
+  on(window,'keydown',e=>{if(/^[1-9]$/.test(e.key)){e.preventDefault();if(!e.repeat)press(+e.key)}});
+  hudUp();play()}
+
+/* GPU：監視カメラ解析（指定色の上着を着た人物を探す） */
+const FIG=["..hhhh..",".hhhhhh.",".hssssh.","..ssss..","..jjjj..",".jjjjjj.","jjjjjjjj","sjjjjjjs","sjjjjjjs",".jjjjjj.","..pppp..","..p..p..","..p..p..",".bb..bb."];
+const HAIR=['#2b2438','#5a3a2a','#c9c6d8','#1a1630','#7a2a4a','#2a5a58'],SKIN=['#d9a07a','#b97f5a','#f0c5a0','#8a5a3c'];
+const figURL=(j,h,s)=>sprite(FIG,{h,s,j,p:'#191828',b:'#0b0a12'}).toDataURL();
+function runCam(d){const P=JP.cam[d];let found=0,end=performance.now()+P.T*1000,over=false;
+  openPanel(`<div class="hud"><span>GPU · 監視カメラ解析 · 特定 <b id="sc">0</b> / ${P.q}</span><span id="tleft">${P.T.toFixed(1)} 秒</span></div><div class="timer"><i id="tbar"></i></div>
+  <div class="target">対象の上着<i id="tg"></i></div><div class="feeds" id="fd"></div>
+  <p class="note c">同じ色の上着の人物をタップ。間違えると2秒減ります</p>`);
+  const fd=$('#fd'),col=(h,s,l)=>`hsl(${Math.round((h+360)%360)},${Math.round(s)}%,${Math.round(l)}%)`;
+  function board(){const n=Math.min(5,3+Math.floor(found/4)),delta=Math.max(P.dm,P.d0-found*1.3);
+    const h=Math.random()*360,s=55+Math.random()*20,l=42+Math.random()*16,odd=Math.floor(Math.random()*n*n);
+    $('#tg').style.background=col(h,s,l);fd.style.gridTemplateColumns=`repeat(${n},1fr)`;
+    fd.innerHTML=Array.from({length:n*n},(_,i)=>{let c=col(h,s,l);
+      if(i!==odd){const m=(0.6+Math.random()*0.4)*(Math.random()<0.5?-1:1);c=Math.random()<0.5?col(h+m*delta*1.6,s,l):col(h,s,l+m*delta*0.7)}
+      return `<button type="button" aria-label="カメラ${i+1}" data-o="${i===odd?1:0}"><img alt="" src="${figURL(c,HAIR[rnd(0,HAIR.length-1)],SKIN[rnd(0,SKIN.length-1)])}"></button>`}).join('')}
+  fd.onclick=e=>{const b=e.target.closest('button');if(!b||over)return;if(b.dataset.o==='1'){found++;$('#sc').textContent=found;board()}else{end-=2000;shake(fd)}};
+  timeBar(()=>end,P.T,()=>{if(over)return;over=true;const ok=found>=P.q;jobDone('cam',d,{ok,score:found,raw:found*10+(ok?40:0),detail:`特定 ${found} 人 / ノルマ ${P.q} 人`})});board()}
+
+/* ALU：暗号ロック解除（□ に入る数を答える。3問で1錠） */
+function runLock(d){const P=JP.lock[d];let tum=0,locks=0,total=0,ans=0,end=performance.now()+P.T*1000,over=false;
+  openPanel(`<div class="hud"><span>ALU · 暗号ロック解除 · 解錠 <b id="sc">0</b> / ${P.q}</span><span id="tleft">${P.T.toFixed(1)} 秒</span></div><div class="timer"><i id="tbar"></i></div>
+  <div class="tum" id="tm"></div><div class="q" id="q"></div>
+  <form id="f" class="prow" style="justify-content:center"><input id="lk-in" class="ans" inputmode="numeric" autocomplete="off" aria-label="□ に入る数"><button class="nbtn">回す</button></form>
+  <p class="note c">□ に入る数を答える。タンブラー3つで1錠。間違えると3秒減ります</p>`);
+  const tumUp=()=>$('#tm').innerHTML=`LOCK ${String(locks+1).padStart(2,'0')}`+[0,1,2].map(i=>`<i class="${i<tum?'on':''}"></i>`).join('');
+  function next(){const s=P.s*(1+total*0.06),k=rnd(0,P.div?3:2);let q;
+    if(k===0){const a=rnd(3,Math.round(12*s)),b=rnd(3,Math.round(12*s));if(Math.random()<0.5){q=`□ + ${b} = ${a+b}`;ans=a}else{q=`${a} + □ = ${a+b}`;ans=b}}
+    else if(k===1){const c=rnd(10,Math.round(25*s)),b=rnd(2,c-1);q=`${c} − □ = ${c-b}`;ans=b}
+    else if(k===2){const a=rnd(2,Math.round(4+2*s)),b=rnd(2,9);q=`${a} × □ = ${a*b}`;ans=b}
+    else{const b=rnd(2,9),v=rnd(2,Math.round(3+2*s));q=`□ ÷ ${b} = ${v}`;ans=b*v}
+    $('#q').textContent=q}
+  const inp=$('#lk-in');
+  $('#f').onsubmit=e=>{e.preventDefault();if(over||inp.value.trim()==='')return;
+    if(parseInt(inp.value,10)===ans){total++;tum++;if(tum>=3){tum=0;locks++;$('#sc').textContent=locks}tumUp()}else{end-=3000;shake(inp)}
+    inp.value='';next()};
+  timeBar(()=>end,P.T,()=>{if(over)return;over=true;const ok=locks>=P.q;jobDone('lock',d,{ok,score:locks,raw:total*8+locks*20+(ok?40:0),detail:`解錠 ${locks} 錠 / ノルマ ${P.q} 錠 · タンブラー ${total} 個`})});
+  tumUp();next();inp.focus()}
 
 /* ===== 入力 ===== */
 const inField=e=>/INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
