@@ -69,6 +69,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .dlg.npc-gate{border-left-color:var(--amber)} .dlg.npc-gate .who{color:var(--amber)}
 .dlg.npc-genji{border-left-color:var(--amber)} .dlg.npc-genji .who{color:var(--amber)}
 .dlg.npc-ray{border-left-color:#c9d2e6} .dlg.npc-ray .who{color:#c9d2e6}
+.dlg.npc-daimon{border-left-color:#e8a040} .dlg.npc-daimon .who{color:#e8a040}
 .dlg.npc-kago{border-left-color:var(--muted)} .dlg.npc-kago .who{color:var(--muted)}
 .tags{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .tags span{position:absolute;transform:translate(-50%,-100%);font-family:var(--f-data);font-size:clamp(8px,1.3vw,11px);line-height:1.3;color:var(--cyan);background:rgba(4,10,14,.72);border:1px solid rgba(62,242,224,.5);padding:0 4px;white-space:nowrap}
@@ -174,7 +175,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.6 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.7 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -211,7 +212,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.6"></script>
+<script src="sound.js?v=0.7"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -276,7 +277,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* ===== 音（sound.js） ===== */
 const SND=window.NGSound||null;
 const sfx=n=>{try{SND&&SND.se(n)}catch(e){}};
-function sndApply(){if(!SND)return;const o=S.snd||{};try{SND.setVolume('bgm',o.bgm??0.6);SND.setVolume('se',o.se??0.8);SND.setMuted(!!o.muted);SND.setCyber(1-flesh()/100)}catch(e){}}
+function sndApply(){if(!SND)return;const o=S.snd||{};try{SND.setVolume('bgm',o.bgm??0.6);SND.setVolume('se',o.se??0.8);SND.setMuted(!!o.muted);SND.setCyber(1-flesh()/100);SND.setMood&&SND.setMood(area())}catch(e){}}
 function sndStart(){if(!SND)return;try{
   /* iPhone のマナーモード（消音スイッチ）でも鳴るように、再生用の音声セッションにする（Safari 17 以降） */
   if(navigator.audioSession)navigator.audioSession.type='playback';
@@ -311,6 +312,28 @@ const DOC=sprite(["...gggg....","..gggggg...","..gsssmg...","..sesrms...","..sss
 
 const GENJI=sprite(["...wwww...","..wwwwww..","..rrrrrr..","..ssssss..","..sesses..","..ssssss..","...smms...","..oooooo..",".oaaaaaao.","oaaaaaaaao","saaaaaaaas",".aaaaaaaa.","..aaaaaa..","..pp..pp..","..pp..pp..","..pp..pp..",".bbb..bbb."],{w:'#d8d4e0',r:'#c8323c',s:'#c98f6a',e:'#07060d',m:'#9a96a8',o:'#3a3550',a:'#e8e2d0',p:'#191828',b:'#0b0a12'});
 const RAY=sprite(["...cccc...","..cCCCCc..","..cvvvvc..","..cCCCCc..","...cccc...","....cc....","..cccccc..",".cCCccCCc.","cCccLLccCc","cCccccccCc","c.cCCCCc.c","..cccccc..","..cc..cc..","..cC..Cc..","..cc..cc..","..cC..Cc..","..cc..cc..",".ccc..ccc."],{c:'#8f97ad',C:'#d6dbe8',v:'#3ef2e0',L:'#5fb8ff'});
+const DAIMON=sprite(["...yyyy...","..yyyyyy..","..ssssss..","..sesses..","..sBBBBs..","...BBBB...",".oooooooo.","sooooooooo","sooooooooo","ss.oooo.ss","s..oooo..s","...oooo...","..oo..oo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb..bbb."],{y:'#f2c230',s:'#b9805a',e:'#07060d',B:'#3a2a22',o:'#c0662a',b:'#0b0a12'});
+/* 沈殿街の住人（人間が多く、サイボーグは少し） */
+const wk=(pal)=>sprite(["...yyyy...","..yyyyyy..","..ssssss..","..sesses..","..ssssss..","...ssss...",".tooooot..","toooooooot","toooooooot","s.oooooo.s","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb..bbb."],{s:'#c98f6a',e:'#07060d',b:'#0b0a12',...pal});
+const WK_A=wk({y:'#f2c230',o:'#2f4a7a',t:'#8a8a96'}),WK_B=wk({y:'#e85a2a',o:'#5a4a2a',t:'#6a6a74',s:'#a8704c'}),WK_C=wk({y:'#d8d4e0',o:'#3a5a3a',t:'#7a7a84',s:'#d9a07a'});
+const WK_M=sprite(["...hhhh...","..rrrrrr..","..ssssss..","..sesses..","..ssssss..","...ssss...",".sswwwwss.","ss.wwww.ss","ss.wwww.ss","s..wwww..s","...pppp...","..pppppp..","..pp..pp..","..pp..pp..","..pp..pp..",".bbb..bbb."],{h:'#2b2438',r:'#3e6aa8',s:'#b9805a',e:'#07060d',w:'#d8d4cc',p:'#3a3550',b:'#0b0a12'});
+const WK_F=sprite(["..hhhh....",".hhhhhh...",".hsssshh..",".hsesesh..",".hssssh.h.","..ssss..h.",".oooooo...","sooooooos.","sooooooos.","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb.bbb.."],{h:'#5a2a3a',s:'#d9a07a',e:'#07060d',o:'#7a3a2a',b:'#0b0a12'});
+const CY_A=sprite(["...cccc...","..cCCCCc..","..cCrrCc..","..cCCCCc..","...cccc...","....cc....",".oooooooo.","coooooooos","coooooooos","c.oooooo.s","..oooooo..","..oooooo..","..oo..cc..","..oo..cC..","..oo..cc..",".bbb..ccc."],{c:'#8f97ad',C:'#d6dbe8',r:'#ff4a5c',o:'#3a3a48',s:'#c98f6a',b:'#0b0a12'});
+const CY_B=sprite(["...cccc...","..cCCCCc..","..cvvvvc..","..cCCCCc..","...cccc...","..cccccc..",".cCCccCCc.","cCccccccCc","cCccccccCc","c.cCCCCc.c","..cccccc..","..cc..cc..","..cC..Cc..","..cc..cc..","..cC..Cc..",".ccc..ccc."],{c:'#7a8296',C:'#c4cad8',v:'#ff9a3c'});
+/* x0〜x1 を歩く（sp=0 は立ち止まり）。cy=サイボーグ */
+const CROWD=[
+  {spr:WK_M,x0:150,x1:150,sp:0,sex:'m',dir:1},
+  {spr:WK_A,x0:90,x1:250,sp:13,sex:'m'},
+  {spr:WK_F,x0:300,x1:300,sp:0,sex:'f',dir:1},
+  {spr:WK_C,x0:368,x1:368,sp:0,sex:'m',dir:-1},
+  {spr:WK_B,x0:505,x1:505,sp:0,sex:'m',dir:-1},
+  {spr:WK_A,x0:480,x1:700,sp:11,sex:'m'},
+  {spr:CY_A,x0:620,x1:780,sp:16,sex:'m',cy:1},
+  {spr:WK_M,x0:660,x1:660,sp:0,sex:'m',dir:-1},
+  {spr:WK_F,x0:700,x1:830,sp:12,sex:'f'},
+  {spr:CY_B,x0:740,x1:740,sp:0,sex:'m',cy:1,dir:-1},
+  {spr:WK_B,x0:780,x1:840,sp:9,sex:'m'}
+].map((c,i)=>({...c,x:c.x0+(c.x1-c.x0)*((i*0.37)%1),d:c.dir||(i%2?1:-1)}));
 /* 機械化した目に映る「汎用の人型」（男性・女性） */
 const SIL_M=sprite(["...kkkk...","..kkkkkk..","..kkkkkk..","..kkkkkk..","...kkkk...",".kkkkkkkk.","kkkkkkkkkk","kkkkkkkkkk","kk.kkkk.kk","...kkkk...","...kkkk...","...kk.kk..","...kk.kk..","...kk.kk..","...kk.kk..","..kkk.kkk."],{k:'#5b6680'});
 const SIL_F=sprite(["...kkkk...","..kkkkkk..","..kkkkkk..","..kkkkkk..","..kk..kk..","..kkkkkk..",".kkkkkkkk.",".kkkkkkkk.","...kkkk...","..kkkkkk..",".kkkkkkkk.","kkkkkkkkkk","...k..k...","...k..k...","...k..k...","..kk..kk.."],{k:'#5b6680'});
@@ -335,14 +358,14 @@ const AREAS={
   out:{nm:'圏外 · 東京の外',floor:'地上 · 圏外',label:'東京の外のスラム街。遠くに東京の光が見える',
     npcs:[{id:'mina',x:200},{id:'doc',x:462},{id:'lift',x:800},{id:'gate',x:856}]},
   lower:{nm:'沈殿街 · 下層区',floor:'地下1層 · 沈殿街',label:'地下の街、沈殿街。屋台の灯りと配管、ホログラム広告の切れ端',
-    npcs:[{id:'lift',x:30},{id:'genji',x:322},{id:'ray',x:590},{id:'gate',x:856}]}
+    npcs:[{id:'lift',x:30},{id:'genji',x:322},{id:'daimon',x:428},{id:'ray',x:590},{id:'gate',x:856}]}
 };
 const AREA_ORDER=['out','lower'];
 const area=()=>AREAS[S.area]?S.area:'out';
 const following=()=>!!(S.st&&S.st.follow);
 const npcsHere=()=>AREAS[area()].npcs.filter(n=>!(n.id==='mina'&&following()));
 /* 人の見え方（知覚）に使う情報 */
-const PEOPLE={mina:{nm:'ミナ',sex:'f',age:'20代'},doc:{nm:'ドク・カゲロウ',sex:'m',age:'50代'},genji:{nm:'ゲンジ',sex:'m',age:'60代'},ray:{nm:'レイ',model:'RAY-07 ／ 運送用義体 ／ 稼働14年'}};
+const PEOPLE={mina:{nm:'ミナ',sex:'f',age:'20代'},doc:{nm:'ドク・カゲロウ',sex:'m',age:'50代'},genji:{nm:'ゲンジ',sex:'m',age:'60代'},daimon:{nm:'ダイモン',sex:'m',age:'40代'},ray:{nm:'レイ',model:'RAY-07 ／ 運送用義体 ／ 稼働14年'}};
 const drops=[];{const R=rng(3);for(let i=0;i<90;i++)drops.push({x:R()*W,y:R()*H,v:150+R()*90,l:2+Math.round(R()*3)})}
 /* 沈殿街：配管、店の灯り、ホログラム広告の切れ端、柱 */
 const L_SHOPS=[],L_HOLO=[],L_PIPES=[];
@@ -363,7 +386,7 @@ function draw(t){
   const n=near();if(n&&mode==='play'){const sx=X(n.x),bob=Math.round(Math.sin(t*5)*1.5),y=markY(n)+bob;
     ctx.fillStyle='#3ef2e0';ctx.fillRect(sx-3,y,7,1);ctx.fillRect(sx-2,y+1,5,1);ctx.fillRect(sx-1,y+2,3,1);ctx.fillRect(sx,y+3,1,1)}
   tagsUp()}
-const markY=n=>n.id==='gate'?84:n.id==='lift'?GY-52:n.id==='doc'?GY-26:n.id==='ray'?GY-26:n.id==='genji'?GY-25:GY-22;
+const markY=n=>n.id==='gate'?84:n.id==='lift'?GY-52:n.id==='doc'?GY-26:n.id==='ray'?GY-26:n.id==='genji'?GY-25:n.id==='daimon'?GY-25:GY-22;
 function drawOut(t){
   const prog=camX/CAMMAX;
   /* 空 */
@@ -469,6 +492,37 @@ function drawLower(t){
     const lon=flick(t,7)||cl>=1;ctx.fillStyle=lon?'#ff5a3c':'#6a2a20';ctx.fillRect(sx+14,GY-40,6,8);ctx.fillStyle='rgba(255,90,60,.25)';if(lon)ctx.fillRect(sx+10,GY-44,14,16);
     /* 湯気（澄みで濃くなる） */
     const n=cl>=1?7:3;for(let i=0;i<n;i++){const k=((t*0.6+i/n)%1);ctx.fillStyle=`rgba(230,230,240,${(cl>=1?0.35:0.18)*(1-k)})`;ctx.fillRect(Math.round(sx+60+Math.sin(t*2+i)*3),Math.round(GY-24-k*26),2,2)}}}
+  /* 沈殿第三工場：人間がレバーを握り、払い下げのAIアームを動かす */
+  {const fx=X(380);if(fx<W+10&&fx+170>-10){
+    /* 建屋の壁、鋲、危険表示の帯 */
+    ctx.fillStyle='#2a2226';ctx.fillRect(fx,GY-96,168,96);ctx.fillStyle='#3a3034';for(let y=GY-92;y<GY-20;y+=10)for(let x=fx+4;x<fx+166;x+=12)ctx.fillRect(x,y,1,1);
+    for(let x=0;x<168;x+=8){ctx.fillStyle=(x/8)%2?'#f2c230':'#1a1416';ctx.fillRect(fx+x,GY-96,8,4)}
+    ctx.fillStyle='#4a3a30';ctx.fillRect(fx,GY-96,168,1);
+    /* 炉の窓（オレンジに揺れる） */
+    const fl=0.55+0.25*Math.sin(t*3.1)+0.1*Math.sin(t*11);ctx.fillStyle=`rgba(255,120,40,${fl})`;ctx.fillRect(fx+110,GY-80,40,18);ctx.fillStyle='#1a1416';ctx.fillRect(fx+129,GY-80,2,18);
+    ctx.fillStyle=`rgba(255,140,60,${fl*0.25})`;ctx.fillRect(fx+100,GY-90,60,38);
+    /* 天井のクレーン（レールを行き来し、鎖とフックが揺れる） */
+    ctx.fillStyle='#4a4048';ctx.fillRect(fx-4,GY-104,176,3);const cx0=fx+20+Math.round((Math.sin(t*0.4)*0.5+0.5)*120);
+    ctx.fillStyle='#5a5058';ctx.fillRect(cx0-5,GY-101,10,4);ctx.fillStyle='#6a6068';for(let y=GY-97;y<GY-70;y+=3)ctx.fillRect(cx0,y,1,2);ctx.fillRect(cx0-2,GY-70,5,2);ctx.fillRect(cx0+2,GY-68,1,3);
+    /* ベルトコンベアと流れる箱 */
+    ctx.fillStyle='#1a1618';ctx.fillRect(fx+60,GY-14,104,6);ctx.fillStyle='#3a3438';for(let x=(t*14)%6;x<104;x+=6)ctx.fillRect(Math.round(fx+60+x),GY-14,2,1);
+    ctx.fillStyle='#2a2428';ctx.fillRect(fx+64,GY-8,3,8);ctx.fillRect(fx+156,GY-8,3,8);
+    for(let i=0;i<3;i++){const bx=fx+60+((t*14+i*36)%100);ctx.fillStyle='#8a6a40';ctx.fillRect(Math.round(bx),GY-21,9,7);ctx.fillStyle='#6a5030';ctx.fillRect(Math.round(bx),GY-21,9,1)}
+    /* AIアーム（払い下げ品。人の操作に合わせて動く） */
+    const ax=fx+98,ay=GY-14,a1=-1.9+0.45*Math.sin(t*1.3),a2=0.9+0.6*Math.sin(t*1.3+1.2);
+    const jx=ax+Math.cos(a1)*20,jy=ay+Math.sin(a1)*20,hx=jx+Math.cos(a1+a2)*16,hy=jy+Math.sin(a1+a2)*16;
+    ctx.strokeStyle='#c8c0b0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(jx,jy);ctx.lineTo(hx,hy);ctx.stroke();ctx.lineWidth=1;
+    ctx.fillStyle='#4a4048';ctx.fillRect(ax-5,ay-2,10,4);ctx.fillStyle='#e8a040';ctx.fillRect(Math.round(jx)-1,Math.round(jy)-1,3,3);
+    ctx.fillStyle=Math.floor(t*3)%2?'#3ef2e0':'#1a7a70';ctx.fillRect(Math.round(hx)-1,Math.round(hy)-1,3,3);
+    /* 操作盤：ダイモンが握るレバーと、計器 */
+    ctx.fillStyle='#3a3238';ctx.fillRect(fx+38,GY-22,20,22);ctx.fillStyle='#ffb547';ctx.fillRect(fx+41,GY-20,10,5);ctx.fillStyle='#1a1416';ctx.fillRect(fx+42,GY-19,8,3);
+    ctx.fillStyle='#ffb547';ctx.fillRect(fx+42+Math.floor((t*4)%7),GY-18,1,1);
+    const lv=Math.round(3*Math.sin(t*1.3));ctx.fillStyle='#8a8090';ctx.fillRect(fx+53,GY-30+lv,1,9);ctx.fillStyle='#ff4a5c';ctx.fillRect(fx+52,GY-31+lv,3,2);
+    /* 溶接の火花（溶接工のそば） */
+    const sp=(t*1.7)%1;if(sp<0.45){for(let i=0;i<6;i++){const a=i*1.1+t*7,r=sp*14*(0.5+((i*37)%10)/10);ctx.fillStyle=i%2?'#fff4c0':'#ffb547';ctx.fillRect(Math.round(fx+132+Math.cos(a)*r),Math.round(GY-12+Math.sin(a)*r*0.6-sp*4),1,1)}
+      ctx.fillStyle='rgba(200,230,255,.35)';ctx.fillRect(fx+129,GY-15,6,6)}
+    /* 屋根の排気（澄みで濃く見える） */
+    const n=clarityLv()>=1?6:3;for(let i=0;i<n;i++){const k=((t*0.35+i/n)%1);ctx.fillStyle=`rgba(200,190,200,${0.22*(1-k)})`;ctx.fillRect(Math.round(fx+18+Math.sin(t+i)*4),Math.round(GY-104-k*30),3,3)}}}
   /* 鋼組の溜まり場（レイ） */
   {const sx=X(560);if(sx<W+10&&sx+80>-10){ctx.fillStyle='#1a1e2a';ctx.fillRect(sx,GY-14,22,14);ctx.fillRect(sx+44,GY-10,18,10);ctx.fillStyle='#5fb8ff';ctx.globalAlpha=0.6;ctx.fillRect(sx+2,GY-12,18,1);ctx.globalAlpha=1;
     ctx.fillStyle='rgba(95,184,255,.08)';ctx.fillRect(sx-6,GY-60,80,60)}}
@@ -491,9 +545,11 @@ function drawSpr(spr,x,flip,alpha=1){const sx=Math.round(x-camX-spr.width/2),sy=
 function drawPeople(t){const a=area();
   if(a==='out'){if(!following())drawSpr(personSprite('mina',MINA),200,false);drawSpr(personSprite('doc',DOC),462,true);
     if(docMood()<3){ctx.fillStyle='#ff4a5c';if(Math.floor(t*1.2)%4)ctx.fillRect(Math.round(462-camX)+5,GY-15,1,1)}}
-  else{drawSpr(personSprite('genji',GENJI),322,false);
+  else{const m=docMood();
+    for(const c of CROWD){const alpha=c.cy?(m===0?0.55:m===1?0.75:1):1,spr=!c.cy&&m>=3?(c.sex==='f'?SIL_F:SIL_M):c.spr;drawSpr(spr,c.x,c.d<0,alpha)}
+    drawSpr(personSprite('genji',GENJI),322,false);drawSpr(personSprite('daimon',DAIMON),428,false);
     /* レイ：全身義体なので、生身の目にはぼやけ、機械の目にははっきり映る */
-    const m=docMood(),jit=m<2?Math.round(Math.sin(t*9)*1):0;drawSpr(RAY,590+jit,true,m===0?0.5:m===1?0.7:1)}
+    const jit=m<2?Math.round(Math.sin(t*9)*1):0;drawSpr(RAY,590+jit,true,m===0?0.5:m===1?0.7:1)}
   if(following())drawSpr(personSprite('mina',MINA),fol.x,fol.dir<0);
   const spr=player.moving&&Math.floor(player.step*8)%2?P_B:P_A;drawSpr(spr,player.x,player.dir<0)}
 /* 知覚のフィルター：機械化で色が抜け、走査線、線画になる。澄みで色が深まる */
@@ -516,7 +572,7 @@ function perceive(t){const m=docMood(),c=clarityLv();
 let tagsHTML='';
 function tagsUp(){const m=docMood(),el=$('#tags');let h='';
   if(m>=2&&(mode==='play'||mode==='dialog')){const list=[];const add=(id,x,spr)=>list.push({id,x,y:GY-spr.height-3});
-    if(area()==='out'){if(!following())add('mina',200,MINA);add('doc',462,DOC)}else{add('genji',322,GENJI);add('ray',590,RAY)}
+    if(area()==='out'){if(!following())add('mina',200,MINA);add('doc',462,DOC)}else{add('genji',322,GENJI);add('daimon',428,DAIMON);add('ray',590,RAY)}
     if(following())add('mina',fol.x,MINA);
     const ids={};let n=0;
     for(const p of list){const sx=p.x-camX;if(sx<-10||sx>W+10)continue;const P=PEOPLE[p.id];let tx;
@@ -534,6 +590,7 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
   if(mode==='play'){const dx=(keys.r?1:0)-(keys.l?1:0);player.moving=dx!==0;
     if(dx){player.dir=dx;player.x=clamp(player.x+dx*62*dt,12,846);player.step+=dt;const si=Math.floor(player.step*2.5);if(si!==stepIdx){stepIdx=si;sfx('step')}}
     camX=clamp(Math.round(player.x-130),0,CAMMAX);
+    if(area()==='lower')for(const c of CROWD){if(!c.sp)continue;c.x+=c.d*c.sp*dt;if(c.x>c.x1){c.x=c.x1;c.d=-1}else if(c.x<c.x0){c.x=c.x0;c.d=1}}
     const ft=player.x-20*player.dir;fol.x+=(ft-fol.x)*Math.min(1,dt*3);if(Math.abs(ft-fol.x)>1)fol.dir=ft>fol.x?1:-1;
     const pr=camX/CAMMAX,br=Math.round((area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='title'){titlePan+=dt*14;camX=Math.round((Math.sin(titlePan/120)*0.5+0.5)*CAMMAX*0.55)}
@@ -554,7 +611,7 @@ function toast(msg,ms=4200){const el=$('#toast');el.textContent=msg;el.hidden=fa
 
 /* ===== 会話 ===== */
 let D=null,typeT=0;
-const WHO={me:'あなた',mina:'ミナ',doc:'ドク・カゲロウ',gate:'SENTRY',genji:'ゲンジ',ray:'レイ',kago:'カゴ'};
+const WHO={me:'あなた',mina:'ミナ',doc:'ドク・カゲロウ',gate:'SENTRY',genji:'ゲンジ',daimon:'ダイモン',ray:'レイ',kago:'カゴ'};
 /* 名前欄：機械化が進むと、名前の代わりに「女性・20代」などの識別になる */
 function whoName(id){const P=PEOPLE[id],m=docMood();if(!P)return WHO[id];
   if(P.model)return m>=2?'RAY-07':'レイ';
@@ -579,7 +636,7 @@ $('#dlg').addEventListener('click',advance);
 
 /* ===== 会話の中身 ===== */
 const L=(who,text,choices)=>({who,text,choices});
-function interact(){const n=near();if(!n)return;({mina:talkMina,doc:talkDoc,gate:area()==='lower'?talkGate2:talkGate,lift:liftTalk,genji:talkGenji,ray:talkRay})[n.id]()}
+function interact(){const n=near();if(!n)return;({mina:talkMina,doc:talkDoc,gate:area()==='lower'?talkGate2:talkGate,lift:liftTalk,genji:talkGenji,daimon:talkDaimon,ray:talkRay})[n.id]()}
 function talkMina(){const o=overall(S.cur);
   if(!o){S.mina=Math.max(S.mina,1);save();return talk([L('mina','見ない顔だね。ここは圏外。東京の光が届かない場所だよ。'),L('mina','東京に入りたいなら、まず脳を測ってもらいな。この先の闇医者、ドク・カゲロウのとこ。'),L('mina','スペックがわからない奴には、仕事も回せないからさ。')])}
   let ls;
@@ -649,7 +706,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
-  <p class="muted">試作版 v0.6 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
+  <p class="muted">試作版 v0.7 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -663,10 +720,11 @@ function minaJoin(){S.st={...S.st,join:1,follow:1};save();fol.x=player.x-40;fol.
 function travel(to,via){if(!AREAS[to])return;mode='fade';$('#fade').classList.add('on');keys.l=keys.r=false;
   setTimeout(()=>{S.area=to;if(!S.reached.includes(to))S.reached=[...S.reached,to];
     player.x=to==='lower'?(via==='lift'?54:96):(via==='lift'?778:820);player.dir=1;fol.x=player.x-24;fol.dir=1;
-    camX=clamp(Math.round(player.x-130),0,CAMMAX);S.x=Math.round(player.x);save();hud();
+    camX=clamp(Math.round(player.x-130),0,CAMMAX);S.x=Math.round(player.x);save();hud();sndApply();
     $('#fade').classList.remove('on');setTimeout(()=>{mode='play';arrive(to)},380)},380)}
 function arrive(to){if(to==='lower'&&!S.st.arrive){S.st={...S.st,arrive:1};save();
-  talk([L('me',{n:'階段を降りきると、地下なのに、上より明るい街が広がっていた。',c:'階段を降りきると、湯気と出汁の匂いがした。地下なのに、上より明るい。',m:'地下1層に到達。照度、地上の2.4倍。気温21℃、湿度88%。'}),
+  talk([L('me',{n:'階段を降りきると、地下なのに、上より明るい街が広がっていた。',c:'階段を降りきると、湯気と出汁の匂いがした。地下なのに、上より明るい。',m:'地下1層に到達。照度、地上の2.4倍。気温21℃、湿度88%。人間 82%、義体 18%。'}),
+    L('me',{n:'機械の唸りと、男たちの怒鳴り声が響いている。',c:'鉄を打つ音、油の匂い、男たちの笑い声。人が、生きて働いている音がする。',m:'工場の稼働音を検出。作業者の大半は生身。'}),
     L('mina','……変わってない。'),L('mina','あたしが変わったのか。'),
     L('mina','ここが沈殿街。上から落ちてきたものが、溜まる場所。……あたしが生まれた街。'),
     L('mina','弟を探してる。ソウっていうんだ。十年前、あたしだけ検査に落ちて、ここを出された。'),
@@ -707,6 +765,20 @@ function talkGenji(){const fc=fac(),practice={label:'練習場を使う',fn:prac
     return talk([...head,...sou,...tail],afterClue)}
   if(fc==='closed')return talk([L('genji','ここは生身の店だ。……ミナ坊の連れでも、それは変わらねえ。')]);
   talk([L('genji',fc==='open'?{n:'よう。今日も練習か？',c:'よう。今日も練習か？ 一杯食ってけ、出汁がうまく取れた。',m:'よう。今日も練習か？'}:'練習場か。……好きにしな。',[practice,bye])])}
+/* 沈殿第三工場：親方ダイモン（生身派寄り） */
+function talkDaimon(){const fc=fac();
+  if(!S.st.daimon){S.st={...S.st,daimon:1};save();
+    const head=fc==='open'?[L('daimon','おう、見ねえ顔だな。ここは沈殿第三工場だ。')]:fc==='mid'?[L('daimon','……半分、機械か。まあいい、手が動くなら話は聞いてやる。')]:[L('daimon','おい、ラインに近づくな。アームがあんたを仲間だと思って寄ってくる。')];
+    return talk([...head,
+      L('me',{n:'鉄を打つ音と、男たちの怒鳴り声。巨大なアームが箱を持ち上げている。',c:'油と鉄の焼ける匂い。男たちの汗の匂い。アームが動くたび、床が低く震える。',m:'産業用AIアームを検出。型落ち、企業区の払い下げ品。制御権：外部（人間）。'}),
+      L('daimon','あのアームは企業区のAIの払い下げでな。勝手に動かせば、半日で人を潰す。'),
+      L('daimon','だから人が握る。レバーも、判断もだ。'),
+      L('daimon','機械に使われるんじゃねえ。俺らが使うんだ。……それが沈殿街のやり方よ。'),
+      ...(following()?[L('mina','……ここ、昔は小さな町工場だったのに。'),L('daimon','十年でこうなった。上から落ちてきた機械を、拾って、直して、こき使ってな。')]:[])])}
+  const pool=fc==='open'?['アームの調子がいい。今日は誰も潰れてねえ。','腹が減ったら、ゲンさんの屋台に行け。あそこの出汁は、体を人間に戻す。','企業区の連中は、AIに判断を任せる。だから人がいらなくなる。']
+    :fc==='mid'?['そのインプラント、どこの店だ？ ……ドク・カゲロウか。腕はいい。','半分機械でも、レバーを握るのは自分の手だ。忘れんなよ。']
+    :['あんたの目、アームのカメラと同じ色をしてやがる。','機械同士で通じ合うんなら、アームの機嫌でも聞いてきてくれ。'];
+  talk([L('daimon',pool[Math.floor(Math.random()*pool.length)])])}
 /* サイボーグ側「鋼組」：レイ */
 function talkRay(){const fc=fac();
   if(!S.st.ray){S.st={...S.st,ray:1};save();
