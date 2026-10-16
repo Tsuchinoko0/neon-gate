@@ -1,4 +1,3 @@
-[README (1).md](https://github.com/user-attachments/files/33536905/README.1.md)
 # NEON GATE
 
 脳のスペックで、住める場所が決まる街。
