@@ -11,6 +11,7 @@
  *   NGSound.setMuted(true / false)
  *   NGSound.setCyber(c)       … 0（生身）〜1（完全サイボーグ）。効果音が機械的な音に変わっていく
  *   NGSound.setLayer('pad', true / false)  … シンセの持続音のオン・オフ
+ *   NGSound.setMood('out' | 'lower')  … BGMの雰囲気。'lower'＝沈殿街（工場の機械音とハンマーのリズム）
  *   NGSound.analyser()        … 波形表示用の AnalyserNode（init 前は null）
  */
 (function (global) {
@@ -24,11 +25,18 @@
     { root: 43, tones: [43, 46, 50, 53] },
     { root: 45, tones: [45, 49, 52, 55] }
   ];
+  /* 沈殿街：Em → C → D → B（工場の重いリズムに合わせた、男くさい進行） */
+  const PROG_LOWER = [
+    { root: 40, tones: [40, 43, 47, 50] },
+    { root: 36, tones: [36, 40, 43, 47] },
+    { root: 38, tones: [38, 42, 45, 48] },
+    { root: 35, tones: [35, 39, 42, 45] }
+  ];
   const ARP = [0, 2, 1, 3, 2, 1, 3, 0];
   const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
   const clamp01 = v => Math.max(0, Math.min(1, v));
 
-  const st = { bgmVol: 0.6, seVol: 0.8, muted: false, bright: 0, playing: false, pad: true, cyber: 0 };
+  const st = { bgmVol: 0.6, seVol: 0.8, muted: false, bright: 0, playing: false, pad: true, cyber: 0, mood: 'out' };
   const SE_BOOST = 4; /* 効果音をBGMより前に出すための底上げ */
   let ctx = null, master, bgmIn, bgmMix, duck, seIn, seDry, seWet, crusher, ringOsc, padFilter, padLfoAmt, delayIn, reverbIn, an;
   let noiseBuf = null, timer = null, nextTime = 0, step = 0;
@@ -167,7 +175,39 @@
     a.gain.setValueAtTime(0, t); a.gain.linearRampToValueAtTime(0.035, t + 0.01); a.gain.exponentialRampToValueAtTime(0.0008, t + 1.2);
     o.start(t); o.stop(t + 1.25);
   }
+  /* 工場の音：ハンマーで鉄を打つ音 */
+  function clank(t, lvl) {
+    noise(t, 0.09, lvl, 'bandpass', 2600 + Math.random() * 500, 9);
+    const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = 1830;
+    const o2 = ctx.createOscillator(); o2.type = 'triangle'; o2.frequency.value = 2757;
+    const a = g(0, bgmMix); o.connect(a); o2.connect(a); a.connect(g(0.4, delayIn));
+    a.gain.setValueAtTime(lvl * 0.5, t); a.gain.exponentialRampToValueAtTime(0.0006, t + 0.35);
+    o.start(t); o2.start(t); o.stop(t + 0.37); o2.stop(t + 0.37);
+  }
+  /* 工場の音：蒸気が抜ける音 */
+  function hiss(t) {
+    const n = ctx.createBufferSource(); n.buffer = noiseBuf;
+    const f = filt('highpass', 2000, 0.7), a = g(0, bgmMix); n.connect(f); f.connect(a);
+    f.frequency.setValueAtTime(5000, t); f.frequency.exponentialRampToValueAtTime(900, t + 1.2);
+    a.gain.setValueAtTime(0, t); a.gain.linearRampToValueAtTime(0.025, t + 0.08); a.gain.exponentialRampToValueAtTime(0.0008, t + 1.3);
+    n.start(t, Math.random() * 1); n.stop(t + 1.35);
+  }
+  function playLower(s, t) {
+    const b = st.bright, ss = s % 16, chord = PROG_LOWER[Math.floor(s / 32) % 4];
+    if (s % 32 === 0 && st.pad) pad(chord, t, 32 * S16);
+    /* 機械が刻むような8分のベース */
+    if (ss % 2 === 0) bass(chord.root - 12 + (ss === 6 || ss === 14 ? 12 : 0), t, 0.25 + 0.3 * b);
+    /* 重いキックと、2拍目・4拍目のハンマー */
+    if (ss === 0 || ss === 8 || (ss === 10 && b > 0.6)) kick(t, 0.32);
+    if (ss === 4 || ss === 12) clank(t, 0.05 + 0.03 * b);
+    if (b > 0.55 && ss % 4 === 2) hat(t, 0.025, false);
+    /* 低いアルペジオ（奥へ行くほど聞こえる） */
+    const arpLvl = clamp01((b - 0.45) / 0.4) * 0.03;
+    if (arpLvl > 0.002 && ss % 2 === 0) arp(chord.tones[ARP[(s / 2) % 8 | 0]], t, arpLvl, b * 0.6);
+    if (s % 64 === 44) hiss(t);
+  }
   function playStep(s, t) {
+    if (st.mood === 'lower') return playLower(s, t);
     const b = st.bright, ss = s % 16, chord = PROG[Math.floor(s / 32) % 4];
     if (s % 32 === 0 && st.pad) pad(chord, t, 32 * S16);
     const bassHits = b > 0.5 ? [0, 3, 6, 8, 11, 14] : [0, 6, 8, 14];
@@ -230,6 +270,7 @@
     seWet.gain.setTargetAtTime(0.9 * c, t, 0.05);
   }
   function setCyber(c) { st.cyber = clamp01(+c || 0); applyCyber(); }
+  function setMood(m) { st.mood = m === 'lower' ? 'lower' : 'out'; }
   function setBrightness(b) { st.bright = clamp01(+b || 0); applyBright(st.bright); }
 
   function setVolume(kind, v) {
@@ -373,7 +414,7 @@
   }
 
   global.NGSound = {
-    init, start, stop, se, setBrightness, setLayer, setCyber, setVolume, setMuted, SE_NAMES,
+    init, start, stop, se, setBrightness, setLayer, setCyber, setMood, setVolume, setMuted, SE_NAMES,
     isPlaying: () => st.playing,
     analyser: () => an,
     context: () => ctx,
