@@ -386,6 +386,12 @@
       tone('sine', 1319, t + 1.3, 0.5, 0.05, { echo: 0.3 });
       tone('sine', 1047, t + 1.45, 0.6, 0.05, { echo: 0.3 });
     },
+    /* 本音：低いうなりがふくらんで、鐘が鳴る（ふだんの会話と聞き分けられるように） */
+    honne(t) {
+      tone('sine', 110, t, 2.2, 0.08, { attack: 0.5, echo: 0.3 });
+      tone('triangle', 220, t + 0.05, 1.8, 0.04, { attack: 0.4 });
+      [76, 83, 88].forEach((m, i) => tone('sine', mtof(m), t + 0.35 + i * 0.22, 1.4, 0.05, { echo: 0.45 }));
+    },
     /* インプラント装着 */
     implant(t) {
       tone('sawtooth', 70, t, 1.0, 0.1, { to: 140, slide: 0.9, lp: 700, attack: 0.1 });
@@ -398,7 +404,7 @@
   /* 効果音ごとの「BGMをどこまで下げるか」と「下げておく時間（秒）」 */
   const DUCK = {
     text: [0.85, 0.05], step: [0.8, 0.05], key: [0.75, 0.06], ui: [0.6, 0.12],
-    scan: [0.35, 1.1], implant: [0.35, 1.0], lift: [0.4, 1.6], allow: [0.4, 0.8], deny: [0.4, 0.6]
+    scan: [0.35, 1.1], implant: [0.35, 1.0], lift: [0.4, 1.6], honne: [0.3, 2.2], allow: [0.4, 0.8], deny: [0.4, 0.6]
   };
   function se(name) {
     if (!ctx || !SE[name]) return;

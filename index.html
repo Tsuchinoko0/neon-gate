@@ -85,6 +85,20 @@ button{font:inherit;color:inherit;cursor:pointer}
 .floors .nbtn{text-align:left;display:flex;justify-content:space-between;gap:12px}
 .lift-ind{font-family:var(--f-data);font-size:clamp(36px,9vw,60px);color:var(--amber);text-align:center;letter-spacing:.1em;text-shadow:0 0 14px rgba(255,181,71,.5);padding-block:30px}
 .dlg.npc-me{border-left-color:var(--muted)} .dlg.npc-me .who{color:var(--muted)}
+/* 本音：金色の縁と文字。ふだんの会話と見分けがつくように */
+.dlg.honne{border:1px solid rgba(201,160,255,.7);border-left:4px solid #ffd27a;background:rgba(28,16,38,.96);box-shadow:0 0 22px rgba(201,160,255,.35),inset 0 0 30px rgba(255,210,122,.06)}
+.dlg.honne .who{color:#ffd27a}
+.dlg.honne .who::after{content:'　本音';color:#c9a0ff;letter-spacing:.2em}
+.dlg.honne .txt{color:#ffe7b0}
+.dlg.honne .more{color:#ffd27a}
+.tbtn.new{border-color:var(--amber);color:var(--amber);box-shadow:0 0 10px rgba(255,181,71,.5)}
+.goal{border:1px solid var(--line);border-left:3px solid var(--amber);padding:10px 14px;background:var(--panel2)}
+.goal b{color:var(--amber)}
+.conds{display:grid;gap:6px}
+.cond{display:grid;grid-template-columns:22px minmax(0,1fr);gap:4px 8px;align-items:baseline;font-size:14px}
+.cond .ok{color:var(--cyan)} .cond .ng{color:var(--red)} .cond .lock{color:var(--muted)}
+.cond .ex{grid-column:2;font-size:12px;color:var(--muted);font-family:var(--f-data)}
+.story{margin:0;padding-left:1.2em;display:grid;gap:4px;font-size:14px;color:var(--ink)}
 .dlg .txt{min-height:2.6em}
 .dlg .more{position:absolute;right:12px;bottom:6px;color:var(--cyan);animation:blink 1s steps(2) infinite}
 .dlg .ch{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
@@ -199,7 +213,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.10 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.11 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -208,6 +222,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     <span class="chip cr" id="crChip">0 CR</span>
     <span class="chip body" id="bodyChip" role="img" aria-label="生身率 100%、サイボーグ率 0%"><span class="f" id="bodyF">生身 100%</span><span class="gauge"><b id="bodyBar" style="width:100%"></b><i></i></span><span class="m" id="bodyM">機械 0%</span></span>
     <span class="sp"></span>
+    <button class="tbtn" id="goalBtn" type="button">目的</button>
     <button class="tbtn" id="sndBtn" type="button" aria-expanded="false" aria-controls="sndPop">音量</button>
     <button class="tbtn" id="setBtn" type="button">設定</button>
     <div class="sndpop" id="sndPop" hidden></div>
@@ -238,7 +253,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.10"></script>
+<script src="sound.js?v=0.11"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -690,7 +705,8 @@ function hud(){const o=overall(S.cur);
   $('#crChip').textContent=`${S.cr.toLocaleString()} CR`;
   {const f=flesh();$('#bodyF').textContent=`生身 ${f}%`;$('#bodyM').textContent=`機械 ${100-f}%`;$('#bodyBar').style.width=f+'%';$('#bodyChip').setAttribute('aria-label',`生身率 ${f}%、サイボーグ率 ${100-f}%`)}
   if(typeof sndBtnUp==='function')sndBtnUp();
-  $('#areaChip').textContent=AREAS[area()].nm;cv.setAttribute('aria-label',AREAS[area()].label)}
+  $('#areaChip').textContent=AREAS[area()].nm;cv.setAttribute('aria-label',AREAS[area()].label);
+  if(typeof goalNow==='function'&&S.started){const g=goalNow();if(S.goalK!==g.k){const had=S.goalK!=null;S.goalK=g.k;save();if(had){$('#goalBtn').classList.add('new');toast('目的を更新：'+g.t,5200)}}}}
 let toastT=0;
 function toast(msg,ms=4200){const el=$('#toast');el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,ms)}
 
@@ -704,23 +720,24 @@ function whoName(id){const P=PEOPLE[id],m=docMood();if(!P)return WHO[id];
 /* 文章の出し分け：{n:ふつう, c:澄み, m:機械} */
 const pickText=x=>typeof x==='string'?x:(docMood()>=2&&x.m)?x.m:(clarityLv()>=1&&x.c)?x.c:x.n;
 function talk(lines,onEnd){mode='dialog';D={lines,i:0,onEnd,typing:false,full:''};show()}
-function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who;
+function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who+(L.honne?' honne':'');D.at=performance.now();if(L.se)sfx(L.se);
   $('#dlgWho').textContent=whoName(L.who);$('#dlgCh').innerHTML='';$('#dlgMore').hidden=true;
   D.full=pickText(L.text);D.n=0;D.typing=true;clearInterval(typeT);const el=$('#dlgTxt');el.textContent='';
-  typeT=setInterval(()=>{D.n+=1;el.textContent=D.full.slice(0,D.n);if(D.n%2===0&&/[^\s…・。、]/.test(D.full[D.n-1]||''))sfx('text');if(D.n>=D.full.length)doneTyping()},26)}
+  typeT=setInterval(()=>{D.n+=1;el.textContent=D.full.slice(0,D.n);if(D.n%2===0&&/[^\s…・。、]/.test(D.full[D.n-1]||''))sfx('text');if(D.n>=D.full.length)doneTyping()},L.honne?48:26)}
 function doneTyping(){clearInterval(typeT);D.typing=false;$('#dlgTxt').textContent=D.full;const L=D.lines[D.i];
   if(L.choices){D.sel=0;$('#dlgCh').innerHTML=L.choices.map((c,i)=>`<button class="nbtn ${i===0?'sel':''}" type="button" data-i="${i}">${esc(c.label)}</button>`).join('');
     $('#dlgCh').querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();pick(+b.dataset.i)})}
   else $('#dlgMore').hidden=false}
 function pick(i){const c=D.lines[D.i].choices[i];sfx('ui');document.activeElement&&document.activeElement.blur();endDialog();c.fn&&c.fn()}
-function advance(){if(!D)return;if(D.typing)return doneTyping();if(D.lines[D.i].choices)return;D.i++;if(D.i>=D.lines.length){const f=D.onEnd;endDialog();f&&f()}else show()}
-function endDialog(){clearInterval(typeT);$('#dlg').hidden=true;D=null;if(mode==='dialog')mode='play'}
+function advance(){if(!D)return;if(D.lines[D.i].honne&&performance.now()-D.at<700)return;if(D.typing)return doneTyping();if(D.lines[D.i].choices)return;D.i++;if(D.i>=D.lines.length){const f=D.onEnd;endDialog();f&&f()}else show()}
+function endDialog(){clearInterval(typeT);$('#dlg').hidden=true;D=null;if(mode==='dialog')mode='play';hud()}
 function moveSel(d){if(!D||!D.lines[D.i].choices||D.typing)return;const n=D.lines[D.i].choices.length;D.sel=(D.sel+d+n)%n;
   $('#dlgCh').querySelectorAll('button').forEach((b,i)=>b.classList.toggle('sel',i===D.sel))}
 $('#dlg').addEventListener('click',advance);
 
 /* ===== 会話の中身 ===== */
 const L=(who,text,choices)=>({who,text,choices});
+const LH=(who,text,se)=>({who,text,honne:1,se});
 /* 裏コマンド：同じ相手に10回続けて話しかけると、本音を聞ける */
 let streakId=null,streak=0;
 function interact(){const n=near();if(!n)return;
@@ -731,7 +748,7 @@ function interact(){const n=near();if(!n)return;
 function nth(id){const n=(S.talkN&&S.talkN[id])||0;S.talkN={...S.talkN,[id]:n+1};save();return n}
 const pick3=(id,arr)=>arr[nth(id)%arr.length];
 function honne(id){const first=!(S.honne&&S.honne[id]);S.honne={...S.honne,[id]:1};save();
-  talk([L('me',{n:'……何度も話しかけるうちに、相手の顔から、いつもの表情が消えた。',c:'……何度も話しかけるうちに、相手の目が、ふっと遠くを見た。',m:'対象の応答パターンが変化。防御反応の解除を検出。'}),...HONNE[id].map(t=>L(id,t))],
+  talk([LH('me',{n:'……何度も話しかけるうちに、相手の顔から、いつもの表情が消えた。',c:'……何度も話しかけるうちに、相手の目が、ふっと遠くを見た。',m:'対象の応答パターンが変化。防御反応の解除を検出。'},'honne'),...HONNE[id].map((t,i)=>LH(id,t,i===0?'honne':null))],
     ()=>{if(first)toast(`本音を聞いた（${Object.keys(S.honne).length} / ${Object.keys(HONNE).length}人）`)})}
 const HONNE={
   mina:['ほんとはね、怖いんだ。','検査に落ちた日、母さんはあたしの手を離した。ソウの手だけ握って、ゲートの向こうに戻ってった。','インプラントを入れたくないのは……生身のあたしを捨てた街に、機械の体で認められても、意味がないから。','……今のは忘れて。勉強、戻るね。'],
@@ -823,7 +840,7 @@ function talkGate(){const o=overall(S.cur);
       if(!S.st.join)return talk(again?[L('gate','通行許可済みの脳です。どうぞ。')]:[L('gate','基準を満たしています。通行を許可します。'),L('me','光が、近い。')],minaJoin);
       talk([L('gate','通行許可済みの脳です。第1層・沈殿街へどうぞ。',[{label:'沈殿街へ進む',fn:()=>travel('lower','gate')},{label:'やめておく'}])])}
     else{gateLight='deny';gateLightUntil=performance.now()+4000;sfx('deny');S.gate=1;save();
-      talk([L('gate','基準に届きません。通行を拒否します。'),L('me','……今の自分じゃ、足りないってことか。'),L('me','ミナのところに戻ろう。')])}})}
+      talk([L('gate','基準に届きません。通行を拒否します。'),L('me','……今の自分じゃ、足りないってことか。'),L('me','ミナのところに戻ろう。')],()=>toast('ゲートの条件と、やることは、上の「目的」で確かめられます',6000))}})}
 function clearPanel(){const o=overall(S.cur),b=overall(S.base);
   openPanel(`<div class="eyebrow">TO BE CONTINUED · 沈殿街 → 企業区</div><h3 style="color:var(--cyan)">ソウの行方</h3>
   <p>ソウは企業区にいる。白い光の向こうで、型番で呼ばれながら。</p>
@@ -835,7 +852,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
-  <p class="muted">試作版 v0.10 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
+  <p class="muted">試作版 v0.11 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -1032,6 +1049,31 @@ $('#sndBtn').onclick=()=>sndPop();
 document.addEventListener('pointerdown',e=>{if(!$('#sndPop').hidden&&!e.target.closest('#sndPop,#sndBtn'))sndPop(false)});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sndPop').hidden){sndPop(false);$('#sndBtn').focus()}});
 sndBtnUp();
+/* ===== 目的：今やること、ゲートの条件、これまでのあらすじ ===== */
+function goalNow(){const o=overall(S.cur),st=S.st||{};
+  if(!o)return{k:'scan',t:'ドク・カゲロウの診療所で、ブレインスキャンを受ける',h:'診療所は圏外の中ほど。赤い十字の看板が目印。'};
+  if(!S.passed){const cur=effective(),req=gateReq();return{k:'gate1',t:`実効スペックを ${req} 以上にして、圏外のゲートを通る（今 ${cur}）`,h:'ミナから仕事を受けてクレジットを稼ぎ、生身を鍛えて再スキャンするか、ドクの店でインプラントを入れる。'}}
+  if(!st.join)return{k:'join',t:'圏外のゲートを、もう一度くぐる',h:'ミナが話したがっている。'};
+  if(!st.genji||!st.ray)return{k:'clue',t:'沈殿街で、ミナの弟・ソウの手がかりを探す',h:`屋台のゲンジ ${st.genji?'✓':'□'}　／　鋼組の運び屋レイ ${st.ray?'✓':'□'}　（昇降機で沈殿街へ）`};
+  if(!st.done)return{k:'tell',t:'昇降機のそばのミナに、ソウのことを知らせる',h:'沈殿街の入り口、昇降機のそばで勉強している。'};
+  return{k:'end',t:'沈殿街の奥の、企業区ゲートを調べる',h:'企業区は次の版で。仕事・練習・インプラント・本音集めは続けられる。'}}
+function goalPanel(){$('#goalBtn').classList.remove('new');const g=goalNow(),st=S.st||{},o=overall(S.cur),cur=effective(),req=gateReq(),hn=Object.keys(S.honne||{}).length;
+  const mark=(ok,lock)=>lock?'<span class="lock">－</span>':ok?'<span class="ok">✓</span>':'<span class="ng">✗</span>';
+  const story=[S.started&&'東京の外、圏外。脳のスペックがなければ、ピラミッド都市・東京には入れない。',o&&`ドク・カゲロウのブレインスキャンで、脳は「${o.tier.name}」と測られた。`,S.passed&&'圏外のゲートを通った。ミナが追ってきて、一緒に行くと言った。基準は越えていたが、一人でくぐる勇気がなかったのだという。',
+    st.arrive&&'ピラミッドの底、第1層・沈殿街に着いた。ミナはここで生まれ、十年前に弟のソウを残して圏外へ出された。ミナは昇降機のそばに残り、インプラントに頼らず次のゲートを通るため勉強を始めた。',
+    st.genji&&'屋台のゲンジいわく、ソウは三年前「上へ行く」と言って鋼組の運び屋になった。',st.ray&&'鋼組のレイいわく、ソウは企業区の配送をしていて、今は型番で呼ばれている。',st.done&&'ミナに知らせた。ソウは企業区にいる。ミナは、それでも会いに行くと決めた。'].filter(Boolean);
+  openPanel(`<div class="eyebrow">OBJECTIVE · 目的</div><h3>目的</h3>
+  <div class="goal"><b>いまやること</b><p style="margin:4px 0 0">${esc(g.t)}</p><p class="note" style="margin-top:4px">${esc(g.h)}</p></div>
+  <div><p>ゲートの条件</p><p class="note">実効スペック＝生身のスキャン点数＋インプラント。インプラントでも通れるが、生身率が下がると、人の態度や世界の見え方が変わる。</p></div>
+  <div class="conds">
+    <div class="cond">${mark(S.passed||(o&&cur>=req),!o)}<span>圏外のゲート → 第1層 沈殿街</span><span class="ex">${o?`実効スペック ${req} 以上（今 ${cur}${o?` ＝ 生身 ${Math.round(o.avg)} ＋ 拡張 ${implantBonus()}`:''}）`:'まずブレインスキャンを受ける'}${S.passed?' · 通過済み':''}</span></div>
+    <div class="cond">${mark(st.done,!st.arrive)}<span>企業区ゲート → 第2層 企業区</span><span class="ex">ソウの手がかりを集める（ゲンジ ${st.genji?'✓':'□'}／レイ ${st.ray?'✓':'□'}）→ ミナに知らせる ${st.done?'✓':'□'} · 企業区は次の版で</span></div>
+  </div>
+  <div><p>これまでのあらすじ</p></div><ol class="story">${story.map(t=>`<li>${esc(t)}</li>`).join('')}</ol>
+  <p class="note">本音を聞いた人：${hn} / ${Object.keys(HONNE).length}人${hn?'':'（同じ人と、とことん話してみると……）'}</p>
+  <div class="prow"><button class="nbtn" id="cl" type="button">閉じる</button></div>`);
+  $('#cl').onclick=()=>closePanel();$('#cl').focus()}
+$('#goalBtn').onclick=()=>{sndPop(false);if(mode==='title')return toast('「はじめる」か「つづきから」でゲームを始めると見られます');if(mode==='panel'&&!$('#panel').querySelector('#cl'))return;if(mode==='dialog')endDialog();goalPanel()};
 $('#setBtn').onclick=()=>{sndPop(false);if(mode==='panel'&&!$('#panel').querySelector('#cl'))return;if(mode==='dialog')endDialog();settingsPanel()};
 
 /* ===== スキャン：4テスト ===== */
