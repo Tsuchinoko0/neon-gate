@@ -70,6 +70,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .dlg.npc-genji{border-left-color:var(--amber)} .dlg.npc-genji .who{color:var(--amber)}
 .dlg.npc-ray{border-left-color:#c9d2e6} .dlg.npc-ray .who{color:#c9d2e6}
 .dlg.npc-daimon{border-left-color:#e8a040} .dlg.npc-daimon .who{color:#e8a040}
+.dlg.npc-tsugi{border-left-color:#5fb8ff} .dlg.npc-tsugi .who{color:#5fb8ff}
 .dlg.npc-kago{border-left-color:var(--muted)} .dlg.npc-kago .who{color:var(--muted)}
 .tags{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .tags span{position:absolute;transform:translate(-50%,-100%);font-family:var(--f-data);font-size:clamp(8px,1.3vw,11px);line-height:1.3;color:var(--cyan);background:rgba(4,10,14,.72);border:1px solid rgba(62,242,224,.5);padding:0 4px;white-space:nowrap}
@@ -165,6 +166,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .keys{display:flex;gap:10px}
 .kbtn{width:64px;height:52px;background:var(--panel);border:1px solid var(--line);font-size:20px;border-radius:2px;user-select:none;-webkit-user-select:none;touch-action:none}
 .kbtn.act{width:auto;padding:0 18px;font-size:15px;color:var(--cyan);border-color:rgba(62,242,224,.45)}
+.kbtn.run{width:auto;padding:0 14px;font-size:14px;color:var(--muted)}
+.kbtn.run[aria-pressed="true"]{color:var(--amber);border-color:rgba(255,181,71,.6)}
 .kbtn:active{background:var(--panel2)}
 .hint{font-family:var(--f-data);font-size:12px;color:var(--muted)}
 @media (max-width:560px){.hint{display:none}}
@@ -175,7 +178,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.7 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.8 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -189,7 +192,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 
   <div class="frame" id="frame">
-    <canvas id="cv" width="320" height="180" role="img" aria-label="東京の外のスラム街。遠くに東京の光が見える"></canvas>
+    <canvas id="cv" width="640" height="360" role="img" aria-label="東京の外のスラム街。遠くに東京の光が見える"></canvas>
     <div class="title" id="title">
       <h2>NEON GATE</h2>
       <p>脳のスペックで、住める場所が決まる街。</p>
@@ -206,13 +209,14 @@ button{font:inherit;color:inherit;cursor:pointer}
     <div class="keys">
       <button class="kbtn" id="kL" type="button" aria-label="左へ歩く">◀</button>
       <button class="kbtn" id="kR" type="button" aria-label="右へ歩く">▶</button>
+      <button class="kbtn run" id="kRun" type="button" aria-pressed="false" aria-label="走る（押すたびに切り替え）">走る</button>
     </div>
-    <span class="hint">キーボード：← → で移動 ／ Space・Enter で話す</span>
+    <span class="hint">キーボード：← → で移動（Shift で走る）／ Space・Enter で話す</span>
     <button class="kbtn act" id="kA" type="button">話す</button>
   </div>
 </div>
 
-<script src="sound.js?v=0.7"></script>
+<script src="sound.js?v=0.8"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -264,13 +268,17 @@ const IMP_LV=[{price:400,spec:4,flesh:10},{price:800,spec:3,flesh:10},{price:140
 const impLv=id=>clamp(Math.floor(+(S.imp&&S.imp[id])||0),0,IMP_MAX);
 const totalLv=()=>IMPLANTS.reduce((n,m)=>n+impLv(m.id),0);
 const sumLv=(id,k)=>IMP_LV.slice(0,impLv(id)).reduce((n,x)=>n+x[k],0);
-const implantBonus=()=>IMPLANTS.reduce((n,m)=>n+sumLv(m.id,'spec'),0);
+/* 店ごとの値段と性能。層が上がるほど少し高く、少し良い部品（Lv ごとに実効 +plus）。どこで入れたかは S.impQ に記録 */
+const SHOPS={out:{who:'doc',place:'ドク・カゲロウ診療所',mult:1,plus:0,back:'診療所に戻る'},lower:{who:'tsugi',place:'鋼組の施術所',mult:1.25,plus:1,back:'施術所を出る'}};
+const priceAt=(lv,tier)=>Math.round(IMP_LV[lv].price*SHOPS[tier].mult/10)*10;
+const plusOf=id=>((S.impQ&&S.impQ[id])||[]).slice(0,impLv(id)).reduce((a,b)=>a+b,0);
+const implantBonus=()=>IMPLANTS.reduce((n,m)=>n+sumLv(m.id,'spec')+plusOf(m.id),0);
 const flesh=()=>Math.max(0,100-IMPLANTS.reduce((n,m)=>n+sumLv(m.id,'flesh'),0));
 function effective(){const o=overall(S.cur);return o?Math.round(o.avg+implantBonus()):null}
 
 /* ===== セーブ ===== */
 const KEY='neongate';
-const fresh=()=>({v:1,base:null,cur:null,scans:0,diff:'auto',mina:0,gate:0,x:36,started:false,cr:0,jobs:{},imp:{},earned:0,passed:0,snd:{bgm:0.6,se:0.8,muted:false},area:'out',reached:['out'],st:{}});
+const fresh=()=>({v:1,base:null,cur:null,scans:0,diff:'auto',mina:0,gate:0,x:36,started:false,cr:0,jobs:{},imp:{},earned:0,passed:0,snd:{bgm:0.6,se:0.8,muted:false},area:'out',reached:['out'],st:{},impQ:{}});
 let S=fresh();
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.v===1)S=Object.assign(fresh(),s)}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -302,8 +310,15 @@ const W=320,H=180,WORLD=1000,GY=148,CAMMAX=WORLD-W;
 function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
 /* スプライト */
-function sprite(rows,pal){const c=document.createElement('canvas');c.width=rows[0].length;c.height=rows.length;const g=c.getContext('2d');
-  rows.forEach((r,y)=>[...r].forEach((ch,x)=>{if(pal[ch]){g.fillStyle=pal[ch];g.fillRect(x,y,1,1)}}));return c}
+/* 文字列の地図からドット絵を作り、Scale2x で縦横2倍の細かさにする（lw・lh が元の大きさ） */
+function sprite(rows,pal){const w=rows[0].length,h=rows.length,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
+  rows.forEach((r,y)=>[...r].forEach((ch,x)=>{if(pal[ch]){g.fillStyle=pal[ch];g.fillRect(x,y,1,1)}}));
+  const src=new Uint32Array(g.getImageData(0,0,w,h).data.buffer),o=document.createElement('canvas');o.width=w*2;o.height=h*2;
+  const og=o.getContext('2d'),img=og.createImageData(w*2,h*2),dst=new Uint32Array(img.data.buffer),at=(x,y)=>x<0||y<0||x>=w||y>=h?0:src[y*w+x];
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const P=at(x,y),A=at(x,y-1),B=at(x+1,y),C=at(x-1,y),D=at(x,y+1);let e0=P,e1=P,e2=P,e3=P;
+    if(A!==D&&C!==B){if(C===A)e0=A;if(A===B)e1=B;if(D===C)e2=C;if(B===D)e3=D}
+    const i=y*2*w*2+x*2;dst[i]=e0;dst[i+1]=e1;dst[i+w*2]=e2;dst[i+w*2+1]=e3}
+  og.putImageData(img,0,0);o.lw=w;o.lh=h;return o}
 const PP={h:'#3b3554',H:'#5d5680',s:'#d9a07a',v:'#3ef2e0',j:'#27243d',c:'#3ef2e0',p:'#191828',b:'#0b0a12'};
 const P_A=sprite(["...hhhh...","..hHHHHh..",".hHhhhhHh.",".hhsssshh.",".hhsvvvvh.",".hhsssshh.","..hhsshh..",".jjjjjjjj.","jjjjcjjjjj","jjjjcjjjjj","sjjjcjjjjs","..pppppp..","..pp..pp..","..pp..pp..","..pp..pp..",".bbb..bbb."],PP);
 const P_B=sprite(["...hhhh...","..hHHHHh..",".hHhhhhHh.",".hhsssshh.",".hhsvvvvh.",".hhsssshh.","..hhsshh..",".jjjjjjjj.","jjjjcjjjjj","jjjjcjjjjj","sjjjcjjjjs","..pppppp..","..ppp.pp..",".pp....pp.",".pp....pp.","bbb....bbb"],PP);
@@ -313,6 +328,7 @@ const DOC=sprite(["...gggg....","..gggggg...","..gsssmg...","..sesrms...","..sss
 const GENJI=sprite(["...wwww...","..wwwwww..","..rrrrrr..","..ssssss..","..sesses..","..ssssss..","...smms...","..oooooo..",".oaaaaaao.","oaaaaaaaao","saaaaaaaas",".aaaaaaaa.","..aaaaaa..","..pp..pp..","..pp..pp..","..pp..pp..",".bbb..bbb."],{w:'#d8d4e0',r:'#c8323c',s:'#c98f6a',e:'#07060d',m:'#9a96a8',o:'#3a3550',a:'#e8e2d0',p:'#191828',b:'#0b0a12'});
 const RAY=sprite(["...cccc...","..cCCCCc..","..cvvvvc..","..cCCCCc..","...cccc...","....cc....","..cccccc..",".cCCccCCc.","cCccLLccCc","cCccccccCc","c.cCCCCc.c","..cccccc..","..cc..cc..","..cC..Cc..","..cc..cc..","..cC..Cc..","..cc..cc..",".ccc..ccc."],{c:'#8f97ad',C:'#d6dbe8',v:'#3ef2e0',L:'#5fb8ff'});
 const DAIMON=sprite(["...yyyy...","..yyyyyy..","..ssssss..","..sesses..","..sBBBBs..","...BBBB...",".oooooooo.","sooooooooo","sooooooooo","ss.oooo.ss","s..oooo..s","...oooo...","..oo..oo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb..bbb."],{y:'#f2c230',s:'#b9805a',e:'#07060d',B:'#3a2a22',o:'#c0662a',b:'#0b0a12'});
+const TSUGI=sprite(["..hhhhhh..",".hhhhhhhh.",".hgggghhh.",".hsssssh..",".hsesesh..",".hssssshh.","..sssss...",".wwwwwwww.","cwwwwwwwws","Cwwwrwwwws","cwwwwwwww.","..wwwwww..","..wwwwww..","..pp..pp..","..pp..pp..","..pp..pp..",".bbb..bbb."],{h:'#2a2a3a',g:'#3ef2e0',s:'#d9a07a',e:'#07060d',w:'#b8c4d0',r:'#ff4a5c',c:'#8f97ad',C:'#d6dbe8',p:'#2a2838',b:'#0b0a12'});
 /* 沈殿街の住人（人間が多く、サイボーグは少し） */
 const wk=(pal)=>sprite(["...yyyy...","..yyyyyy..","..ssssss..","..sesses..","..ssssss..","...ssss...",".tooooot..","toooooooot","toooooooot","s.oooooo.s","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb..bbb."],{s:'#c98f6a',e:'#07060d',b:'#0b0a12',...pal});
 const WK_A=wk({y:'#f2c230',o:'#2f4a7a',t:'#8a8a96'}),WK_B=wk({y:'#e85a2a',o:'#5a4a2a',t:'#6a6a74',s:'#a8704c'}),WK_C=wk({y:'#d8d4e0',o:'#3a5a3a',t:'#7a7a84',s:'#d9a07a'});
@@ -329,9 +345,9 @@ const CROWD=[
   {spr:WK_B,x0:505,x1:505,sp:0,sex:'m',dir:-1},
   {spr:WK_A,x0:480,x1:700,sp:11,sex:'m'},
   {spr:CY_A,x0:620,x1:780,sp:16,sex:'m',cy:1},
-  {spr:WK_M,x0:660,x1:660,sp:0,sex:'m',dir:-1},
+  {spr:WK_M,x0:636,x1:636,sp:0,sex:'m',dir:-1},
   {spr:WK_F,x0:700,x1:830,sp:12,sex:'f'},
-  {spr:CY_B,x0:740,x1:740,sp:0,sex:'m',cy:1,dir:-1},
+  {spr:CY_B,x0:748,x1:748,sp:0,sex:'m',cy:1,dir:-1},
   {spr:WK_B,x0:780,x1:840,sp:9,sex:'m'}
 ].map((c,i)=>({...c,x:c.x0+(c.x1-c.x0)*((i*0.37)%1),d:c.dir||(i%2?1:-1)}));
 /* 機械化した目に映る「汎用の人型」（男性・女性） */
@@ -356,16 +372,16 @@ const PUDDLES=[{x:70,w:22},{x:250,w:30},{x:520,w:26},{x:700,w:34},{x:820,w:18}];
 /* 層ごとの住人と設備 */
 const AREAS={
   out:{nm:'圏外 · 東京の外',floor:'地上 · 圏外',label:'東京の外のスラム街。遠くに東京の光が見える',
-    npcs:[{id:'mina',x:200},{id:'doc',x:462},{id:'lift',x:800},{id:'gate',x:856}]},
+    npcs:[{id:'mina',x:200},{id:'lift',x:398},{id:'doc',x:462},{id:'gate',x:856}]},
   lower:{nm:'沈殿街 · 下層区',floor:'地下1層 · 沈殿街',label:'地下の街、沈殿街。屋台の灯りと配管、ホログラム広告の切れ端',
-    npcs:[{id:'lift',x:30},{id:'genji',x:322},{id:'daimon',x:428},{id:'ray',x:590},{id:'gate',x:856}]}
+    npcs:[{id:'lift',x:30},{id:'genji',x:322},{id:'daimon',x:428},{id:'ray',x:590},{id:'tsugi',x:700},{id:'gate',x:856}]}
 };
 const AREA_ORDER=['out','lower'];
 const area=()=>AREAS[S.area]?S.area:'out';
 const following=()=>!!(S.st&&S.st.follow);
 const npcsHere=()=>AREAS[area()].npcs.filter(n=>!(n.id==='mina'&&following()));
 /* 人の見え方（知覚）に使う情報 */
-const PEOPLE={mina:{nm:'ミナ',sex:'f',age:'20代'},doc:{nm:'ドク・カゲロウ',sex:'m',age:'50代'},genji:{nm:'ゲンジ',sex:'m',age:'60代'},daimon:{nm:'ダイモン',sex:'m',age:'40代'},ray:{nm:'レイ',model:'RAY-07 ／ 運送用義体 ／ 稼働14年'}};
+const PEOPLE={mina:{nm:'ミナ',sex:'f',age:'20代'},doc:{nm:'ドク・カゲロウ',sex:'m',age:'50代'},genji:{nm:'ゲンジ',sex:'m',age:'60代'},daimon:{nm:'ダイモン',sex:'m',age:'40代'},tsugi:{nm:'ツギハギ',sex:'f',age:'40代'},ray:{nm:'レイ',model:'RAY-07 ／ 運送用義体 ／ 稼働14年'}};
 const drops=[];{const R=rng(3);for(let i=0;i<90;i++)drops.push({x:R()*W,y:R()*H,v:150+R()*90,l:2+Math.round(R()*3)})}
 /* 沈殿街：配管、店の灯り、ホログラム広告の切れ端、柱 */
 const L_SHOPS=[],L_HOLO=[],L_PIPES=[];
@@ -374,19 +390,20 @@ const L_SHOPS=[],L_HOLO=[],L_PIPES=[];
   for(let i=0;i<6;i++)L_PIPES.push({y:Math.round(4+i*5+R()*3),h:2+Math.round(R()*2),c:i%2?'#2a2036':'#221a2e'})}
 const fol={x:0,dir:1};
 
-let camX=0,player={x:S.x,dir:1,step:0,moving:false},keys={l:false,r:false};
+let camX=0,player={x:S.x,dir:1,step:0,moving:false},keys={l:false,r:false,run:false,runT:false};
+const running=()=>keys.run||keys.runT;
 let gateLight='idle',gateLightUntil=0;
 
-function draw(t){
+function draw(t){ctx.setTransform(2,0,0,2,0,0);ctx.imageSmoothingEnabled=false;
   if(area()==='lower')drawLower(t);else drawOut(t);
   const X=x=>Math.round(x-camX);
   drawPeople(t);
   perceive(t);
   /* 話しかけられる印 */
-  const n=near();if(n&&mode==='play'){const sx=X(n.x),bob=Math.round(Math.sin(t*5)*1.5),y=markY(n)+bob;
+  const n=near();if(n&&mode==='play'&&!(n.id==='mina'&&following())){const sx=X(n.x),bob=Math.round(Math.sin(t*5)*1.5),y=markY(n)+bob;
     ctx.fillStyle='#3ef2e0';ctx.fillRect(sx-3,y,7,1);ctx.fillRect(sx-2,y+1,5,1);ctx.fillRect(sx-1,y+2,3,1);ctx.fillRect(sx,y+3,1,1)}
   tagsUp()}
-const markY=n=>n.id==='gate'?84:n.id==='lift'?GY-52:n.id==='doc'?GY-26:n.id==='ray'?GY-26:n.id==='genji'?GY-25:n.id==='daimon'?GY-25:GY-22;
+const markY=n=>n.id==='gate'?84:n.id==='lift'?GY-52:n.id==='doc'?GY-26:n.id==='ray'?GY-26:n.id==='genji'?GY-25:n.id==='daimon'||n.id==='tsugi'?GY-25:GY-22;
 function drawOut(t){
   const prog=camX/CAMMAX;
   /* 空 */
@@ -401,7 +418,7 @@ function drawOut(t){
   const fo=Math.round(camX*0.15);
   for(const b of far){const sx=b.x-fo;if(sx>W||sx+b.w<0)continue;ctx.fillStyle=b.tk?'#1d1739':'#100d1e';ctx.fillRect(sx,GY-18-b.h,b.w,b.h+18);
     if(b.tk&&b.h>70){ctx.fillStyle='#ff4a5c';if(Math.floor(t*1.5+b.x)%2===0)ctx.fillRect(sx+Math.floor(b.w/2),GY-19-b.h,1,1)}}
-  for(const w of farWin){const sx=w.x-fo;if(sx<0||sx>W)continue;ctx.fillStyle=w.c;ctx.fillRect(sx,w.y,1,1)}
+  for(const w of farWin){const sx=w.x-fo;if(sx<0||sx>W)continue;ctx.fillStyle=w.c;ctx.fillRect(sx,w.y,0.5,0.5);ctx.globalAlpha=0.35;ctx.fillRect(sx+0.5,w.y,0.5,0.5);ctx.globalAlpha=1}
   /* 中景 */
   const mo=Math.round(camX*0.5);
   for(const b of mid){const sx=b.x-mo;if(sx>W||sx+b.w<0)continue;ctx.fillStyle='#0c0a16';ctx.fillRect(sx,GY-b.h,b.w,b.h);ctx.fillStyle='#1a1630';ctx.fillRect(sx,GY-b.h,b.w,1);
@@ -446,13 +463,13 @@ function drawOut(t){
     const on=!l.broken||flick(t,l.x);ctx.fillStyle=on?'#ffe2a8':'#3a3020';ctx.fillRect(sx+7,GY-50,3,2);
     if(on){ctx.fillStyle='rgba(255,210,140,.09)';ctx.beginPath();ctx.moveTo(sx+7,GY-49);ctx.lineTo(sx-10,GY);ctx.lineTo(sx+28,GY);ctx.closePath();ctx.fill()}}
 
-  /* 昇降機（ゲートの手前） */
-  drawLift(X(800),t,S.reached.includes('lower'));
+  /* 昇降機（ドクの診療所の左） */
+  drawLift(X(398),t,S.reached.includes('lower'));
   /* 澄み：水たまりに街灯の灯りが映り、暖かい光の粒が漂う */
   if(clarityLv()>=1){for(const l of LAMPS){if(l.broken)continue;const sx=X(l.x);if(sx<-30||sx>W+30)continue;ctx.fillStyle='rgba(255,214,150,.22)';ctx.fillRect(sx+2,GY+3,10,1);ctx.fillRect(sx+4,GY+5,6,1)}
     motes(t,'rgba(255,220,170,.55)')}
   /* 雨 */
-  ctx.fillStyle='rgba(160,175,255,.32)';for(const d of drops)ctx.fillRect(Math.round(d.x),Math.round(d.y),1,d.l);
+  ctx.fillStyle='rgba(160,175,255,.38)';for(const d of drops)ctx.fillRect(Math.round(d.x*2)/2,Math.round(d.y*2)/2,0.5,d.l);
 }
 function motes(t,col){ctx.fillStyle=col;for(let i=0;i<14;i++){const x=((i*73+t*6*(1+i%3))%(W+20))-10,y=60+((i*37+Math.sin(t*0.7+i)*12)%70);ctx.fillRect(Math.round(x),Math.round(y),1,1)}}
 /* 昇降機の扉。lit=行き先が登録済み */
@@ -526,6 +543,15 @@ function drawLower(t){
   /* 鋼組の溜まり場（レイ） */
   {const sx=X(560);if(sx<W+10&&sx+80>-10){ctx.fillStyle='#1a1e2a';ctx.fillRect(sx,GY-14,22,14);ctx.fillRect(sx+44,GY-10,18,10);ctx.fillStyle='#5fb8ff';ctx.globalAlpha=0.6;ctx.fillRect(sx+2,GY-12,18,1);ctx.globalAlpha=1;
     ctx.fillStyle='rgba(95,184,255,.08)';ctx.fillRect(sx-6,GY-60,80,60)}}
+  /* 鋼組の施術所（ツギハギ）：青い手術灯と、壁の義体パーツ */
+  {const sx=X(672);if(sx<W+10&&sx+64>-10){
+    ctx.fillStyle='#1a1e2a';ctx.fillRect(sx,GY-70,60,70);ctx.fillStyle='#2a3448';ctx.fillRect(sx,GY-70,60,1);
+    ctx.fillStyle='rgba(95,184,255,.18)';ctx.beginPath();ctx.moveTo(sx+30,GY-62);ctx.lineTo(sx+4,GY);ctx.lineTo(sx+56,GY);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#5fb8ff';ctx.fillRect(sx+24,GY-64,12,2);
+    ctx.fillStyle='#8f97ad';for(let i=0;i<3;i++){ctx.fillRect(sx+6+i*6,GY-52,2,10);ctx.fillRect(sx+5+i*6,GY-53,4,2)}
+    ctx.fillStyle='#d6dbe8';ctx.fillRect(sx+44,GY-54,8,3);ctx.fillRect(sx+47,GY-51,2,6);
+    ctx.fillStyle='#2a3448';ctx.fillRect(sx+10,GY-12,40,4);ctx.fillRect(sx+12,GY-8,2,8);ctx.fillRect(sx+46,GY-8,2,8);
+    ctx.fillStyle=Math.floor(t*2)%2?'#3ef2e0':'#1a7a70';ctx.fillRect(sx+52,GY-24,3,2)}}
   /* 企業区へのゲート（白い光） */
   {const gx0=X(872);if(gx0<W+10){
     let lg=ctx.createLinearGradient(gx0,0,gx0+120,0);lg.addColorStop(0,'rgba(240,250,255,0.08)');lg.addColorStop(1,'rgba(240,250,255,0.85)');ctx.fillStyle=lg;ctx.fillRect(gx0+12,30,140,GY-30);
@@ -534,14 +560,14 @@ function drawLower(t){
   /* 澄み：暖かい光の粒 */
   if(cl>=1)motes(t,'rgba(255,200,150,.6)');
   /* 上の層から漏れるしずく */
-  ctx.fillStyle='rgba(170,190,230,.35)';for(let i=0;i<drops.length;i+=4){const d=drops[i];ctx.fillRect(Math.round(d.x),Math.round(d.y),1,1)}
+  ctx.fillStyle='rgba(170,190,230,.45)';for(let i=0;i<drops.length;i+=4){const d=drops[i];ctx.fillRect(Math.round(d.x*2)/2,Math.round(d.y*2)/2,0.5,1)}
   /* 地下の暗さ（奥へ行くほど明るい） */
   ctx.fillStyle=`rgba(6,3,10,${0.1*(1-prog)})`;ctx.fillRect(0,0,W,H);
 }
 /* 人物：知覚に合わせて、本来の姿か汎用の人型かを描き分ける */
 function personSprite(id,base){const m=docMood();if(m>=3&&PEOPLE[id]&&PEOPLE[id].sex)return PEOPLE[id].sex==='f'?SIL_F:SIL_M;return base}
-function drawSpr(spr,x,flip,alpha=1){const sx=Math.round(x-camX-spr.width/2),sy=GY-spr.height;if(sx>W+10||sx<-20)return;ctx.globalAlpha=alpha;
-  if(flip){ctx.save();ctx.translate(sx+spr.width,sy);ctx.scale(-1,1);ctx.drawImage(spr,0,0);ctx.restore()}else ctx.drawImage(spr,sx,sy);ctx.globalAlpha=1}
+function drawSpr(spr,x,flip,alpha=1){const sx=Math.round(x-camX-spr.lw/2),sy=GY-spr.lh;if(sx>W+10||sx<-20)return;ctx.globalAlpha=alpha;
+  if(flip){ctx.save();ctx.translate(sx+spr.lw,sy);ctx.scale(-1,1);ctx.drawImage(spr,0,0,spr.lw,spr.lh);ctx.restore()}else ctx.drawImage(spr,sx,sy,spr.lw,spr.lh);ctx.globalAlpha=1}
 function drawPeople(t){const a=area();
   if(a==='out'){if(!following())drawSpr(personSprite('mina',MINA),200,false);drawSpr(personSprite('doc',DOC),462,true);
     if(docMood()<3){ctx.fillStyle='#ff4a5c';if(Math.floor(t*1.2)%4)ctx.fillRect(Math.round(462-camX)+5,GY-15,1,1)}}
@@ -549,12 +575,12 @@ function drawPeople(t){const a=area();
     for(const c of CROWD){const alpha=c.cy?(m===0?0.55:m===1?0.75:1):1,spr=!c.cy&&m>=3?(c.sex==='f'?SIL_F:SIL_M):c.spr;drawSpr(spr,c.x,c.d<0,alpha)}
     drawSpr(personSprite('genji',GENJI),322,false);drawSpr(personSprite('daimon',DAIMON),428,false);
     /* レイ：全身義体なので、生身の目にはぼやけ、機械の目にははっきり映る */
-    const jit=m<2?Math.round(Math.sin(t*9)*1):0;drawSpr(RAY,590+jit,true,m===0?0.5:m===1?0.7:1)}
+    const jit=m<2?Math.round(Math.sin(t*9)*1):0;drawSpr(RAY,590+jit,true,m===0?0.5:m===1?0.7:1);drawSpr(personSprite('tsugi',TSUGI),700,true)}
   if(following())drawSpr(personSprite('mina',MINA),fol.x,fol.dir<0);
   const spr=player.moving&&Math.floor(player.step*8)%2?P_B:P_A;drawSpr(spr,player.x,player.dir<0)}
 /* 知覚のフィルター：機械化で色が抜け、走査線、線画になる。澄みで色が深まる */
 function perceive(t){const m=docMood(),c=clarityLv();
-  if(m>=2||c>=1){const img=ctx.getImageData(0,0,W,H),d=img.data;
+  if(m>=2||c>=1){const W=cv.width,H=cv.height,img=ctx.getImageData(0,0,W,H),d=img.data;
     if(m>=4){const lum=new Float32Array(W*H);for(let i=0,j=0;j<lum.length;i+=4,j++)lum[j]=d[i]*0.3+d[i+1]*0.59+d[i+2]*0.11;
       for(let y=0;y<H;y++)for(let x=0;x<W;x++){const j=y*W+x,i=j*4,e=Math.abs(lum[j]-(x<W-1?lum[j+1]:lum[j]))+Math.abs(lum[j]-(y<H-1?lum[j+W]:lum[j]));
         const v=e>14?Math.min(1,e/60):0;d[i]=8+54*v;d[i+1]=12+230*v;d[i+2]=16+208*v}}
@@ -571,8 +597,8 @@ function perceive(t){const m=docMood(),c=clarityLv();
 /* 機械化 2 以上：人の上にタグを出す */
 let tagsHTML='';
 function tagsUp(){const m=docMood(),el=$('#tags');let h='';
-  if(m>=2&&(mode==='play'||mode==='dialog')){const list=[];const add=(id,x,spr)=>list.push({id,x,y:GY-spr.height-3});
-    if(area()==='out'){if(!following())add('mina',200,MINA);add('doc',462,DOC)}else{add('genji',322,GENJI);add('daimon',428,DAIMON);add('ray',590,RAY)}
+  if(m>=2&&(mode==='play'||mode==='dialog')){const list=[];const add=(id,x,spr)=>list.push({id,x,y:GY-spr.lh-3});
+    if(area()==='out'){if(!following())add('mina',200,MINA);add('doc',462,DOC)}else{add('genji',322,GENJI);add('daimon',428,DAIMON);add('ray',590,RAY);add('tsugi',700,TSUGI)}
     if(following())add('mina',fol.x,MINA);
     const ids={};let n=0;
     for(const p of list){const sx=p.x-camX;if(sx<-10||sx>W+10)continue;const P=PEOPLE[p.id];let tx;
@@ -588,10 +614,10 @@ function near(){let best=null,bd=24;for(const n of npcsHere()){const d=Math.abs(
 let mode='title',last=0,titlePan=0,stepIdx=0,lastBright=-1;
 function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
   if(mode==='play'){const dx=(keys.r?1:0)-(keys.l?1:0);player.moving=dx!==0;
-    if(dx){player.dir=dx;player.x=clamp(player.x+dx*62*dt,12,846);player.step+=dt;const si=Math.floor(player.step*2.5);if(si!==stepIdx){stepIdx=si;sfx('step')}}
+    if(dx){player.dir=dx;const rn=running();player.x=clamp(player.x+dx*(rn?140:62)*dt,12,846);player.step+=dt*(rn?1.7:1);const si=Math.floor(player.step*2.5);if(si!==stepIdx){stepIdx=si;sfx('step')}}
     camX=clamp(Math.round(player.x-130),0,CAMMAX);
     if(area()==='lower')for(const c of CROWD){if(!c.sp)continue;c.x+=c.d*c.sp*dt;if(c.x>c.x1){c.x=c.x1;c.d=-1}else if(c.x<c.x0){c.x=c.x0;c.d=1}}
-    const ft=player.x-20*player.dir;fol.x+=(ft-fol.x)*Math.min(1,dt*3);if(Math.abs(ft-fol.x)>1)fol.dir=ft>fol.x?1:-1;
+    const ft=player.x-20*player.dir;fol.x+=(ft-fol.x)*Math.min(1,dt*(running()?6:3));if(Math.abs(ft-fol.x)>1)fol.dir=ft>fol.x?1:-1;
     const pr=camX/CAMMAX,br=Math.round((area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='title'){titlePan+=dt*14;camX=Math.round((Math.sin(titlePan/120)*0.5+0.5)*CAMMAX*0.55)}
   for(const d of drops){d.y+=d.v*dt;d.x-=d.v*dt*0.22;if(d.y>H){d.y=-4;d.x=Math.random()*(W+40)}if(d.x<0)d.x+=W}
@@ -611,7 +637,7 @@ function toast(msg,ms=4200){const el=$('#toast');el.textContent=msg;el.hidden=fa
 
 /* ===== 会話 ===== */
 let D=null,typeT=0;
-const WHO={me:'あなた',mina:'ミナ',doc:'ドク・カゲロウ',gate:'SENTRY',genji:'ゲンジ',daimon:'ダイモン',ray:'レイ',kago:'カゴ'};
+const WHO={me:'あなた',mina:'ミナ',doc:'ドク・カゲロウ',gate:'SENTRY',genji:'ゲンジ',daimon:'ダイモン',tsugi:'ツギハギ',ray:'レイ',kago:'カゴ'};
 /* 名前欄：機械化が進むと、名前の代わりに「女性・20代」などの識別になる */
 function whoName(id){const P=PEOPLE[id],m=docMood();if(!P)return WHO[id];
   if(P.model)return m>=2?'RAY-07':'レイ';
@@ -636,7 +662,7 @@ $('#dlg').addEventListener('click',advance);
 
 /* ===== 会話の中身 ===== */
 const L=(who,text,choices)=>({who,text,choices});
-function interact(){const n=near();if(!n)return;({mina:talkMina,doc:talkDoc,gate:area()==='lower'?talkGate2:talkGate,lift:liftTalk,genji:talkGenji,daimon:talkDaimon,ray:talkRay})[n.id]()}
+function interact(){const n=near();if(!n)return;({mina:talkMina,doc:talkDoc,gate:area()==='lower'?talkGate2:talkGate,lift:liftTalk,genji:talkGenji,daimon:talkDaimon,tsugi:talkTsugi,ray:talkRay})[n.id]()}
 function talkMina(){const o=overall(S.cur);
   if(!o){S.mina=Math.max(S.mina,1);save();return talk([L('mina','見ない顔だね。ここは圏外。東京の光が届かない場所だよ。'),L('mina','東京に入りたいなら、まず脳を測ってもらいな。この先の闇医者、ドク・カゲロウのとこ。'),L('mina','スペックがわからない奴には、仕事も回せないからさ。')])}
   let ls;
@@ -654,7 +680,7 @@ function talkDoc(){const o=overall(S.cur),rec=siteRecord();
   if(md===0)ls=first?[L('doc','インプラントが入荷した。反射、記憶、視覚、演算。Lv3まで強化できる。最初は400だ。'),L('doc','スキャンの数字は変わらんぞ。測るのはお前の脳そのものだからな。だが、ゲートの機械は拡張込みで見る。')]:[L('doc','また来たか。測り直すか、入れるか。伸びていれば数字に出る。')];
   else if(md===4)ls=DOC_TALK[4].map(t=>L('doc',t));
   else{const pool=DOC_TALK[md];ls=[L('doc',pool[Math.floor(Math.random()*pool.length)])]}
-  ls.push(L('doc','どうする？',[{label:'再スキャン',fn:scanIntro},{label:'インプラント',fn:shopPanel},{label:'結果を見る',fn:()=>resultPanel(false)},{label:'やめておく'}]));talk(ls)}
+  ls.push(L('doc','どうする？',[{label:'再スキャン',fn:scanIntro},{label:'インプラント',fn:()=>shopPanel('out')},{label:'結果を見る',fn:()=>resultPanel(false)},{label:'やめておく'}]));talk(ls)}
 /* ドクの心情：0=生身100%（皮肉っぽい商売人）→ 4=生身0%（変わっちまったな） */
 const docMood=()=>{const f=flesh();return f>=100?0:f>=70?1:f>=40?2:f>0?3:4};
 const DOC_TALK={
@@ -663,28 +689,41 @@ const DOC_TALK={
   3:['……俺はこうやって、何人も生身を削ってきた。','お前、ここに初めて来たときの自分を覚えてるか。'],
   4:['……変わっちまったな。','初めて来たときの、あの旧式の匂い。もう、どこにもねえ。']
 };
-function shopPanel(){
-  openPanel(`<div class="eyebrow">IMPLANT · ドク・カゲロウ診療所</div><h3>インプラント</h3>
-  <p class="muted">部位ごとに Lv3 まで強化できる。Lv1 400 CR（実効 +4・生身率 -10%）／Lv2 800 CR（+3・-10%）／Lv3 1400 CR（+2・-5%）。スキャン値には入らない。</p>
+function shopPanel(tier){tier=SHOPS[tier]?tier:area();const sh=SHOPS[tier],pr=lv=>priceAt(lv,tier);
+  openPanel(`<div class="eyebrow">IMPLANT · ${sh.place}</div><h3>インプラント</h3>
+  <p class="muted">部位ごとに Lv3 まで強化できる。Lv1 ${pr(0)} CR（実効 +${IMP_LV[0].spec+sh.plus}・生身率 -10%）／Lv2 ${pr(1)} CR（+${IMP_LV[1].spec+sh.plus}・-10%）／Lv3 ${pr(2)} CR（+${IMP_LV[2].spec+sh.plus}・-5%）。${sh.plus?`ドクの店より少し高いが、部品が良い（Lv ごとに実効 +${sh.plus}）。`:''}スキャン値には入らない。</p>
   <div class="stats"><div class="stat"><span>所持クレジット</span><b>${S.cr.toLocaleString()} CR</b></div><div class="stat"><span>生身率</span><b>${flesh()}%</b></div><div class="stat"><span>実効スペック</span><b>${effective()??'—'}</b></div></div>
-  <div class="jobs">${IMPLANTS.map(m=>{const lv=impLv(m.id),nx=IMP_LV[lv],poor=nx&&S.cr<nx.price;
-    const act=!nx?'<span class="tag">最大</span>':`<button class="nbtn" type="button" data-b="${m.id}"${poor?' disabled':''}>${lv?`Lv${lv+1} に強化`:'入れる'} · ${nx.price}</button>`;
-    return `<div class="job"><span class="tag">${TESTS.find(t=>t.id===m.stat).tag}</span><span class="nm">${m.nm}<span class="pips">${'■'.repeat(lv)}${'□'.repeat(IMP_MAX-lv)}</span></span><span class="act">${act}</span><span class="ex">${m.desc}<br>${lv?`いま Lv${lv}：${m.eff(lv)}`:'未導入'}${nx?`<br>次 Lv${lv+1}：${m.eff(lv+1)} · 実効 +${nx.spec} · 生身率 -${nx.flesh}%`:''}</span></div>`}).join('')}</div>
-  <div class="prow"><button class="nbtn ghost" id="back" type="button">診療所に戻る</button></div>`);
+  <div class="jobs">${IMPLANTS.map(m=>{const lv=impLv(m.id),nx=IMP_LV[lv],price=nx&&pr(lv),poor=nx&&S.cr<price;
+    const act=!nx?'<span class="tag">最大</span>':`<button class="nbtn" type="button" data-b="${m.id}"${poor?' disabled':''}>${lv?`Lv${lv+1} に強化`:'入れる'} · ${price}</button>`;
+    return `<div class="job"><span class="tag">${TESTS.find(t=>t.id===m.stat).tag}</span><span class="nm">${m.nm}<span class="pips">${'■'.repeat(lv)}${'□'.repeat(IMP_MAX-lv)}</span></span><span class="act">${act}</span><span class="ex">${m.desc}<br>${lv?`いま Lv${lv}：${m.eff(lv)}`:'未導入'}${nx?`<br>次 Lv${lv+1}：${m.eff(lv+1)} · 実効 +${nx.spec+sh.plus} · 生身率 -${nx.flesh}%`:''}</span></div>`}).join('')}</div>
+  <div class="prow"><button class="nbtn ghost" id="back" type="button">${sh.back}</button></div>`);
   const pn=$('#panel');
-  pn.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>closePanel(()=>buyTalk(b.dataset.b)));
+  pn.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>closePanel(()=>tier==='out'?buyTalk(b.dataset.b):tsugiBuyTalk(b.dataset.b)));
   $('#back').onclick=()=>closePanel();(pn.querySelector('[data-b]:not([disabled])')||$('#back')).focus()}
 /* 購入前のドクのひとこと（生身率が低いほど、ためらいがにじむ） */
-function buyTalk(id){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IMP_LV[lv];if(!nx||S.cr<nx.price)return shopPanel();
-  const f=flesh(),yes=t=>({label:`入れる（${nx.price} CR）`,fn:()=>doBuy(id,t)}),no=fn=>({label:'やめておく',fn});
+function buyTalk(id){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IMP_LV[lv],price=nx&&priceAt(lv,'out');if(!nx||S.cr<price)return shopPanel('out');
+  const f=flesh(),yes=t=>({label:`入れる（${price} CR）`,fn:()=>doBuy(id,t,'out')}),no=fn=>({label:'やめておく',fn});
   if(f>=100)return talk([L('doc','待て。'),L('doc','一つでも入れたら、もう完全な生身には戻れねえ。脳に金属を通すってのは、そういうことだ。'),
     L('doc','……それでも入れるか？',[yes(['……終わりだ。しばらく頭の奥で音が鳴る。じきに慣れる。']),no(()=>talk([L('doc','それでいい。迷ううちは、まだ生身でいろ。')]))])]);
-  if(f-nx.flesh<=0)return talk([L('doc','これで最後だ。……もう、お前の中に生身は残らねえ。',[yes(['……終わりだ。','……変わっちまったな。']),no(shopPanel)])]);
-  if(f>=70)return talk([L('doc',`${m.nm}${lv?`の Lv${lv+1}`:''}か。${nx.price}だ。`,[yes(['毎度。']),no(shopPanel)])]);
-  talk([L('doc',f>=40?'……本当にいいんだな。':'本当にいいのか。……いや、聞くだけ野暮か。',[yes(['……終わりだ。']),no(shopPanel)])])}
-function doBuy(id,after){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IMP_LV[lv];if(!nx||S.cr<nx.price)return shopPanel();
-  S.cr-=nx.price;S.imp={...S.imp,[id]:lv+1};save();hud();sfx('implant');sndApply();
-  talk(after.map(t=>L('doc',t)),()=>{toast(`${m.nm} Lv${lv+1}：実効スペック +${nx.spec}／生身率 ${flesh()}%`);shopPanel()})}
+  if(f-nx.flesh<=0)return talk([L('doc','これで最後だ。……もう、お前の中に生身は残らねえ。',[yes(['……終わりだ。','……変わっちまったな。']),no(()=>shopPanel('out'))])]);
+  if(f>=70)return talk([L('doc',`${m.nm}${lv?`の Lv${lv+1}`:''}か。${price}だ。`,[yes(['毎度。']),no(()=>shopPanel('out'))])]);
+  talk([L('doc',f>=40?'……本当にいいんだな。':'本当にいいのか。……いや、聞くだけ野暮か。',[yes(['……終わりだ。']),no(()=>shopPanel('out'))])])}
+function doBuy(id,after,tier='out'){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IMP_LV[lv],sh=SHOPS[tier],price=nx&&priceAt(lv,tier);if(!nx||S.cr<price)return shopPanel(tier);
+  const q=((S.impQ&&S.impQ[id])||[]).slice(0,lv);q[lv]=sh.plus;
+  S.cr-=price;S.imp={...S.imp,[id]:lv+1};S.impQ={...S.impQ,[id]:q};save();hud();sfx('implant');sndApply();
+  talk(after.map(t=>L(sh.who,t)),()=>{toast(`${m.nm} Lv${lv+1}：実効スペック +${nx.spec+sh.plus}／生身率 ${flesh()}%`);shopPanel(tier)})}
+/* 鋼組の施術師ツギハギ（片腕が義体。機械寄りの客には親しげ） */
+function talkTsugi(){const fc=fac(),first=!S.st.tsugi,ch=[{label:'インプラント',fn:()=>shopPanel('lower')},{label:'やめておく'}];
+  if(first){S.st={...S.st,tsugi:1};save()}
+  const head=fc==='open'?(first?[L('tsugi','あら、生身のお客さん。この街じゃ、珍しくもないけど。'),L('tsugi','ここは鋼組の施術所。ドクの爺さんより、ちょっと高くて、ちょっといい部品を入れてる。')]:[L('tsugi','生身のまま来るのね。……まあ、見るだけならタダよ。')])
+    :fc==='mid'?(first?[L('tsugi','半分こっち側ね。いい選択よ。'),L('tsugi','上の層の部品は、圏外のより少し高い。そのぶん、よく効く。')]:[L('tsugi','その継ぎ目、ちゃんと馴染んでる？')])
+    :(first?[L('tsugi','おかえり、同類さん。'),L('tsugi','この腕も、半分は自分で継いだの。だから「ツギハギ」。')]:[L('tsugi','調子はどう？ 換えたいところがあれば、言って。')]);
+  talk([...head,L('tsugi','どうする？',ch)])}
+function tsugiBuyTalk(id){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IMP_LV[lv],price=nx&&priceAt(lv,'lower');if(!nx||S.cr<price)return shopPanel('lower');
+  const f=flesh(),yes=t=>({label:`入れる（${price} CR）`,fn:()=>doBuy(id,t,'lower')}),no={label:'やめておく',fn:()=>shopPanel('lower')};
+  if(f>=100)return talk([L('tsugi','ドクの爺さんじゃなくて、あたしでいいの？'),L('tsugi','最初の一本は、もう戻れないよ。',[yes(['はい、おしまい。上物でしょ？','……ようこそ、こっち側へ。']),no])]);
+  if(f-nx.flesh<=0)return talk([L('tsugi','これで全部、こっち側ね。……いいのね？',[yes(['おしまい。','……ようこそ。もう、何も怖くないでしょ。']),no])]);
+  talk([L('tsugi',`${m.nm}${lv?`の Lv${lv+1}`:''}ね。${price}。いい部品よ。`,[yes(['はい、おしまい。上物でしょ？']),no])])}
 function talkGate(){const o=overall(S.cur);
   if(!o){gateLight='deny';gateLightUntil=performance.now()+2500;sfx('deny');return talk([L('gate','未登録の脳を検出。ブレインスキャンの記録がありません。'),L('gate','通行を許可できません。')])}
   const cur=effective(),req=gateReq();
@@ -706,7 +745,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
-  <p class="muted">試作版 v0.7 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
+  <p class="muted">試作版 v0.8 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -719,7 +758,7 @@ function minaJoin(){S.st={...S.st,join:1,follow:1};save();fol.x=player.x-40;fol.
     L('mina','あんたが通るのを見て、決めた。……一緒に行かせて。')],()=>travel('lower','gate'))}
 function travel(to,via){if(!AREAS[to])return;mode='fade';$('#fade').classList.add('on');keys.l=keys.r=false;
   setTimeout(()=>{S.area=to;if(!S.reached.includes(to))S.reached=[...S.reached,to];
-    player.x=to==='lower'?(via==='lift'?54:96):(via==='lift'?778:820);player.dir=1;fol.x=player.x-24;fol.dir=1;
+    player.x=to==='lower'?(via==='lift'?54:96):(via==='lift'?398:820);player.dir=1;fol.x=player.x-24;fol.dir=1;
     camX=clamp(Math.round(player.x-130),0,CAMMAX);S.x=Math.round(player.x);save();hud();sndApply();
     $('#fade').classList.remove('on');setTimeout(()=>{mode='play';arrive(to)},380)},380)}
 function arrive(to){if(to==='lower'&&!S.st.arrive){S.st={...S.st,arrive:1};save();
@@ -1001,9 +1040,9 @@ function jobDone(id,d,r){clearTimers();const j=jobOf(id),cr=Math.round(r.raw*MUL
 const DRONE=sprite(["r.......r","rrr...rrr",".ggggggg.","..gGeGg..","...g.g..."],{r:'#5c6378',g:'#2c2750',G:'#8e8aa6',e:'#ff4a5c'});
 function runDrone(d){const P=jp('drone',d),DUR=30,NL=5,CW=200,CH=112,LW=CW/NL,BEAM=0.22;
   openPanel(`<div class="hud"><span>CPU · ドローン回避 · 回避 <b id="sc">0</b></span><span id="sh"></span></div><div class="timer"><i id="tbar"></i></div>
-  <canvas class="mcv" id="dcv" width="${CW}" height="${CH}" role="img" aria-label="5列の道。上から警備ドローンが照準を合わせてくる"></canvas>
+  <canvas class="mcv" id="dcv" width="${CW*2}" height="${CH*2}" role="img" aria-label="5列の道。上から警備ドローンが照準を合わせてくる"></canvas>
   <div class="prow" style="justify-content:space-between"><button class="kbtn" id="dl" type="button" aria-label="左の列へ">◀</button><span class="note">赤い線の列から逃げろ</span><button class="kbtn" id="dr" type="button" aria-label="右の列へ">▶</button></div>`);
-  const c=$('#dcv').getContext('2d');c.imageSmoothingEnabled=false;
+  const c=$('#dcv').getContext('2d');c.setTransform(2,0,0,2,0,0);c.imageSmoothingEnabled=false;
   let lane=2,vx=lane*LW+LW/2,t=0,last=0,alive=true,shields=P.sh,inv=0,hitFx=0,dodged=0,nextSpawn=1,hz=[];
   offs.push(()=>alive=false);
   const shUp=()=>$('#sh').textContent='シールド '+'◆'.repeat(Math.max(0,shields))+'◇'.repeat(P.sh-Math.max(0,shields));shUp();
@@ -1037,8 +1076,8 @@ function runDrone(d){const P=jp('drone',d),DUR=30,NL=5,CW=200,CH=112,LW=CW/NL,BE
       if(t<h.fire){const k=(t-h.t0)/(h.fire-h.t0);if(Math.floor(t*(6+k*16))%2===0){c.fillStyle=`rgba(255,74,92,${0.3+0.5*k})`;c.fillRect(cx-1,9,2,CH-9)}}
       else if(t<h.fire+BEAM){c.fillStyle='rgba(255,61,139,.4)';c.fillRect(cx-6,6,12,CH);c.fillStyle='#ffd6ea';c.fillRect(cx-2,6,4,CH)}
       const dy=t<h.fire+BEAM?Math.min(2,-6+(t-h.t0)*30):2-(t-h.fire-BEAM)*40;
-      c.drawImage(DRONE,Math.round(cx-4),Math.round(dy))}
-    if(t>=inv||Math.floor(t*14)%2){const spr=Math.floor(t*8)%2?P_B:P_A;c.drawImage(spr,Math.round(vx-5),CH-19)}
+      c.drawImage(DRONE,Math.round(cx-4),Math.round(dy),DRONE.lw,DRONE.lh)}
+    if(t>=inv||Math.floor(t*14)%2){const spr=Math.floor(t*8)%2?P_B:P_A;c.drawImage(spr,Math.round(vx-5),CH-19,spr.lw,spr.lh)}
     if(t<hitFx){c.fillStyle='rgba(255,74,92,.35)';c.fillRect(0,0,CW,CH)}}
   draw();requestAnimationFrame(ts=>{last=ts;requestAnimationFrame(step)})}
 
@@ -1112,16 +1151,17 @@ function runLock(d){const P=jp('lock',d);let tum=0,locks=0,total=0,ans=0,end=per
 
 /* ===== 入力 ===== */
 const inField=e=>/INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
-addEventListener('keydown',e=>{if(inField(e))return;const k=e.key;
+addEventListener('keydown',e=>{if(e.key==='Shift')keys.run=true;if(inField(e))return;const k=e.key;
   if(mode==='play'){if(k==='ArrowLeft'||k==='a'||k==='A'){keys.l=true;e.preventDefault()}else if(k==='ArrowRight'||k==='d'||k==='D'){keys.r=true;e.preventDefault()}
     else if(k===' '||k==='Enter'||k==='z'||k==='Z'||k==='ArrowUp'){if(e.target.tagName==='BUTTON'&&e.target.id!=='kA')return;e.preventDefault();if(!e.repeat)interact()}}
   else if(mode==='dialog'){if(k==='ArrowLeft'||k==='ArrowUp'){e.preventDefault();moveSel(-1)}else if(k==='ArrowRight'||k==='ArrowDown'){e.preventDefault();moveSel(1)}
     else if(k===' '||k==='Enter'||k==='z'||k==='Z'){e.preventDefault();if(e.repeat)return;if(D&&!D.typing&&D.lines[D.i].choices)pick(D.sel);else advance()}}
   else if(mode==='title'&&(k==='Enter'||k===' ')&&e.target.tagName!=='BUTTON'){e.preventDefault();startGame()}});
-addEventListener('keyup',e=>{const k=e.key;if(k==='ArrowLeft'||k==='a'||k==='A')keys.l=false;if(k==='ArrowRight'||k==='d'||k==='D')keys.r=false});
-addEventListener('blur',()=>{keys.l=keys.r=false});
+addEventListener('keyup',e=>{const k=e.key;if(k==='Shift')keys.run=false;if(k==='ArrowLeft'||k==='a'||k==='A')keys.l=false;if(k==='ArrowRight'||k==='d'||k==='D')keys.r=false});
+addEventListener('blur',()=>{keys.l=keys.r=keys.run=false});
 function hold(el,key){const on=e=>{e.preventDefault();keys[key]=true},off=()=>keys[key]=false;el.addEventListener('pointerdown',on);['pointerup','pointerleave','pointercancel'].forEach(t=>el.addEventListener(t,off));el.addEventListener('contextmenu',e=>e.preventDefault())}
 hold($('#kL'),'l');hold($('#kR'),'r');
+$('#kRun').addEventListener('click',e=>{keys.runT=!keys.runT;e.currentTarget.setAttribute('aria-pressed',keys.runT)});
 $('#kA').addEventListener('click',()=>{if(mode==='play')interact();else if(mode==='dialog'){if(D&&!D.typing&&D.lines[D.i].choices)pick(D.sel);else advance()}});
 cv.addEventListener('pointerdown',()=>{if(mode==='dialog')advance()});
 
