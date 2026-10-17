@@ -36,6 +36,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 .chip.area{color:var(--amber);border-color:rgba(255,181,71,.35)}
 .chip.spec{color:var(--cyan);border-color:rgba(62,242,224,.35)}
 .chip.cr{color:var(--pink);border-color:rgba(255,61,139,.35)}
+.chip.body{display:inline-flex;align-items:center;gap:6px}
+.chip.body .f{color:var(--amber)} .chip.body .m{color:var(--cyan)}
+.gauge{display:inline-flex;width:72px;height:6px;background:#0b2a2a;border:1px solid var(--line)}
+.gauge b{display:block;height:100%;background:var(--amber);transition:width .4s}
+.gauge i{display:block;height:100%;flex:1;background:repeating-linear-gradient(90deg,var(--cyan) 0 3px,#1a9e94 3px 4px)}
 .bar .sp{flex:1}
 .bar{position:relative}
 .sndpop{position:absolute;right:0;top:calc(100% + 6px);z-index:20;width:min(340px,100%);background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--cyan);padding:12px 14px;display:grid;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
@@ -145,6 +150,22 @@ button{font:inherit;color:inherit;cursor:pointer}
 .vol{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-family:var(--f-data);font-size:13px}
 .vol label{display:flex;align-items:center;gap:8px}
 .vol input{accent-color:var(--cyan);width:140px}
+.track{position:relative;height:34px;border:1px solid var(--line);background:var(--panel2);max-width:520px;width:100%;margin:0 auto}
+.track .zone{position:absolute;top:0;bottom:0;background:rgba(62,242,224,.28);border-left:1px solid var(--cyan);border-right:1px solid var(--cyan)}
+.track .mark{position:absolute;top:-4px;bottom:-4px;width:4px;margin-left:-2px;background:var(--amber);box-shadow:0 0 10px rgba(255,181,71,.7)}
+.track.hit{box-shadow:0 0 0 2px var(--cyan)} .track.miss{box-shadow:0 0 0 2px var(--red)}
+.seq{display:flex;gap:6px;justify-content:center;min-height:52px;flex-wrap:wrap}
+.seq span{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid var(--line);background:var(--panel2)}
+.syms{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-width:420px;width:100%;margin:0 auto}
+.syms button{aspect-ratio:1;font-size:26px;background:var(--panel2);border:1px solid var(--line);border-radius:2px}
+.belt{position:relative;height:70px;overflow:hidden;border-top:2px solid #3a3438;border-bottom:2px solid #3a3438;background:repeating-linear-gradient(90deg,#1a1618 0 10px,#221d20 10px 12px)}
+.belt .row{position:absolute;top:8px;left:0;display:flex;gap:10px;will-change:transform}
+.belt button{width:50px;height:50px;border-radius:50%;border:3px solid #0b0a12;padding:0;background:var(--c);box-shadow:inset 0 0 0 6px rgba(0,0,0,.18)}
+.belt button::after{content:'';display:block;width:14px;height:14px;margin:auto;border-radius:50%;background:#0b0a12}
+.belt button.glow{box-shadow:0 0 0 3px var(--cyan),0 0 16px rgba(62,242,224,.8)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:360px;width:100%;margin:0 auto}
+.tiles button{padding:14px 0;font-family:var(--f-data);font-size:26px;font-weight:600;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:2px}
+.tiles button.on{background:var(--amber);color:var(--void);border-color:var(--amber)}
 .earn{font-family:var(--f-data);font-size:clamp(30px,7vw,46px);font-weight:600;color:var(--pink);margin:0;text-shadow:0 0 12px rgba(255,61,139,.45)}
 
 .sheet{display:grid;gap:8px}
@@ -178,13 +199,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.8 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.9 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
     <span class="chip area" id="areaChip">圏外 · 東京の外</span>
     <span class="chip spec" id="specChip">未スキャン</span>
     <span class="chip cr" id="crChip">0 CR</span>
+    <span class="chip body" id="bodyChip" role="img" aria-label="生身率 100%、サイボーグ率 0%"><span class="f" id="bodyF">生身 100%</span><span class="gauge"><b id="bodyBar" style="width:100%"></b><i></i></span><span class="m" id="bodyM">機械 0%</span></span>
     <span class="sp"></span>
     <button class="tbtn" id="sndBtn" type="button" aria-expanded="false" aria-controls="sndPop">音量</button>
     <button class="tbtn" id="setBtn" type="button">設定</button>
@@ -216,7 +238,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.8"></script>
+<script src="sound.js?v=0.9"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -259,17 +281,17 @@ function gateReq(){const b=overall(S.base);if(!b)return null;return Math.min(100
 /* インプラント：スキャン値には入らず、実効スペックと仕事にだけ効く。部位ごとに Lv1〜3 */
 const GLOW=0.3;
 const IMPLANTS=[
-  {id:'reflex',stat:'cpu',job:'drone',nm:'反射ブースター',desc:'脊髄に入れる信号増幅器。体が考えるより先に動く。',eff:lv=>`ドローン回避：シールド +${lv}`},
-  {id:'buffer',stat:'ram',job:'pass',nm:'記憶バッファ',desc:'海馬の横に差す小さな外部記憶。見たものをもう一度呼び出せる。',eff:lv=>`パスコード侵入：見直せる回数 +${lv}`},
-  {id:'optic',stat:'gpu',job:'cam',nm:'光学センサー',desc:'網膜に重ねる色解析レンズ。標的を一瞬だけ光らせる。',eff:lv=>`監視カメラ解析：標的が ${Math.round(lv*GLOW*10)/10} 秒光る`},
-  {id:'copro',stat:'alu',job:'lock',nm:'演算コプロセッサ',desc:'前頭葉に並べる計算チップ。暗算を肩代わりする。',eff:lv=>`暗号ロック解除：制限時間 +${lv*5} 秒`}
+  {id:'reflex',stat:'cpu',job:'drone',nm:'反射ブースター',desc:'脊髄に入れる信号増幅器。体が考えるより先に動く。',eff:lv=>`ドローン回避・アーム停止：ミスできる回数 +${lv}`},
+  {id:'buffer',stat:'ram',job:'pass',nm:'記憶バッファ',desc:'海馬の横に差す小さな外部記憶。見たものをもう一度呼び出せる。',eff:lv=>`パスコード侵入・工程手順：見直せる回数 +${lv}`},
+  {id:'optic',stat:'gpu',job:'cam',nm:'光学センサー',desc:'網膜に重ねる色解析レンズ。標的を一瞬だけ光らせる。',eff:lv=>`監視カメラ解析・不良品検査：標的が ${Math.round(lv*GLOW*10)/10} 秒光る`},
+  {id:'copro',stat:'alu',job:'lock',nm:'演算コプロセッサ',desc:'前頭葉に並べる計算チップ。暗算を肩代わりする。',eff:lv=>`暗号ロック解除・配合計算：制限時間 +${lv*5} 秒`}
 ];
 const IMP_LV=[{price:400,spec:4,flesh:10},{price:800,spec:3,flesh:10},{price:1400,spec:2,flesh:5}],IMP_MAX=IMP_LV.length;
 const impLv=id=>clamp(Math.floor(+(S.imp&&S.imp[id])||0),0,IMP_MAX);
 const totalLv=()=>IMPLANTS.reduce((n,m)=>n+impLv(m.id),0);
 const sumLv=(id,k)=>IMP_LV.slice(0,impLv(id)).reduce((n,x)=>n+x[k],0);
 /* 店ごとの値段と性能。層が上がるほど少し高く、少し良い部品（Lv ごとに実効 +plus）。どこで入れたかは S.impQ に記録 */
-const SHOPS={out:{who:'doc',place:'ドク・カゲロウ診療所',mult:1,plus:0,back:'診療所に戻る'},lower:{who:'tsugi',place:'鋼組の施術所',mult:1.25,plus:1,back:'施術所を出る'}};
+const SHOPS={out:{who:'doc',place:'ドク・カゲロウ診療所',mult:1,plus:0,back:'診療所に戻る',note:'部品は、沈殿街のツギハギが改良し終えた型落ちを譲ってもらったもの。'},lower:{who:'tsugi',place:'鋼組の施術所',mult:1.25,plus:1,back:'施術所を出る',note:'上の層から落ちてきた廃棄品を、ツギハギが拾って改良した部品。'}};
 const priceAt=(lv,tier)=>Math.round(IMP_LV[lv].price*SHOPS[tier].mult/10)*10;
 const plusOf=id=>((S.impQ&&S.impQ[id])||[]).slice(0,impLv(id)).reduce((a,b)=>a+b,0);
 const implantBonus=()=>IMPLANTS.reduce((n,m)=>n+sumLv(m.id,'spec')+plusOf(m.id),0);
@@ -301,7 +323,7 @@ function sndStatus(){if(!SND)return 'sound.js を読み込めていません（i
 if(!SND)console.warn('NEON GATE: sound.js が読み込めなかったため、音なしで動きます');
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;
   if(b.dataset.se!==undefined){if(b.dataset.se)sfx(b.dataset.se);return}
-  if(b.closest('#kp,#fd,.grid,#dlgCh,form,.keys')||b.matches('#pad,#dl,#dr,#kA'))return;sfx('ui')});
+  if(b.closest('#kp,#fd,.grid,#dlgCh,form,.keys,#sy,#bt,#tl')||b.matches('#pad,#dl,#dr,#kA,#stop'))return;sfx('ui')});
 function siteRecord(){try{const r=JSON.parse(localStorage.getItem('brainspec')||'null');if(r&&TESTS.every(t=>typeof r[t.id]==='number'))return{cpu:r.cpu,ram:r.ram,gpu:r.gpu,alu:r.alu}}catch(e){}return null}
 
 /* ===== 画面 ===== */
@@ -310,6 +332,9 @@ const W=320,H=180,WORLD=1000,GY=148,CAMMAX=WORLD-W;
 function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
 /* スプライト */
+/* 主要キャラは2倍の大きさで手描きした地図（lw・lh は半分。そのまま1:1で描く） */
+function spriteHi(rows,pal){const w=rows[0].length,h=rows.length,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
+  rows.forEach((r,y)=>[...r].forEach((ch,x)=>{if(pal[ch]){g.fillStyle=pal[ch];g.fillRect(x,y,1,1)}}));c.lw=w/2;c.lh=h/2;return c}
 /* 文字列の地図からドット絵を作り、Scale2x で縦横2倍の細かさにする（lw・lh が元の大きさ） */
 function sprite(rows,pal){const w=rows[0].length,h=rows.length,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
   rows.forEach((r,y)=>[...r].forEach((ch,x)=>{if(pal[ch]){g.fillStyle=pal[ch];g.fillRect(x,y,1,1)}}));
@@ -320,15 +345,15 @@ function sprite(rows,pal){const w=rows[0].length,h=rows.length,c=document.create
     const i=y*2*w*2+x*2;dst[i]=e0;dst[i+1]=e1;dst[i+w*2]=e2;dst[i+w*2+1]=e3}
   og.putImageData(img,0,0);o.lw=w;o.lh=h;return o}
 const PP={h:'#3b3554',H:'#5d5680',s:'#d9a07a',v:'#3ef2e0',j:'#27243d',c:'#3ef2e0',p:'#191828',b:'#0b0a12'};
-const P_A=sprite(["...hhhh...","..hHHHHh..",".hHhhhhHh.",".hhsssshh.",".hhsvvvvh.",".hhsssshh.","..hhsshh..",".jjjjjjjj.","jjjjcjjjjj","jjjjcjjjjj","sjjjcjjjjs","..pppppp..","..pp..pp..","..pp..pp..","..pp..pp..",".bbb..bbb."],PP);
-const P_B=sprite(["...hhhh...","..hHHHHh..",".hHhhhhHh.",".hhsssshh.",".hhsvvvvh.",".hhsssshh.","..hhsshh..",".jjjjjjjj.","jjjjcjjjjj","jjjjcjjjjj","sjjjcjjjjs","..pppppp..","..ppp.pp..",".pp....pp.",".pp....pp.","bbb....bbb"],PP);
-const MINA=sprite(["..cccc...",".ccCCcc..",".cssssc..",".csesec..",".cssssc..","..ssss...",".kkkkkk..","kkKkkKkk.","skkkkkks.",".kkkkkk..","..pppp...","..p..p...","..p..p...",".bb..bb.."],{c:'#3ef2e0',C:'#1a9e94',s:'#d9a07a',e:'#07060d',k:'#ff3d8b',K:'#a3245a',p:'#191828',b:'#0b0a12'});
-const DOC=sprite(["...gggg....","..gggggg...","..gsssmg...","..sesrms...","..sssmms...","...ssss....","..wwwwwww..",".wwWwwwWww.",".wwWwmwWww.",".swWwwwWws.","..wWwwwWw..","..wWwwwWw..","..wWwwwWw..","..wwpppww..","...pp.pp...","...pp.pp...","...pp.pp...","..bbb.bbb.."],{g:'#8a8aa0',s:'#d9a07a',e:'#07060d',r:'#ff4a5c',m:'#5c6378',w:'#c9c6d8',W:'#8e8aa6',p:'#191828',b:'#0b0a12'});
+const P_A=spriteHi(["......oooooooo......", "....ooHHHHHHhhoo....", "...oHHHhhhhhhhhhdo..", "..oHHhhhhhhhhhhhhdo.", "..oHhhhoooooooohhdo.", "..ohhhossssssssohdo.", "..ohhosVVvvvvvvsohdo", "..ohhosvvvvvvvvsohdo", "..ohhossssssssssohdo", "..odhhosssSSssshhdo.", "...odhhoossssoohdo..", "....oddhhoooohhdo...", "...ooJJJJjjjjjjjoo..", "..oJJJjjjjcjjjjjjjo.", ".oJJjjjjjjcjjjjjjjjo", ".oJjjojjjjcjjjjojjjo", ".ojjjojjjjcjjjjojjjo", ".ojjjojjjjcjjjjojjjo", ".osssojjjjcjjjjosSso", ".oSSoojjjjcjjjjooSSo", "..oo.ojjjjjjjjjjo...", ".....oPPPPpppppppo..", ".....oPPpppppppppo..", ".....oPpppoopppppo..", ".....oPppo..oPpppo..", ".....oPppo..oPpppo..", ".....oPppo..oPpppo..", ".....oPppo..oPpppo..", "....okkkko..okkkkko.", "...okkkkko..okkkkkko", "...oKKKKKo..oKKKKKKo", "...ooooooo..oooooooo"],{"o": "#0b0a12", "H": "#6a6290", "h": "#3b3554", "d": "#262140", "s": "#e0a882", "S": "#b07a58", "v": "#3ef2e0", "V": "#c8fff8", "J": "#3c3860", "j": "#27243d", "c": "#3ef2e0", "P": "#2e2c46", "p": "#1b1a2c", "k": "#1a1824", "K": "#3a3550"});
+const P_B=spriteHi(["......oooooooo......", "....ooHHHHHHhhoo....", "...oHHHhhhhhhhhhdo..", "..oHHhhhhhhhhhhhhdo.", "..oHhhhoooooooohhdo.", "..ohhhossssssssohdo.", "..ohhosVVvvvvvvsohdo", "..ohhosvvvvvvvvsohdo", "..ohhossssssssssohdo", "..odhhosssSSssshhdo.", "...odhhoossssoohdo..", "....oddhhoooohhdo...", "...ooJJJJjjjjjjjoo..", "..oJJJjjjjcjjjjjjjo.", ".oJJjjjjjjcjjjjjjjjo", ".oJjjojjjjcjjjjojjjo", ".ojjjojjjjcjjjjojjjo", ".ojjjojjjjcjjjjojjjo", ".osssojjjjcjjjjosSso", ".oSSoojjjjcjjjjooSSo", "..oo.ojjjjjjjjjjo...", ".....oPPPPpppppppo..", "....oPPpppppppppppo.", "...oPppppoooopppppo.", "..oPppppo...oPppppo.", ".oPpppo......oPpppo.", ".oPppo........oPppo.", "oPppo..........oPppo", "okkkko.........okkko", "okkkkko.......okkkko", "oKKKKKo.......oKKKKo", "ooooooo.......oooooo"],{"o": "#0b0a12", "H": "#6a6290", "h": "#3b3554", "d": "#262140", "s": "#e0a882", "S": "#b07a58", "v": "#3ef2e0", "V": "#c8fff8", "J": "#3c3860", "j": "#27243d", "c": "#3ef2e0", "P": "#2e2c46", "p": "#1b1a2c", "k": "#1a1824", "K": "#3a3550"});
+const MINA=spriteHi([".....oooooooo.....", "...ooccLLccccoo...", "..occLLcccccccco..", ".occcccccccccccCo.", ".occccCCCCCCcccCo.", ".occCssssssssCcCo.", ".occsswesswesscCo.", ".occsseesseessCCo.", ".occssssssssssCco.", ".oCcsSsssmmssSsCo.", "..oCcSsssssssSCo..", "..oCCoSSSSSSoCCo..", "..ookkKkkzkkKkko..", ".okkkKkkkzkkkKkkko", "okkkkKkkkzkkkKkkko", "okkokKkkkzkkkKokko", "okkokkkkkzkkkkokko", "osSokkkkkzkkkkoSso", "oSSoKKKKKKKKKKoSSo", ".oo.oPPpppppppo.oo", "....oPpppppppPo...", "....oPppoooppPo...", "....oPpo...oPpo...", "....oPpo...oPpo...", "....oPpo...oPpo...", "...oBBBo...oBBBo..", "...oBBBBo..oBBBBo.", "...oooooo..oooooo."],{"o": "#0b0a12", "c": "#3ef2e0", "C": "#1a9e94", "L": "#c8fff8", "s": "#e8b48e", "S": "#c08a68", "e": "#07060d", "w": "#ffffff", "m": "#c0306a", "k": "#ff3d8b", "K": "#a3245a", "z": "#ffd0e4", "P": "#2e2c46", "p": "#1b1a2c", "B": "#3a1a30"});
+const DOC=spriteHi(["......................", "......oooooooo........", "....ooGGGgggggoo......", "...oGGgggggggggGo.....", "...oGgggggggggggo.....", "...oggsssssssmmmo.....", "...ogssssssssmMMo.....", "...ossewssssmrRmo.....", "...osseessssmrrmo.....", "...ossssssssmmmso.....", "...oSssssSSssssso.....", "....oSsssssssssSo.....", ".....oSSSSSSSSSo......", "....oollcctttcclloo...", "...olllccctttccclllo..", "..olcclcccttcccclcclo.", "..olcclccccxcccclcclo.", "..occclccccxcccclccco.", "..occclcccccxccclccco.", "..occclcccccxccclccco.", "..occCoccccccccocCcco.", "..osssoccccccccosssso.", "..oSSSoCcccccccoSSSSo.", "...ooooCcccccccCoooo..", "......oCccccccCo......", "......oCccccccCo......", "......oCcccccccCo.....", "......oCccooocCo......", "......oPppo.oPppo.....", "......oPppo.oPppo.....", "......oPppo.oPppo.....", "......oPppo.oPppo.....", "......oPppo.oPppo.....", ".....okkkko.okkkko....", "....okkkkko.okkkkko...", "....oooooooo.ooooooo.."],{"o": "#0b0a12", "G": "#c0c0d4", "g": "#8a8aa0", "s": "#e0a882", "S": "#b07a58", "e": "#07060d", "w": "#ffffff", "r": "#ff4a5c", "R": "#ffc0c8", "m": "#5c6378", "M": "#9aa2b8", "l": "#f0eef8", "c": "#d6d2e4", "C": "#9a96b2", "t": "#3a3550", "x": "#6a7088", "P": "#2e2c46", "p": "#1b1a2c", "k": "#1a1824"});
 
-const GENJI=sprite(["...wwww...","..wwwwww..","..rrrrrr..","..ssssss..","..sesses..","..ssssss..","...smms...","..oooooo..",".oaaaaaao.","oaaaaaaaao","saaaaaaaas",".aaaaaaaa.","..aaaaaa..","..pp..pp..","..pp..pp..","..pp..pp..",".bbb..bbb."],{w:'#d8d4e0',r:'#c8323c',s:'#c98f6a',e:'#07060d',m:'#9a96a8',o:'#3a3550',a:'#e8e2d0',p:'#191828',b:'#0b0a12'});
-const RAY=sprite(["...cccc...","..cCCCCc..","..cvvvvc..","..cCCCCc..","...cccc...","....cc....","..cccccc..",".cCCccCCc.","cCccLLccCc","cCccccccCc","c.cCCCCc.c","..cccccc..","..cc..cc..","..cC..Cc..","..cc..cc..","..cC..Cc..","..cc..cc..",".ccc..ccc."],{c:'#8f97ad',C:'#d6dbe8',v:'#3ef2e0',L:'#5fb8ff'});
-const DAIMON=sprite(["...yyyy...","..yyyyyy..","..ssssss..","..sesses..","..sBBBBs..","...BBBB...",".oooooooo.","sooooooooo","sooooooooo","ss.oooo.ss","s..oooo..s","...oooo...","..oo..oo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb..bbb."],{y:'#f2c230',s:'#b9805a',e:'#07060d',B:'#3a2a22',o:'#c0662a',b:'#0b0a12'});
-const TSUGI=sprite(["..hhhhhh..",".hhhhhhhh.",".hgggghhh.",".hsssssh..",".hsesesh..",".hssssshh.","..sssss...",".wwwwwwww.","cwwwwwwwws","Cwwwrwwwws","cwwwwwwww.","..wwwwww..","..wwwwww..","..pp..pp..","..pp..pp..","..pp..pp..",".bbb..bbb."],{h:'#2a2a3a',g:'#3ef2e0',s:'#d9a07a',e:'#07060d',w:'#b8c4d0',r:'#ff4a5c',c:'#8f97ad',C:'#d6dbe8',p:'#2a2838',b:'#0b0a12'});
+const GENJI=spriteHi(["....................", "....................", "......oooooooo......", "....oowwWWWwwwoo....", "...owwwWWwwwwwwwo...", "...orrRRrrrrrrrrro..", "...orrrrrrrrrrrrro..", "...osssssssssssso...", "...ossesssssesss.o..", "...osseesssseesso...", "...ossssssssssssoo..", "...oSssmmmmmmssSo...", "....oSmmmmmmmmSo....", ".....oSSmmmmSSo.....", "....oobbbbbbbboo....", "...obbaaaaaaaabbo...", "..obbaaaaaaaaaabbo..", "..obaaaaaaaaaaaabo..", "..obaaaAaaaaAaaabo..", "..osaaaaaaaaaaaaso..", "..oSSaaaaaaaaaaSSo..", "...oo.aaaaaaaa.oo...", "......aAaaaaAa......", ".....oaaaaaaaao.....", ".....oAaaaaaaAo.....", "......oPppppPo......", "......oPpppppo......", "......oPpooPpo......", "......oPpo.oPpo.....", "......oPpo.oPpo.....", "......oPpo.oPpo.....", ".....okkko.okkko....", "....okkkko.okkkko...", "....oooooo.oooooo..."],{"o": "#0b0a12", "W": "#ffffff", "w": "#d8d4e0", "r": "#c8323c", "R": "#ff6a6a", "s": "#d29870", "S": "#a87050", "e": "#07060d", "m": "#b8b4c4", "b": "#3a3550", "a": "#ece6d4", "A": "#bcb4a0", "p": "#1b1a2c", "P": "#2e2c46", "k": "#1a1824"});
+const RAY=spriteHi(["......oooooooo......", "....ooCCCCCCccoo....", "...oCCCcccccccccdo..", "..oCCccccccccccccdo.", "..oCcvvvvvvvvvvvcdo.", "..ocvVVvvvvvvvvvvdo.", "..ocvvvvvvvvvvvvcdo.", "..occccccccccccccdo.", "..ocCccccccccccccdo.", "...ocdcccccccccddo..", "....odddccccdddo....", ".....ooddccddoo.....", "......oddccddo......", "...oooCCCCCCcccooo..", "..oCCcccccccccccCCo.", ".oCCcccdcccccdcccCCo", ".oCcccddcLLlcddcccCo", ".occco.cLLLLlc.occco", ".occco.ccLLcc..occco", ".odcco.ccccccc.occdo", ".oCCo.oCCccccCo.oCCo", "..oo..odccccccdo.oo.", "......occcccccco....", "......odcccoocdo....", "......oCco..oCco....", "......occo..occo....", "......odcCoooCcdo...", "......oCco..oCco....", "......occo..occo....", "......odco..odco....", "......oCco..oCco....", "......occo..occo....", ".....occco..occco...", "....oCCCco..oCCCco..", "....odddddo.oddddo..", "....ooooooo.oooooo.."],{"o": "#0b0a12", "C": "#e6eaf4", "c": "#9aa2b8", "d": "#5c6378", "v": "#3ef2e0", "V": "#c8fff8", "L": "#5fb8ff", "l": "#a8d8ff"});
+const DAIMON=spriteHi(["....................", "....................", "......oooooooo......", "....ooYYYyyyyyoo....", "...oYYyyyyyyyyyyo...", "..oDyyyyyyyyyyyyDo..", "..oooooooooooooooo..", "...osssssssssssso...", "...ossesssssessso...", "...osseesssseesso...", "...ossssssssssssso..", "...oSsBBBBBBBBsSo...", "....oSBBbbbbBBSo....", ".....oSSBBBBSSo.....", "...oottttttttttoo...", "..ouuttttttttttuuo..", ".ouutttttttttttuuuo.", ".outtttTttttTtttuuo.", ".outttTTttttTTtttuo.", ".ossstttttttttttssso", ".oSSStttttttttttSSSo", ".oSSottttggttttoSSo.", "..oo.ottttttttto.oo.", ".....oTtttttttTo....", ".....oTttttttttTo...", "......oTttooTtto....", "......oTto..oTto....", "......oTto..oTto....", "......oTto..oTto....", "......oTto..oTto....", ".....okkko..okkko...", "....okkkko..okkkko..", "....oKKKKo..oKKKKo..", "....oooooo..oooooo.."],{"o": "#0b0a12", "Y": "#ffe070", "y": "#f2c230", "D": "#b08a1a", "s": "#c98a5a", "S": "#9a6440", "e": "#07060d", "B": "#3a2a22", "b": "#5a4030", "t": "#c0662a", "T": "#8a4418", "u": "#e08a4a", "g": "#5a5048", "p": "#1b1a2c", "k": "#2a1e18", "K": "#4a3a30"});
+const TSUGI=spriteHi(["....................", "....................", "....oooooooooo......", "...ohhHHhhhhhhoo....", "..ohhHHhhhhhhhhho...", "..ohgggggggggghho...", "..ohgGGgggGGggghho..", "..ohgggggggggghho...", "..ohsssssssssshho...", "..ohssesssessshho...", "..ohsseesseessho....", "..ohssssssssssho....", "..ohhSsssmmssSho....", "..ohho.oSSSSSoo.....", "...ooowwwwwwwwoo....", "..occwwwwwwwwwwwo...", ".occCwwwwwwwwwwwwo..", ".oCcdwwwwrwwwwwwwo..", ".occdwwWwwwwwWwwwo..", ".occdwwWwwwwwWwwwo..", ".oCcco.wwwwwwwwoSso.", ".oddco.wwwwwwwwoSSo.", "..ooo..oWwwwwwWo.oo.", ".......oWwwwwwWo....", ".......owwwwwwwo....", ".......oWwwwwwWo....", "........oppppo......", "........opooppo.....", "........opo.opo.....", "........opo.opo.....", "........opo.opo.....", ".......okko.okko....", "......okkko.okkko...", "......ooooo.ooooo..."],{"o": "#0b0a12", "h": "#2a2a3a", "H": "#4a4a60", "g": "#3ef2e0", "G": "#c8fff8", "s": "#e0a882", "S": "#b07a58", "e": "#07060d", "m": "#c0306a", "w": "#c8d2de", "W": "#8a96a6", "r": "#ff4a5c", "c": "#9aa2b8", "C": "#e6eaf4", "d": "#5c6378", "p": "#2a2838", "k": "#1a1824"});
 /* 沈殿街の住人（人間が多く、サイボーグは少し） */
 const wk=(pal)=>sprite(["...yyyy...","..yyyyyy..","..ssssss..","..sesses..","..ssssss..","...ssss...",".tooooot..","toooooooot","toooooooot","s.oooooo.s","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb..bbb."],{s:'#c98f6a',e:'#07060d',b:'#0b0a12',...pal});
 const WK_A=wk({y:'#f2c230',o:'#2f4a7a',t:'#8a8a96'}),WK_B=wk({y:'#e85a2a',o:'#5a4a2a',t:'#6a6a74',s:'#a8704c'}),WK_C=wk({y:'#d8d4e0',o:'#3a5a3a',t:'#7a7a84',s:'#d9a07a'});
@@ -350,6 +375,8 @@ const CROWD=[
   {spr:CY_B,x0:748,x1:748,sp:0,sex:'m',cy:1,dir:-1},
   {spr:WK_B,x0:780,x1:840,sp:9,sex:'m'}
 ].map((c,i)=>({...c,x:c.x0+(c.x1-c.x0)*((i*0.37)%1),d:c.dir||(i%2?1:-1)}));
+/* 圏外：ドラム缶の火にあたる人たち（人間だけ） */
+const OUT_CROWD=[{spr:wk({y:'#4a3a3a',o:'#3a3430',t:'#5a5048',s:'#a8704c'}),x:116,d:1,sex:'m'},{spr:wk({y:'#5a3a2a',o:'#2a3030',t:'#4a4a48',s:'#c98f6a'}),x:154,d:-1,sex:'m'},{spr:sprite(["..hhhh....",".hhhhhh...",".hsssshh..",".hsesesh..",".hssssh.h.","..ssss..h.",".oooooo...","sooooooos.","sooooooos.","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb.bbb.."],{h:'#3a2a2a',s:'#c98f6a',e:'#07060d',o:'#4a3a40',b:'#0b0a12'}),x:300,d:-1,sex:'f'}];
 /* 機械化した目に映る「汎用の人型」（男性・女性） */
 const SIL_M=sprite(["...kkkk...","..kkkkkk..","..kkkkkk..","..kkkkkk..","...kkkk...",".kkkkkkkk.","kkkkkkkkkk","kkkkkkkkkk","kk.kkkk.kk","...kkkk...","...kkkk...","...kk.kk..","...kk.kk..","...kk.kk..","...kk.kk..","..kkk.kkk."],{k:'#5b6680'});
 const SIL_F=sprite(["...kkkk...","..kkkkkk..","..kkkkkk..","..kkkkkk..","..kk..kk..","..kkkkkk..",".kkkkkkkk.",".kkkkkkkk.","...kkkk...","..kkkkkk..",".kkkkkkkk.","kkkkkkkkkk","...k..k...","...k..k...","...k..k...","..kk..kk.."],{k:'#5b6680'});
@@ -369,11 +396,16 @@ const mid=[],midWin=[],signs=[];
 const flick=(t,s)=>(Math.sin(t*11.3+s*7.1)+Math.sin(t*3.7+s*2.3)*0.8+Math.sin(t*23+s))>-0.4;
 const LAMPS=[{x:120,broken:false},{x:318,broken:true},{x:600,broken:false},{x:760,broken:true}];
 const PUDDLES=[{x:70,w:22},{x:250,w:30},{x:520,w:26},{x:700,w:34},{x:820,w:18}];
+/* ピラミッド都市・東京（4層。上ほど明るい）。窓の灯りは層ごとに決めておく */
+const PYR=[{w:420,h:30,c:'#110d20',e:'#2e2446',win:'#6b4a1a',p:0.05},{w:316,h:28,c:'#18122e',e:'#4e366c',win:'#ffb547',p:0.14},{w:220,h:26,c:'#21183f',e:'#7e58ae',win:'#c9a0ff',p:0.28},{w:128,h:24,c:'#2e2254',e:'#ff9ac8',win:'#fff4d6',p:0.5}];
+const PYR_WIN=[];{const R=rng(77);PYR.forEach((tr,i)=>{for(let y=3;y<tr.h-2;y+=3)for(let x=-tr.w/2+3;x<tr.w/2-3;x+=3)if(R()<tr.p)PYR_WIN.push({i,x,y,s:R()*20})})}
+/* 圏外の瓦礫・壊れた車・フェンス（見捨てられた場所） */
+const RUBBLE=[];{const R=rng(91);for(const cx of [34,238,352,548,684,786]){const n=6+Math.floor(R()*6);for(let i=0;i<n;i++){const w=3+Math.round(R()*9),h=2+Math.round(R()*6);RUBBLE.push({x:cx+Math.round((R()-0.5)*26),w,h,y:Math.round(R()*3),c:['#2a2430','#3a3030','#25202c','#3a2a24','#4a4048'][Math.floor(R()*5)]})}}}
 /* 層ごとの住人と設備 */
 const AREAS={
-  out:{nm:'圏外 · 東京の外',floor:'地上 · 圏外',label:'東京の外のスラム街。遠くに東京の光が見える',
+  out:{nm:'圏外 · ピラミッドの外',floor:'ふもと · 圏外',label:'ピラミッドの外の、見捨てられたスラム街。遠くにピラミッド都市・東京の光が見える',
     npcs:[{id:'mina',x:200},{id:'lift',x:398},{id:'doc',x:462},{id:'gate',x:856}]},
-  lower:{nm:'沈殿街 · 下層区',floor:'地下1層 · 沈殿街',label:'地下の街、沈殿街。屋台の灯りと配管、ホログラム広告の切れ端',
+  lower:{nm:'沈殿街 · 第1層',floor:'第1層 · 沈殿街',label:'ピラミッドの底の街、沈殿街。上の層の床が空を塞いでいる。屋台の灯りと工場',
     npcs:[{id:'lift',x:30},{id:'genji',x:322},{id:'daimon',x:428},{id:'ray',x:590},{id:'tsugi',x:700},{id:'gate',x:856}]}
 };
 const AREA_ORDER=['out','lower'];
@@ -410,9 +442,12 @@ function drawOut(t){
   const sky=['#07060d','#0a0815','#0e0b1d','#130e26','#1a1230','#24163a'];
   for(let i=0;i<6;i++){ctx.fillStyle=sky[i];ctx.fillRect(0,i*24,W,24)}
   ctx.fillStyle=sky[5];ctx.fillRect(0,144,W,36);
-  /* 東京の光 */
-  const gx=430-camX*0.15,k=0.35+0.5*prog;
-  let g=ctx.createRadialGradient(gx,128,4,gx,128,230);g.addColorStop(0,`rgba(255,110,190,${0.55*k})`);g.addColorStop(0.35,`rgba(150,90,255,${0.25*k})`);g.addColorStop(1,'rgba(0,0,0,0)');
+  /* ピラミッド都市・東京（遠く。頂上ほど明るい） */
+  const pc=Math.round(230-camX*0.07),k=0.35+0.5*prog;let py=GY-22;const tops=[];
+  PYR.forEach(tr=>{py-=tr.h;tops.push(py);ctx.fillStyle=tr.c;ctx.fillRect(pc-tr.w/2,py,tr.w,tr.h);ctx.fillStyle=tr.e;ctx.fillRect(pc-tr.w/2,py,tr.w,0.5)});
+  for(const w of PYR_WIN){if(w.i>0&&!flick(t*0.3,w.s))continue;const tr=PYR[w.i];ctx.fillStyle=tr.win;ctx.globalAlpha=0.5+0.15*w.i;ctx.fillRect(pc+w.x,tops[w.i]+w.y,1,0.5)}ctx.globalAlpha=1;
+  const ax=pc,ay=py;ctx.fillStyle='#3a2a60';ctx.fillRect(ax-2,ay-14,4,14);ctx.fillStyle='#fff4d6';ctx.fillRect(ax-0.5,ay-20,1,6);if(Math.floor(t*1.2)%2){ctx.fillStyle='#ff9ac8';ctx.fillRect(ax-1,ay-21,2,1)}
+  let g=ctx.createRadialGradient(ax,ay-8,2,ax,ay-8,200);g.addColorStop(0,`rgba(255,200,230,${0.5*k})`);g.addColorStop(0.3,`rgba(180,110,255,${0.22*k})`);g.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   /* 遠景 */
   const fo=Math.round(camX*0.15);
@@ -421,13 +456,19 @@ function drawOut(t){
   for(const w of farWin){const sx=w.x-fo;if(sx<0||sx>W)continue;ctx.fillStyle=w.c;ctx.fillRect(sx,w.y,0.5,0.5);ctx.globalAlpha=0.35;ctx.fillRect(sx+0.5,w.y,0.5,0.5);ctx.globalAlpha=1}
   /* 中景 */
   const mo=Math.round(camX*0.5);
-  for(const b of mid){const sx=b.x-mo;if(sx>W||sx+b.w<0)continue;ctx.fillStyle='#0c0a16';ctx.fillRect(sx,GY-b.h,b.w,b.h);ctx.fillStyle='#1a1630';ctx.fillRect(sx,GY-b.h,b.w,1);
+  for(const [i,b] of mid.entries()){const sx=b.x-mo;if(sx>W||sx+b.w<0)continue;ctx.fillStyle='#0c0a16';ctx.fillRect(sx,GY-b.h,b.w,b.h);ctx.fillStyle='#1a1630';ctx.fillRect(sx,GY-b.h,b.w,1);
+    /* 崩れた屋上と、ひび、板で塞いだ窓 */
+    if(i%3===0){const ty=GY-b.h;ctx.fillStyle=['#0e0b1d','#130e26','#1a1230'][Math.min(2,Math.floor(ty/40))];ctx.fillRect(sx+b.w-14,ty,14,6);ctx.fillRect(sx+b.w-9,ty+6,9,5);ctx.fillRect(sx+b.w-4,ty+11,4,4);ctx.fillStyle='#1a1630';ctx.fillRect(sx+b.w-15,ty,1,7);ctx.fillRect(sx+b.w-10,ty+6,1,6)}
+    ctx.fillStyle='#05040a';ctx.fillRect(sx+6+(i*7)%Math.max(1,b.w-12),GY-b.h+12,0.5,10);ctx.fillRect(sx+6.5+(i*7)%Math.max(1,b.w-12),GY-b.h+22,0.5,8);
+    if(i%2){ctx.fillStyle='#3a2a1c';const wx=sx+4+(i*11)%Math.max(1,b.w-16),wy=GY-b.h+20;ctx.fillRect(wx,wy,10,7);ctx.fillStyle='#2a1e14';ctx.fillRect(wx,wy+2,10,0.5);ctx.fillRect(wx,wy+4.5,10,0.5);ctx.fillStyle='#4a3a28';ctx.fillRect(wx-1,wy+1,12,1)}
     if(b.tank){ctx.fillStyle='#0c0a16';ctx.fillRect(sx+6,GY-b.h-7,9,7);ctx.fillRect(sx+7,GY-b.h-9,7,2)}
     if(b.ant){ctx.fillStyle='#151228';ctx.fillRect(sx+b.w-8,GY-b.h-12,1,12);ctx.fillRect(sx+b.w-11,GY-b.h-9,7,1)}}
   for(const w of midWin){const sx=w.x-mo;if(sx<-3||sx>W)continue;if(w.f&&!flick(t,w.s))continue;ctx.fillStyle='#5a3d17';ctx.fillRect(sx,w.y,3,2)}
   for(const s of signs){const sx=s.x-mo;if(sx<-20||sx>W)continue;const on=!s.broken||flick(t,s.s);
     if(on){ctx.globalAlpha=0.18;ctx.fillStyle=s.c;ctx.fillRect(sx-3,s.y-3,s.w+6,s.h+6);ctx.globalAlpha=1}
     ctx.fillStyle=on?s.c:'#2a2238';ctx.fillRect(sx,s.y,s.w,s.h)}
+  /* 垂れ下がった電線 */
+  ctx.strokeStyle='rgba(20,16,32,.9)';ctx.lineWidth=0.5;for(let i=0;i<mid.length-1;i+=2){const a=mid[i],b=mid[i+1],x1=a.x+a.w-mo,x2=b.x+4-mo;if(x2<0||x1>W)continue;const y1=GY-a.h+6,y2=GY-b.h+8;ctx.beginPath();ctx.moveTo(x1,y1);ctx.quadraticCurveTo((x1+x2)/2,Math.max(y1,y2)+14,x2,y2);ctx.stroke()}ctx.lineWidth=1;
   /* 圏外の暗さ（中心へ進むほど薄くなる） */
   ctx.fillStyle=`rgba(4,3,10,${0.42*(1-prog)})`;ctx.fillRect(0,0,W,H);
 
@@ -437,6 +478,22 @@ function drawOut(t){
   ctx.fillStyle='#16132a';for(let x=-(camX%24);x<W;x+=24)ctx.fillRect(Math.round(x),GY+16,10,1);
   for(const p of PUDDLES){const sx=X(p.x);if(sx>W||sx+p.w<0)continue;ctx.fillStyle='#141127';ctx.fillRect(sx,GY+6,p.w,3);ctx.fillStyle=flick(t,p.x)?'rgba(255,61,139,.45)':'rgba(62,242,224,.3)';ctx.fillRect(sx+3,GY+7,p.w-8,1)}
 
+  /* フェンス（破れて、有刺鉄線が垂れている） */
+  {const fx0=X(620);if(fx0<W+10&&fx0+130>-10){ctx.fillStyle='#2a2638';for(let x=0;x<130;x+=10)if(x<60||x>80)ctx.fillRect(fx0+x,GY-30,1,30);
+    ctx.fillStyle='rgba(70,64,90,.55)';for(let y=GY-28;y<GY;y+=3)for(let x=0;x<130;x+=3)if(x<60||x>80)ctx.fillRect(fx0+x+((y/3)%2?1.5:0),y,0.5,0.5);
+    ctx.fillStyle='#3a3448';for(let x=0;x<130;x+=2)if(x<58||x>84)ctx.fillRect(fx0+x,GY-32+Math.sin(x*0.9)*1.2,1,0.5);ctx.fillRect(fx0+60,GY-30,1,12);ctx.fillRect(fx0+62,GY-20,6,0.5)}}
+  /* 焼けた車 */
+  {const cx=X(560);if(cx<W+10&&cx+40>-10){ctx.fillStyle='#1e1a20';ctx.fillRect(cx,GY-10,40,8);ctx.fillRect(cx+8,GY-17,22,7);ctx.fillStyle='#2e2420';ctx.fillRect(cx+2,GY-9,36,1);
+    ctx.fillStyle='#08070c';ctx.fillRect(cx+10,GY-16,8,5);ctx.fillRect(cx+20,GY-16,8,5);ctx.fillStyle='#4a2a1a';ctx.fillRect(cx+4,GY-6,6,1);ctx.fillRect(cx+30,GY-8,5,2);
+    ctx.fillStyle='#0b0a12';ctx.fillRect(cx+5,GY-3,7,3);ctx.fillRect(cx+28,GY-2,7,2)}}
+  /* 瓦礫の山 */
+  for(const r of RUBBLE){const sx=X(r.x);if(sx>W+10||sx<-20)continue;ctx.fillStyle=r.c;ctx.fillRect(sx,GY-r.h+r.y,r.w,r.h);ctx.fillStyle='rgba(255,255,255,.06)';ctx.fillRect(sx,GY-r.h+r.y,r.w,0.5)}
+  /* ドラム缶の火（ここにだけ、人のぬくもりがある） */
+  {const bx=X(134);if(bx<W+30&&bx>-30){const fl=0.6+0.3*Math.sin(t*9)+0.1*Math.sin(t*23);
+    let gg=ctx.createRadialGradient(bx+4,GY-12,1,bx+4,GY-12,34);gg.addColorStop(0,`rgba(255,150,60,${0.32*fl})`);gg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=gg;ctx.fillRect(bx-40,GY-50,88,56);
+    ctx.fillStyle='#3a2a24';ctx.fillRect(bx,GY-10,9,10);ctx.fillStyle='#4a3830';ctx.fillRect(bx,GY-7,9,0.5);ctx.fillRect(bx,GY-3,9,0.5);
+    for(let i=0;i<5;i++){const h=3+((Math.sin(t*12+i*2.1)+1)*2.2);ctx.fillStyle=i%2?'#ffb547':'#ff6a2a';ctx.fillRect(bx+1+i*1.6,GY-10-h,1.2,h)}
+    ctx.fillStyle='rgba(255,240,180,.8)';ctx.fillRect(bx+3+Math.sin(t*5)*2,GY-18-((t*20)%10),0.5,0.5)}}
   /* 診療所 */
   {const bx=X(420);if(bx<W&&bx+96>0){ctx.fillStyle='#120f22';ctx.fillRect(bx,GY-92,96,92);ctx.fillStyle='#231e3d';ctx.fillRect(bx,GY-92,96,1);ctx.fillRect(bx,GY-92,1,92);ctx.fillRect(bx+95,GY-92,1,92);
     ctx.fillStyle='#ff3d8b';ctx.globalAlpha=0.25;ctx.fillRect(bx+20,GY-30,20,30);ctx.globalAlpha=1;
@@ -569,7 +626,8 @@ function personSprite(id,base){const m=docMood();if(m>=3&&PEOPLE[id]&&PEOPLE[id]
 function drawSpr(spr,x,flip,alpha=1){const sx=Math.round(x-camX-spr.lw/2),sy=GY-spr.lh;if(sx>W+10||sx<-20)return;ctx.globalAlpha=alpha;
   if(flip){ctx.save();ctx.translate(sx+spr.lw,sy);ctx.scale(-1,1);ctx.drawImage(spr,0,0,spr.lw,spr.lh);ctx.restore()}else ctx.drawImage(spr,sx,sy,spr.lw,spr.lh);ctx.globalAlpha=1}
 function drawPeople(t){const a=area();
-  if(a==='out'){if(!following())drawSpr(personSprite('mina',MINA),200,false);drawSpr(personSprite('doc',DOC),462,true);
+  if(a==='out'){const m=docMood();for(const c of OUT_CROWD)drawSpr(m>=3?(c.sex==='f'?SIL_F:SIL_M):c.spr,c.x,c.d<0);
+    if(!following())drawSpr(personSprite('mina',MINA),200,false);drawSpr(personSprite('doc',DOC),462,true);
     if(docMood()<3){ctx.fillStyle='#ff4a5c';if(Math.floor(t*1.2)%4)ctx.fillRect(Math.round(462-camX)+5,GY-15,1,1)}}
   else{const m=docMood();
     for(const c of CROWD){const alpha=c.cy?(m===0?0.55:m===1?0.75:1):1,spr=!c.cy&&m>=3?(c.sex==='f'?SIL_F:SIL_M):c.spr;drawSpr(spr,c.x,c.d<0,alpha)}
@@ -630,6 +688,7 @@ function hud(){const o=overall(S.cur);
   const ib=implantBonus();
   $('#specChip').textContent=o?`${o.tier.code} · ${Math.round(o.avg)}${ib?` +${ib}`:''} · ${DIFF[diffNow()]}`:'未スキャン';
   $('#crChip').textContent=`${S.cr.toLocaleString()} CR`;
+  {const f=flesh();$('#bodyF').textContent=`生身 ${f}%`;$('#bodyM').textContent=`機械 ${100-f}%`;$('#bodyBar').style.width=f+'%';$('#bodyChip').setAttribute('aria-label',`生身率 ${f}%、サイボーグ率 ${100-f}%`)}
   if(typeof sndBtnUp==='function')sndBtnUp();
   $('#areaChip').textContent=AREAS[area()].nm;cv.setAttribute('aria-label',AREAS[area()].label)}
 let toastT=0;
@@ -680,6 +739,8 @@ function talkDoc(){const o=overall(S.cur),rec=siteRecord();
   if(md===0)ls=first?[L('doc','インプラントが入荷した。反射、記憶、視覚、演算。Lv3まで強化できる。最初は400だ。'),L('doc','スキャンの数字は変わらんぞ。測るのはお前の脳そのものだからな。だが、ゲートの機械は拡張込みで見る。')]:[L('doc','また来たか。測り直すか、入れるか。伸びていれば数字に出る。')];
   else if(md===4)ls=DOC_TALK[4].map(t=>L('doc',t));
   else{const pool=DOC_TALK[md];ls=[L('doc',pool[Math.floor(Math.random()*pool.length)])]}
+  if(S.reached.includes('lower')&&!S.st.docParts){S.st={...S.st,docParts:1};save();
+    ls.push(L('doc','沈殿街に行ったそうだな。鋼組のツギハギには会ったか。'),L('doc','うちの部品は、あいつが改良し終えて要らなくなった型落ちだ。安く譲ってもらってる。'),L('doc','……圏外の医者にできるのは、それくらいだ。上のものは、上から順に落ちてくる。'))}
   ls.push(L('doc','どうする？',[{label:'再スキャン',fn:scanIntro},{label:'インプラント',fn:()=>shopPanel('out')},{label:'結果を見る',fn:()=>resultPanel(false)},{label:'やめておく'}]));talk(ls)}
 /* ドクの心情：0=生身100%（皮肉っぽい商売人）→ 4=生身0%（変わっちまったな） */
 const docMood=()=>{const f=flesh();return f>=100?0:f>=70?1:f>=40?2:f>0?3:4};
@@ -691,7 +752,7 @@ const DOC_TALK={
 };
 function shopPanel(tier){tier=SHOPS[tier]?tier:area();const sh=SHOPS[tier],pr=lv=>priceAt(lv,tier);
   openPanel(`<div class="eyebrow">IMPLANT · ${sh.place}</div><h3>インプラント</h3>
-  <p class="muted">部位ごとに Lv3 まで強化できる。Lv1 ${pr(0)} CR（実効 +${IMP_LV[0].spec+sh.plus}・生身率 -10%）／Lv2 ${pr(1)} CR（+${IMP_LV[1].spec+sh.plus}・-10%）／Lv3 ${pr(2)} CR（+${IMP_LV[2].spec+sh.plus}・-5%）。${sh.plus?`ドクの店より少し高いが、部品が良い（Lv ごとに実効 +${sh.plus}）。`:''}スキャン値には入らない。</p>
+  <p class="muted">部位ごとに Lv3 まで強化できる。Lv1 ${pr(0)} CR（実効 +${IMP_LV[0].spec+sh.plus}・生身率 -10%）／Lv2 ${pr(1)} CR（+${IMP_LV[1].spec+sh.plus}・-10%）／Lv3 ${pr(2)} CR（+${IMP_LV[2].spec+sh.plus}・-5%）。${sh.plus?`ドクの店より少し高いが、部品が良い（Lv ごとに実効 +${sh.plus}）。`:''}スキャン値には入らない。</p><p class="note">${sh.note}</p>
   <div class="stats"><div class="stat"><span>所持クレジット</span><b>${S.cr.toLocaleString()} CR</b></div><div class="stat"><span>生身率</span><b>${flesh()}%</b></div><div class="stat"><span>実効スペック</span><b>${effective()??'—'}</b></div></div>
   <div class="jobs">${IMPLANTS.map(m=>{const lv=impLv(m.id),nx=IMP_LV[lv],price=nx&&pr(lv),poor=nx&&S.cr<price;
     const act=!nx?'<span class="tag">最大</span>':`<button class="nbtn" type="button" data-b="${m.id}"${poor?' disabled':''}>${lv?`Lv${lv+1} に強化`:'入れる'} · ${price}</button>`;
@@ -715,9 +776,9 @@ function doBuy(id,after,tier='out'){const m=IMPLANTS.find(x=>x.id===id),lv=impLv
 /* 鋼組の施術師ツギハギ（片腕が義体。機械寄りの客には親しげ） */
 function talkTsugi(){const fc=fac(),first=!S.st.tsugi,ch=[{label:'インプラント',fn:()=>shopPanel('lower')},{label:'やめておく'}];
   if(first){S.st={...S.st,tsugi:1};save()}
-  const head=fc==='open'?(first?[L('tsugi','あら、生身のお客さん。この街じゃ、珍しくもないけど。'),L('tsugi','ここは鋼組の施術所。ドクの爺さんより、ちょっと高くて、ちょっといい部品を入れてる。')]:[L('tsugi','生身のまま来るのね。……まあ、見るだけならタダよ。')])
-    :fc==='mid'?(first?[L('tsugi','半分こっち側ね。いい選択よ。'),L('tsugi','上の層の部品は、圏外のより少し高い。そのぶん、よく効く。')]:[L('tsugi','その継ぎ目、ちゃんと馴染んでる？')])
-    :(first?[L('tsugi','おかえり、同類さん。'),L('tsugi','この腕も、半分は自分で継いだの。だから「ツギハギ」。')]:[L('tsugi','調子はどう？ 換えたいところがあれば、言って。')]);
+  const head=fc==='open'?(first?[L('tsugi','あら、生身のお客さん。この街じゃ、珍しくもないけど。'),L('tsugi','ここは鋼組の施術所。上の層から落ちてくる廃棄品を拾って、磨いて、継ぎ直して、インプラントにしてるの。'),L('tsugi','企業区のゴミも、ここじゃ宝物よ。改良が済んで型落ちになったのは、圏外のドクに回してる。だから、あの爺さんの店より、ちょっと高くて、ちょっといい。')]:[L('tsugi',['生身のまま来るのね。……まあ、見るだけならタダよ。','今朝も上から落ちてきたの。企業区の新型の腕。まだ温かかった。'][Math.floor(Math.random()*2)])])
+    :fc==='mid'?(first?[L('tsugi','半分こっち側ね。いい選択よ。'),L('tsugi','うちの部品は、上から落ちてきた廃棄品をあたしが改良したもの。ドクのとこに流れてるのは、その型落ち。'),L('tsugi','だから少し高い。そのぶん、よく効く。')]:[L('tsugi','その継ぎ目、ちゃんと馴染んでる？')])
+    :(first?[L('tsugi','おかえり、同類さん。'),L('tsugi','この腕も、上から落ちてきた部品を、半分は自分で継いだの。だから「ツギハギ」。'),L('tsugi','あんたの体に入ってる部品も、もとはあたしの手を通ったものかもね。ドクの爺さんには、型落ちを回してるから。')]:[L('tsugi',['調子はどう？ 換えたいところがあれば、言って。','いい部品が落ちてきたの。磨いたら、上の層のより良くなったわ。'][Math.floor(Math.random()*2)])]);
   talk([...head,L('tsugi','どうする？',ch)])}
 function tsugiBuyTalk(id){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IMP_LV[lv],price=nx&&priceAt(lv,'lower');if(!nx||S.cr<price)return shopPanel('lower');
   const f=flesh(),yes=t=>({label:`入れる（${price} CR）`,fn:()=>doBuy(id,t,'lower')}),no={label:'やめておく',fn:()=>shopPanel('lower')};
@@ -727,11 +788,11 @@ function tsugiBuyTalk(id){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IM
 function talkGate(){const o=overall(S.cur);
   if(!o){gateLight='deny';gateLightUntil=performance.now()+2500;sfx('deny');return talk([L('gate','未登録の脳を検出。ブレインスキャンの記録がありません。'),L('gate','通行を許可できません。')])}
   const cur=effective(),req=gateReq();
-  if(S.st.join)return talk([L('gate','通行許可済みの脳です。下層区へどうぞ。',[{label:'下層区へ進む',fn:()=>travel('lower','gate')},{label:'やめておく'}])]);
+  if(S.st.join)return talk([L('gate','通行許可済みの脳です。第1層・沈殿街へどうぞ。',[{label:'沈殿街へ進む',fn:()=>travel('lower','gate')},{label:'やめておく'}])]);
   talk([L('gate','スキャン記録を照合中……'),L('gate',`実効スペック ${cur} ／ 通行基準 ${req}（初回スキャンの +10%）`)],()=>{
     if(cur>=req){gateLight='ok';gateLightUntil=performance.now()+4000;sfx('allow');const again=S.passed;S.passed=1;save();
       if(!S.st.join)return talk(again?[L('gate','通行許可済みの脳です。どうぞ。')]:[L('gate','基準を満たしています。通行を許可します。'),L('me','光が、近い。')],minaJoin);
-      talk([L('gate','通行許可済みの脳です。下層区へどうぞ。',[{label:'下層区へ進む',fn:()=>travel('lower','gate')},{label:'やめておく'}])])}
+      talk([L('gate','通行許可済みの脳です。第1層・沈殿街へどうぞ。',[{label:'沈殿街へ進む',fn:()=>travel('lower','gate')},{label:'やめておく'}])])}
     else{gateLight='deny';gateLightUntil=performance.now()+4000;sfx('deny');S.gate=1;save();
       talk([L('gate','基準に届きません。通行を拒否します。'),L('me','……今の自分じゃ、足りないってことか。'),L('me','ミナのところに戻ろう。')])}})}
 function clearPanel(){const o=overall(S.cur),b=overall(S.base);
@@ -745,7 +806,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
-  <p class="muted">試作版 v0.8 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
+  <p class="muted">試作版 v0.9 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -762,10 +823,10 @@ function travel(to,via){if(!AREAS[to])return;mode='fade';$('#fade').classList.ad
     camX=clamp(Math.round(player.x-130),0,CAMMAX);S.x=Math.round(player.x);save();hud();sndApply();
     $('#fade').classList.remove('on');setTimeout(()=>{mode='play';arrive(to)},380)},380)}
 function arrive(to){if(to==='lower'&&!S.st.arrive){S.st={...S.st,arrive:1};save();
-  talk([L('me',{n:'階段を降りきると、地下なのに、上より明るい街が広がっていた。',c:'階段を降りきると、湯気と出汁の匂いがした。地下なのに、上より明るい。',m:'地下1層に到達。照度、地上の2.4倍。気温21℃、湿度88%。人間 82%、義体 18%。'}),
+  talk([L('me',{n:'ゲートをくぐると、空がなかった。上の層の床が、天井のように街を塞いでいる。',c:'ゲートをくぐると、湯気と出汁の匂いがした。空の代わりに、上の層の床が街を覆っている。',m:'第1層に到達。照度、圏外の2.4倍。気温21℃、湿度88%。人間 82%、義体 18%。'}),
     L('me',{n:'機械の唸りと、男たちの怒鳴り声が響いている。',c:'鉄を打つ音、油の匂い、男たちの笑い声。人が、生きて働いている音がする。',m:'工場の稼働音を検出。作業者の大半は生身。'}),
     L('mina','……変わってない。'),L('mina','あたしが変わったのか。'),
-    L('mina','ここが沈殿街。上から落ちてきたものが、溜まる場所。……あたしが生まれた街。'),
+    L('mina','ここが沈殿街。ピラミッドのいちばん底。上から落ちてきたものが、溜まる場所。……あたしが生まれた街。'),
     L('mina','弟を探してる。ソウっていうんだ。十年前、あたしだけ検査に落ちて、ここを出された。'),
     L('mina','屋台のゲンさんなら、何か知ってるかも。奥には鋼組の連中もいる。……行こう。')])}}
 /* 昇降機「縦坑」と案内AIカゴ */
@@ -777,7 +838,7 @@ function liftPanel(){const here=area();
   <div class="prow"><button class="nbtn ghost" id="back" type="button">降りる</button></div>`);
   $('#panel').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>liftRide(b.dataset.f));
   $('#back').onclick=()=>closePanel();($('#panel').querySelector('[data-f]:not([disabled])')||$('#back')).focus()}
-function liftRide(to){const from=area(),fl={out:'1F',lower:'B1'};
+function liftRide(to){const from=area(),fl={out:'ふもと',lower:'第1層'};
   openPanel(`<div class="eyebrow">SHAFT · 縦坑</div><div class="lift-ind" id="ind">${fl[from]}</div><p class="c muted" style="max-width:none;text-align:center">${to==='lower'?'▼ 下降中':'▲ 上昇中'}</p>`);
   sfx('lift');timers.push(setTimeout(()=>{const el=$('#ind');if(el)el.textContent='· · ·'},600));
   timers.push(setTimeout(()=>{const el=$('#ind');if(el)el.textContent=fl[to]},1250));
@@ -788,7 +849,7 @@ function talkMinaFollow(){const m=docMood(),ls=[];
   else if(m>=4&&!S.st.m4){S.st={...S.st,m4:1};save();ls.push(L('mina','ソウもね、最後に会ったとき、そういう目をしてた。'))}
   else if(area()==='lower'&&!S.st.done)ls.push(L('mina',!S.st.genji?'屋台のゲンさんに話を聞こう。あの人、昔からこの街のことは何でも知ってる。':'鋼組の運び屋なら、ソウの仕事を知ってるかも。奥にいるはず。'));
   else if(S.st.done)ls.push(L('mina','ソウは企業区にいる。……絶対、会いに行く。'));
-  else ls.push(L('mina',area()==='out'?'昇降機なら、沈殿街まですぐだよ。':'仕事なら、ここでも回せるよ。'));
+  else ls.push(L('mina',area()==='out'?'昇降機なら、沈殿街まですぐだよ。':'沈殿街の仕事は工場がらみ。圏外より難しいけど、払いはいいよ。'));
   ls.push(L('mina','で、どうする？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
 /* 生身派「灯」：ゲンジ */
 const fac=()=>{const f=flesh();return f>=70?'open':f>=40?'mid':'closed'};
@@ -982,59 +1043,160 @@ const JP={
   drone:{easy:{sh:4,w0:1.1,w1:0.7},normal:{sh:3,w0:0.85,w1:0.5},hard:{sh:2,w0:0.65,w1:0.38}},
   pass:{easy:{len:3,ms:650,lives:3},normal:{len:4,ms:500,lives:2},hard:{len:5,ms:400,lives:1}},
   cam:{easy:{T:40,d0:32,dm:7,q:8},normal:{T:35,d0:26,dm:5,q:10},hard:{T:30,d0:20,dm:3.5,q:12}},
-  lock:{easy:{T:50,s:1,div:false,q:3},normal:{T:40,s:1.4,div:true,q:3},hard:{T:35,s:1.9,div:true,q:4}}
+  lock:{easy:{T:50,s:1,div:false,q:3},normal:{T:40,s:1.4,div:true,q:3},hard:{T:35,s:1.9,div:true,q:4}},
+  /* 第1層・沈殿街の仕事 */
+  arm:{easy:{spd:0.55,zone:0.2,miss:3,n:10},normal:{spd:0.75,zone:0.15,miss:2,n:12},hard:{spd:1,zone:0.11,miss:2,n:14}},
+  proc:{easy:{len:3,ms:650,lives:3,rev:9},normal:{len:4,ms:500,lives:2,rev:3},hard:{len:5,ms:420,lives:2,rev:2}},
+  inspect:{easy:{n:5,dur:5,d:20,lives:3,q:8},normal:{n:6,dur:4.2,d:14,lives:3,q:10},hard:{n:7,dur:3.5,d:9,lives:2,q:12}},
+  mix:{easy:{T:50,k:2,max:20,q:5},normal:{T:45,k:2,max:40,q:6},hard:{T:45,k:3,max:40,q:6}}
 };
+/* 層ごとの報酬の倍率（上の層ほど多い） */
+const TIER_PAY={out:1,lower:1.5};
 const JOBS=[
-  {id:'drone',tag:'CPU',nm:'ドローン回避',client:'運び屋組合',unit:'回避',run:()=>runDrone,
+  {id:'drone',tier:'out',stat:'cpu',tag:'CPU',nm:'ドローン回避',client:'運び屋組合',unit:'回避',run:()=>runDrone,
     desc:'企業の警備ドローンの下を、荷物を抱えて30秒走り抜ける。赤い照準線が出たら、その列から逃げろ。',
     ctl:'← → / A D で列を移動。スマホは画面の左右をタップ',rule:p=>`30秒生き延びれば成功 · シールド ${p.sh} · 照準から発射まで ${p.w0}〜${p.w1} 秒`,
     ok:'荷物は無事。いい足してるね。',ng:'荷物は落としたけど、運んだ分は払うってさ。'},
-  {id:'pass',tag:'RAM',nm:'パスコード侵入',client:'ジャンク屋の盗聴屋',unit:'層',run:()=>runPass,
+  {id:'pass',tier:'out',stat:'ram',tag:'RAM',nm:'パスコード侵入',client:'ジャンク屋の盗聴屋',unit:'層',run:()=>runPass,
     desc:'盗聴したキー入力が光って見える。光った順番を覚えて、同じ順に打ち込め。5層突破で完了。',
     ctl:'キーをタップ、またはキーボードの 1〜9',rule:p=>`全5層 · 最初は ${p.len} 桁で1層ごとに+1 · ミス ${p.lives} 回で切断${p.review?` · 見直し ${p.review} 回`:''}`,
     ok:'全部抜けたの？ 依頼主が腰抜かしてたよ。',ng:'検知されたか。抜けた層の分は払うよ。'},
-  {id:'cam',tag:'GPU',nm:'監視カメラ解析',client:'探偵崩れのオヤジ',unit:'人',run:()=>runCam,
+  {id:'cam',tier:'out',stat:'gpu',tag:'GPU',nm:'監視カメラ解析',client:'探偵崩れのオヤジ',unit:'人',run:()=>runCam,
     desc:'監視映像の群衆から、指定された色の上着を着た人物を探す。似た色に惑わされるな。',
     ctl:'映像をタップ',rule:p=>`制限 ${p.T} 秒 · ノルマ ${p.q} 人 · 見間違えると2秒減${p.glow?` · 標的が ${p.glow} 秒光る`:''}`,
     ok:'目がいいね。オヤジが次も頼みたいって。',ng:'ノルマには届かなかったか。見つけた分は払うよ。'},
-  {id:'lock',tag:'ALU',nm:'暗号ロック解除',client:'倉庫荒らしの兄弟',unit:'錠',run:()=>runLock,
+  {id:'lock',tier:'out',stat:'alu',tag:'ALU',nm:'暗号ロック解除',client:'倉庫荒らしの兄弟',unit:'錠',run:()=>runLock,
     desc:'暗号錠のタンブラーは数式で回る。□ に入る数を答えろ。タンブラー3つで1錠。',
     ctl:'数字を入力して Enter',rule:p=>`制限 ${p.T} 秒 · ノルマ ${p.q} 錠 · 間違えると3秒減`,
     ok:'倉庫が丸裸だって。いい仕事。',ng:'全部は開かなかったか。開けた分は払うよ。'}
+  ,{id:'arm',tier:'lower',stat:'cpu',tag:'CPU',nm:'アーム停止',client:'沈殿第三工場のダイモン',unit:'回',run:()=>runArm,
+    desc:'暴れるAIアームの位置が、レールの上を往復する。緑の範囲に来た瞬間にレバーを引いて止めろ。範囲はだんだん狭く、アームは速くなる。',
+    ctl:'Space・Enter か「止める」ボタン',rule:p=>`全 ${p.n} 回 · 失敗 ${p.miss} 回まで`,
+    ok:'ダイモンの親方が笑ってたよ。いい腕だって。',ng:'アームに振り回されたか。止めた分は払うってさ。'},
+  {id:'proc',tier:'lower',stat:'ram',tag:'RAM',nm:'工程手順',client:'溶接工の班長',unit:'工程',run:()=>runProc,
+    desc:'機械に流す工程は、記号の並びで決まる。一瞬だけ見せる並びを覚えて、同じ順に打ち込め。途中から「逆順」の指示も来る。全5工程。',
+    ctl:'記号をタップ、またはキーボードの 1〜6',rule:p=>`最初は ${p.len} 個で1工程ごとに+1 · ${p.rev<9?`${p.rev}工程目から逆順あり · `:''}ミス ${p.lives} 回まで${p.review?` · 見直し ${p.review} 回`:''}`,
+    ok:'工程表どおり。班長が次も頼むって。',ng:'手順が狂ったか。進んだ工程の分は払うよ。'},
+  {id:'inspect',tier:'lower',stat:'gpu',tag:'GPU',nm:'不良品検査',client:'コンベアの検査係',unit:'個',run:()=>runInspect,
+    desc:'コンベアに部品が並んで流れてくる。色がわずかに違う不良品を、流れ去る前にタップしろ。見逃しと誤検出はミスになる。',
+    ctl:'不良品をタップ',rule:p=>`ノルマ ${p.q} 個 · ミス ${p.lives} 回まで${p.glow?` · 不良品が ${p.glow} 秒光る`:''}`,
+    ok:'不良ゼロのロットが出た。検査係が驚いてた。',ng:'見逃しが出たか。拾えた分は払うよ。'},
+  {id:'mix',tier:'lower',stat:'alu',tag:'ALU',nm:'配合計算',client:'炉の番人',unit:'回',run:()=>runMix,
+    desc:'炉に入れる材料の配合。数字の書かれた部品から、合計が目標の数になる組み合わせを選べ。',
+    ctl:'部品をタップ（キーボードの 1〜6 でも選べる）',rule:p=>`制限 ${p.T} 秒 · ${p.k} 個を選ぶ · ノルマ ${p.q} 回 · 間違えると3秒減`,
+    ok:'炉の火がいい色になった。番人が喜んでたよ。',ng:'配合が足りなかったか。できた分は払うよ。'}
 ];
 const jobOf=id=>JOBS.find(j=>j.id===id);
+const impFor=job=>IMPLANTS.find(m=>m.stat===job.stat);
 const r2=v=>Math.round(v*100)/100;
-function jp(id,d){const p={...JP[id][d],review:0,glow:0},m=IMPLANTS.find(x=>x.job===id),lv=m?impLv(m.id):0;
-  if(id==='drone')p.sh+=lv;else if(id==='pass')p.review=lv;else if(id==='cam')p.glow=r2(lv*GLOW);else if(id==='lock')p.T+=5*lv;
+function jp(id,d){const p={...JP[id][d],review:0,glow:0},m=impFor(jobOf(id)),lv=m?impLv(m.id):0;
+  if(id==='drone')p.sh+=lv;else if(id==='arm')p.miss+=lv;else if(id==='pass'||id==='proc')p.review=lv;else if(id==='cam'||id==='inspect')p.glow=r2(lv*GLOW);else if(id==='lock'||id==='mix')p.T+=5*lv;
   return p}
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 function timeBar(end,T,onEnd){timers.push(setInterval(()=>{const left=Math.max(0,end()-performance.now());$('#tbar').style.width=(left/(T*10))+'%';$('#tleft').textContent=(left/1000).toFixed(1)+' 秒';if(left<=0)onEnd()},100))}
 const shake=el=>{el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')};
 
-function jobBoard(){const d=diffNow();
-  openPanel(`<div class="eyebrow">JOB BOARD · 情報屋ミナの仲介</div><h3>仕事リスト</h3>
-  <p class="muted">脳のパーツごとに向いた仕事がある。稼いだクレジットは、いずれインプラントの代金になる。</p>
-  <div class="stats"><div class="stat"><span>所持クレジット</span><b>${S.cr.toLocaleString()} CR</b></div><div class="stat"><span>難易度 · 報酬倍率</span><b>${DIFF[d]} ×${MULT[d]}</b></div></div>
-  <div class="jobs">${JOBS.map(j=>{const r=S.jobs[j.id];return `<div class="job"><span class="tag">${j.tag}</span><span class="nm">${j.nm}</span><button class="nbtn" type="button" data-j="${j.id}">受ける</button><span class="ex">${j.client} · ${r?`ベスト ${r.best} ${j.unit} · ${r.n} 回`:'未経験'}</span></div>`}).join('')}</div>
+function jobBoard(){const d=diffNow(),tier=area(),tp=TIER_PAY[tier]||1;
+  openPanel(`<div class="eyebrow">JOB BOARD · 情報屋ミナの仲介 · ${AREAS[tier].nm}</div><h3>仕事リスト</h3>
+  <p class="muted">${tier==='out'?'脳のパーツごとに向いた仕事がある。稼いだクレジットは、いずれインプラントの代金になる。':'沈殿街の仕事は、圏外より難しい。そのぶん、払いもいい。'}</p>
+  <div class="stats"><div class="stat"><span>所持クレジット</span><b>${S.cr.toLocaleString()} CR</b></div><div class="stat"><span>難易度 · 報酬倍率</span><b>${DIFF[d]} ×${r2(MULT[d]*tp)}</b></div></div>
+  <div class="jobs">${JOBS.filter(j=>j.tier===tier).map(j=>{const r=S.jobs[j.id];return `<div class="job"><span class="tag">${j.tag}</span><span class="nm">${j.nm}</span><button class="nbtn" type="button" data-j="${j.id}">受ける</button><span class="ex">${j.client} · ${r?`ベスト ${r.best} ${j.unit} · ${r.n} 回`:'未経験'}</span></div>`}).join('')}</div>
   <div class="prow"><button class="nbtn ghost" id="back" type="button">街に戻る</button></div>`);
   $('#panel').querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>jobIntro(b.dataset.j));
   $('#back').onclick=()=>closePanel();$('#panel').querySelector('[data-j]').focus()}
 function jobIntro(id){const j=jobOf(id),d=diffNow();
   openPanel(`<div class="eyebrow">${j.tag} · 依頼主：${j.client}</div><h3>${j.nm}</h3><p>${j.desc}</p>
-  <ul class="plist"><li><span class="tag">操作</span><span>${j.ctl}</span></li><li><span class="tag">${DIFF[d]}</span><span>${j.rule(jp(id,d))}</span></li>${(m=>m&&impLv(m.id)?`<li><span class="tag">拡張</span><span>${m.nm} Lv${impLv(m.id)}が効いている（${m.eff(impLv(m.id)).split('：')[1]}）</span></li>`:'')(IMPLANTS.find(x=>x.job===id))}</ul>
+  <ul class="plist"><li><span class="tag">操作</span><span>${j.ctl}</span></li><li><span class="tag">${DIFF[d]}</span><span>${j.rule(jp(id,d))}</span></li>${(m=>m&&impLv(m.id)?`<li><span class="tag">拡張</span><span>${m.nm} Lv${impLv(m.id)}が効いている（${m.eff(impLv(m.id)).split('：')[1]}）</span></li>`:'')(impFor(j))}</ul>
   <div class="prow"><button class="nbtn" id="go" type="button">開始</button><button class="nbtn ghost" id="back" type="button">仕事リストへ</button></div>`);
   $('#go').onclick=()=>j.run()(d);$('#back').onclick=jobBoard;$('#go').focus()}
-function jobDone(id,d,r){clearTimers();const j=jobOf(id),cr=Math.round(r.raw*MULT[d]);
+function jobDone(id,d,r){clearTimers();const j=jobOf(id),pay=r2(MULT[d]*(TIER_PAY[j.tier]||1)),cr=Math.round(r.raw*pay);
   const prev=S.jobs[id]||{best:0,n:0},rec=prev.n>0&&r.score>prev.best;
   S.jobs[id]={best:Math.max(prev.best,r.score),n:prev.n+1};S.cr+=cr;S.earned=(S.earned||0)+cr;save();hud();
   openPanel(`<div class="eyebrow">${j.tag} · ${j.nm} · ${r.ok?'JOB COMPLETE':'JOB FAILED'}</div>
   <h3 style="color:${r.ok?'var(--cyan)':'var(--red)'}">${r.ok?'仕事完了':'仕事失敗'}</h3>
   <p class="mono">${esc(r.detail)}${rec?' · 自己ベスト更新':''}</p>
-  <div><p class="earn">+${cr} CR</p><p class="note">${DIFF[d]} 報酬 ×${MULT[d]} · 所持 ${S.cr.toLocaleString()} CR</p></div>
+  <div><p class="earn">+${cr} CR</p><p class="note">${DIFF[d]}${j.tier!=='out'?` · ${AREAS[j.tier].nm}`:''} 報酬 ×${pay} · 所持 ${S.cr.toLocaleString()} CR</p></div>
   <p class="muted">ミナ「${esc(r.ok?j.ok:cr>0?j.ng:'……今日はタダ働きだね。次がある。')}」</p>
   <div class="prow"><button class="nbtn" id="again" type="button">もう一度</button><button class="nbtn ghost" id="list" type="button">仕事リストへ</button><button class="nbtn ghost" id="out" type="button">街に戻る</button></div>`);
   sfx(r.ok?'success':'fail');if(cr>0)timers.push(setTimeout(()=>sfx('credit'),r.ok?650:800));
   $('#again').onclick=()=>jobIntro(id);$('#list').onclick=jobBoard;$('#out').onclick=()=>closePanel();$('#again').focus()}
+
+/* ===== 第1層・沈殿街の仕事 ===== */
+/* CPU：アーム停止（往復する印を、緑の範囲で止める） */
+function runArm(d){const P=jp('arm',d);let pos=0,dir=1,spd=P.spd,zw=P.zone,z0=0.4,round=0,hits=0,miss=0,last=0,alive=true,wait=false;
+  openPanel(`<div class="hud"><span>CPU · アーム停止 · 成功 <b id="sc">0</b></span><span id="lf"></span></div>
+  <p class="status c" id="st">緑の範囲でレバーを引け</p><div class="track" id="tr"><div class="zone" id="zn"></div><div class="mark" id="mk"></div></div>
+  <div class="prow" style="justify-content:center"><button class="nbtn" id="stop" type="button" style="padding:12px 40px;font-size:18px">止める</button></div>
+  <p class="note c">Space・Enter でも止められます</p>`);
+  offs.push(()=>alive=false);
+  const lf=()=>$('#lf').textContent=`第 ${Math.min(round+1,P.n)} / ${P.n} 回 · 失敗 ${'◆'.repeat(Math.max(0,P.miss-miss))}${'◇'.repeat(Math.min(P.miss,miss))}`;
+  const setZone=()=>{z0=0.05+Math.random()*(0.9-zw);$('#zn').style.left=z0*100+'%';$('#zn').style.width=zw*100+'%'};
+  function stop(){if(!alive||wait)return;wait=true;const ok=pos>=z0&&pos<=z0+zw,tr=$('#tr');tr.classList.add(ok?'hit':'miss');
+    if(ok){hits++;sfx('key');$('#sc').textContent=hits;$('#st').textContent='止めた！'}else{miss++;sfx('hit');$('#st').textContent='外れた。アームが暴れる'}
+    round++;lf();
+    timers.push(setTimeout(()=>{tr.classList.remove('hit','miss');if(miss>P.miss||round>=P.n)return finish();zw=Math.max(0.05,zw*0.95);spd*=1.06;setZone();$('#st').textContent='緑の範囲でレバーを引け';wait=false},550))}
+  function finish(){alive=false;const ok=miss<=P.miss&&round>=P.n;jobDone('arm',d,{ok,score:hits,raw:hits*9+(ok?50:0),detail:`成功 ${hits} / ${round} 回 · 失敗 ${miss} 回`})}
+  function step(ts){if(!alive)return;const dt=Math.min(0.05,(ts-last)/1000||0);last=ts;if(!wait){pos+=dir*spd*dt;if(pos>1){pos=1;dir=-1}else if(pos<0){pos=0;dir=1}}
+    $('#mk').style.left=pos*100+'%';requestAnimationFrame(step)}
+  $('#stop').onclick=stop;on($('#tr'),'pointerdown',e=>{e.preventDefault();stop()});
+  on(window,'keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();stop()}});
+  setZone();lf();requestAnimationFrame(ts=>{last=ts;step(ts)})}
+/* RAM：工程手順（並びを一度に見せる。途中から逆順） */
+const SYM=[['⚙','#ffb547'],['▲','#3ef2e0'],['■','#ff7ab8'],['●','#c9a0ff'],['◆','#7ff8ee'],['✚','#ff4a5c']];
+function runProc(d){const P=jp('proc',d),STAGES=5;let stage=0,lives=P.lives,reviews=P.review,raw=0,seq=[],inp=[],phase='wait',rev=false;
+  openPanel(`<div class="hud"><span>RAM · 工程手順 · 第 <b id="sg">1</b> / ${STAGES} 工程</span><span id="lv"></span></div>
+  <p class="status c" id="st"></p><div class="seq" id="sq"></div>
+  <div class="syms" id="sy">${SYM.map(([c,col],i)=>`<button type="button" data-s="${i}" style="color:${col}" aria-label="記号${i+1}">${c}</button>`).join('')}</div>
+  ${P.review?`<div class="prow" style="justify-content:center"><button class="nbtn ghost" id="rv" type="button" disabled>もう一度見る（残り <b id="rvn">${P.review}</b>）</button></div>`:''}
+  <p class="note c">記号をタップ、またはキーボードの 1〜6${P.review?'。R で見直し':''}</p>`);
+  const sq=$('#sq'),st=$('#st'),cell=(i,v)=>`<span style="color:${SYM[i]?SYM[i][1]:'var(--muted)'}">${v??(SYM[i]?SYM[i][0]:'?')}</span>`;
+  const hudUp=()=>{$('#sg').textContent=Math.min(stage+1,STAGES);$('#lv').textContent='ミス残り '+'◆'.repeat(lives)+'◇'.repeat(P.lives-lives);const r=$('#rv');if(r){$('#rvn').textContent=reviews;r.disabled=phase!=='input'||reviews<=0}};
+  function newStage(){seq=Array.from({length:P.len+stage},()=>rnd(0,5));rev=stage+1>=P.rev&&Math.random()<0.6;show()}
+  function show(){phase='show';inp=[];hudUp();st.textContent=rev?'逆順で入力せよ。覚えろ……':'覚えろ……';sq.innerHTML=seq.map(i=>cell(i)).join('');
+    timers.push(setTimeout(()=>{phase='input';sq.innerHTML=seq.map(()=>cell(-1,'?')).join('');st.textContent=rev?'逆順に入力（最後から）':'同じ順に入力';hudUp()},seq.length*P.ms+500))}
+  function press(i){if(phase!=='input')return;const want=rev?seq[seq.length-1-inp.length]:seq[inp.length];
+    if(i===want){inp.push(i);sfx('key');const cells=sq.querySelectorAll('span');const at=rev?seq.length-inp.length:inp.length-1;cells[at].outerHTML=cell(i);
+      if(inp.length===seq.length){phase='wait';raw+=8*seq.length;stage++;hudUp();if(stage>=STAGES){st.textContent='全工程、完了';timers.push(setTimeout(()=>finish(true),800))}else{st.textContent=`第 ${stage} 工程 完了`;timers.push(setTimeout(newStage,800))}}}
+    else{phase='wait';sfx('hit');lives--;hudUp();sq.innerHTML=(rev?[...seq].reverse():seq).map(j=>cell(j)).join('');
+      if(lives<=0){st.textContent='工程ミス。ラインが止まった';timers.push(setTimeout(()=>finish(false),1400))}else{st.textContent='違う。正しい並び（入力する順）はこう';timers.push(setTimeout(newStage,1600))}}}
+  function finish(ok){jobDone('proc',d,{ok,score:stage,raw:raw+(ok?60:0),detail:`完了 ${stage} / ${STAGES} 工程`})}
+  $('#sy').onclick=e=>{const b=e.target.closest('button');if(b)press(+b.dataset.s)};
+  const review=()=>{if(phase!=='input'||reviews<=0)return;reviews--;show()};if($('#rv'))$('#rv').onclick=review;
+  on(window,'keydown',e=>{if(/^[1-6]$/.test(e.key)){e.preventDefault();if(!e.repeat)press(+e.key-1)}else if((e.key==='r'||e.key==='R')&&!e.repeat)review()});
+  newStage()}
+/* GPU：不良品検査（流れてくる部品の列から、色の違う1つを探す） */
+function runInspect(d){const P=jp('inspect',d),BATCH=16;let found=0,lives=P.lives,batch=0,dur=P.dur,anim=null,over=false;
+  openPanel(`<div class="hud"><span>GPU · 不良品検査 · 発見 <b id="sc">0</b> / ${P.q}</span><span id="lv"></span></div>
+  <p class="status c" id="st">色の違う部品を、流れ去る前にタップ</p><div class="belt" id="bt"></div><p class="note c">ロット <b id="bn">1</b> / ${BATCH}</p>`);
+  const bt=$('#bt'),hudUp=()=>{$('#lv').textContent='ミス残り '+'◆'.repeat(Math.max(0,lives))+'◇'.repeat(P.lives-Math.max(0,lives));$('#bn').textContent=Math.min(batch+1,BATCH)};
+  offs.push(()=>{over=true;anim&&anim.cancel()});
+  function next(){if(over)return;if(batch>=BATCH||lives<=0)return finish();hudUp();const h=Math.random()*360,s=50+Math.random()*25,l=45+Math.random()*12,odd=rnd(0,P.n-1),dl=Math.max(3,P.d-found*0.8),sgn=Math.random()<0.5?-1:1;
+    const col=(hh,ll)=>`hsl(${Math.round((hh+360)%360)},${Math.round(s)}%,${Math.round(ll)}%)`;
+    bt.innerHTML=`<div class="row" id="rw">${Array.from({length:P.n},(_,i)=>`<button type="button" data-o="${i===odd?1:0}" aria-label="部品${i+1}" style="--c:${i===odd?(Math.random()<0.5?col(h+sgn*dl*1.6,l):col(h,l+sgn*dl*0.7)):col(h,l)}"></button>`).join('')}</div>`;
+    const rw=$('#rw'),W0=bt.clientWidth;rw.style.transform=`translateX(${W0}px)`;
+    anim=rw.animate([{transform:`translateX(${W0}px)`},{transform:`translateX(${-rw.scrollWidth}px)`}],{duration:dur*1000,easing:'linear',fill:'forwards'});
+    anim.onfinish=()=>{if(over)return;lives--;sfx('hit');$('#st').textContent='見逃した！';batch++;next()};
+    if(P.glow){const ob=rw.querySelector('[data-o="1"]');ob.classList.add('glow');timers.push(setTimeout(()=>ob.classList.remove('glow'),P.glow*1000+400))}}
+  bt.onclick=e=>{const b=e.target.closest('button');if(!b||over)return;
+    if(b.dataset.o==='1'){found++;sfx('key');$('#sc').textContent=found;$('#st').textContent='不良品を発見';anim.onfinish=null;anim.cancel();batch++;dur=Math.max(1.6,dur*0.96);next()}
+    else{lives--;sfx('hit');shake(bt);$('#st').textContent='それは良品だ';hudUp();if(lives<=0){anim.onfinish=null;anim.cancel();finish()}}};
+  function finish(){if(over)return;over=true;const ok=found>=P.q;jobDone('inspect',d,{ok,score:found,raw:found*12+(ok?50:0),detail:`発見 ${found} 個 / ノルマ ${P.q} 個 · 検査 ${batch} ロット`})}
+  next()}
+/* ALU：配合計算（合計が目標になる部品を選ぶ） */
+function runMix(d){const P=jp('mix',d);let solved=0,target=0,sel=[],end=performance.now()+P.T*1000,over=false;
+  openPanel(`<div class="hud"><span>ALU · 配合計算 · 成功 <b id="sc">0</b> / ${P.q}</span><span id="tleft">${P.T.toFixed(1)} 秒</span></div><div class="timer"><i id="tbar"></i></div>
+  <p class="status c">合計が目標になる部品を ${P.k} 個選べ</p><div class="q" id="tg"></div><div class="tiles" id="tl"></div>
+  <p class="note c">部品をタップ、またはキーボードの 1〜6。間違えると3秒減ります</p>`);
+  let vals=[];
+  function next(){const s=1+solved*0.12,ans=Array.from({length:P.k},()=>rnd(2,Math.round(P.max*s)));target=ans.reduce((a,b)=>a+b,0);
+    vals=[...ans];while(vals.length<6)vals.push(rnd(2,Math.round(P.max*s)));vals.sort(()=>Math.random()-0.5);sel=[];
+    $('#tg').textContent=`目標 ${target}`;$('#tl').innerHTML=vals.map((v,i)=>`<button type="button" data-i="${i}">${v}</button>`).join('')}
+  function tap(i){if(over||i>=vals.length)return;const k=sel.indexOf(i);if(k>=0)sel.splice(k,1);else sel.push(i);sfx('key');
+    $('#tl').querySelectorAll('button').forEach((b,j)=>b.classList.toggle('on',sel.includes(j)));
+    if(sel.length===P.k){const sum=sel.reduce((a,j)=>a+vals[j],0);if(sum===target){solved++;$('#sc').textContent=solved;next()}else{end-=3000;sfx('hit');shake($('#tl'));sel=[];timers.push(setTimeout(()=>$('#tl').querySelectorAll('button').forEach(b=>b.classList.remove('on')),200))}}}
+  $('#tl').onclick=e=>{const b=e.target.closest('button');if(b)tap(+b.dataset.i)};
+  on(window,'keydown',e=>{if(/^[1-6]$/.test(e.key)){e.preventDefault();if(!e.repeat)tap(+e.key-1)}});
+  timeBar(()=>end,P.T,()=>{if(over)return;over=true;const ok=solved>=P.q;jobDone('mix',d,{ok,score:solved,raw:solved*14+(ok?50:0),detail:`成功 ${solved} 回 / ノルマ ${P.q} 回`})});next()}
 
 /* CPU：ドローン回避（5列。照準線が出た列にレーザーが落ちる） */
 const DRONE=sprite(["r.......r","rrr...rrr",".ggggggg.","..gGeGg..","...g.g..."],{r:'#5c6378',g:'#2c2750',G:'#8e8aa6',e:'#ff4a5c'});
