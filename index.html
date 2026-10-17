@@ -199,7 +199,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.9 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.10 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -238,7 +238,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.9"></script>
+<script src="sound.js?v=0.10"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -332,9 +332,6 @@ const W=320,H=180,WORLD=1000,GY=148,CAMMAX=WORLD-W;
 function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
 /* スプライト */
-/* 主要キャラは2倍の大きさで手描きした地図（lw・lh は半分。そのまま1:1で描く） */
-function spriteHi(rows,pal){const w=rows[0].length,h=rows.length,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
-  rows.forEach((r,y)=>[...r].forEach((ch,x)=>{if(pal[ch]){g.fillStyle=pal[ch];g.fillRect(x,y,1,1)}}));c.lw=w/2;c.lh=h/2;return c}
 /* 文字列の地図からドット絵を作り、Scale2x で縦横2倍の細かさにする（lw・lh が元の大きさ） */
 function sprite(rows,pal){const w=rows[0].length,h=rows.length,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
   rows.forEach((r,y)=>[...r].forEach((ch,x)=>{if(pal[ch]){g.fillStyle=pal[ch];g.fillRect(x,y,1,1)}}));
@@ -345,15 +342,15 @@ function sprite(rows,pal){const w=rows[0].length,h=rows.length,c=document.create
     const i=y*2*w*2+x*2;dst[i]=e0;dst[i+1]=e1;dst[i+w*2]=e2;dst[i+w*2+1]=e3}
   og.putImageData(img,0,0);o.lw=w;o.lh=h;return o}
 const PP={h:'#3b3554',H:'#5d5680',s:'#d9a07a',v:'#3ef2e0',j:'#27243d',c:'#3ef2e0',p:'#191828',b:'#0b0a12'};
-const P_A=spriteHi(["......oooooooo......", "....ooHHHHHHhhoo....", "...oHHHhhhhhhhhhdo..", "..oHHhhhhhhhhhhhhdo.", "..oHhhhoooooooohhdo.", "..ohhhossssssssohdo.", "..ohhosVVvvvvvvsohdo", "..ohhosvvvvvvvvsohdo", "..ohhossssssssssohdo", "..odhhosssSSssshhdo.", "...odhhoossssoohdo..", "....oddhhoooohhdo...", "...ooJJJJjjjjjjjoo..", "..oJJJjjjjcjjjjjjjo.", ".oJJjjjjjjcjjjjjjjjo", ".oJjjojjjjcjjjjojjjo", ".ojjjojjjjcjjjjojjjo", ".ojjjojjjjcjjjjojjjo", ".osssojjjjcjjjjosSso", ".oSSoojjjjcjjjjooSSo", "..oo.ojjjjjjjjjjo...", ".....oPPPPpppppppo..", ".....oPPpppppppppo..", ".....oPpppoopppppo..", ".....oPppo..oPpppo..", ".....oPppo..oPpppo..", ".....oPppo..oPpppo..", ".....oPppo..oPpppo..", "....okkkko..okkkkko.", "...okkkkko..okkkkkko", "...oKKKKKo..oKKKKKKo", "...ooooooo..oooooooo"],{"o": "#0b0a12", "H": "#6a6290", "h": "#3b3554", "d": "#262140", "s": "#e0a882", "S": "#b07a58", "v": "#3ef2e0", "V": "#c8fff8", "J": "#3c3860", "j": "#27243d", "c": "#3ef2e0", "P": "#2e2c46", "p": "#1b1a2c", "k": "#1a1824", "K": "#3a3550"});
-const P_B=spriteHi(["......oooooooo......", "....ooHHHHHHhhoo....", "...oHHHhhhhhhhhhdo..", "..oHHhhhhhhhhhhhhdo.", "..oHhhhoooooooohhdo.", "..ohhhossssssssohdo.", "..ohhosVVvvvvvvsohdo", "..ohhosvvvvvvvvsohdo", "..ohhossssssssssohdo", "..odhhosssSSssshhdo.", "...odhhoossssoohdo..", "....oddhhoooohhdo...", "...ooJJJJjjjjjjjoo..", "..oJJJjjjjcjjjjjjjo.", ".oJJjjjjjjcjjjjjjjjo", ".oJjjojjjjcjjjjojjjo", ".ojjjojjjjcjjjjojjjo", ".ojjjojjjjcjjjjojjjo", ".osssojjjjcjjjjosSso", ".oSSoojjjjcjjjjooSSo", "..oo.ojjjjjjjjjjo...", ".....oPPPPpppppppo..", "....oPPpppppppppppo.", "...oPppppoooopppppo.", "..oPppppo...oPppppo.", ".oPpppo......oPpppo.", ".oPppo........oPppo.", "oPppo..........oPppo", "okkkko.........okkko", "okkkkko.......okkkko", "oKKKKKo.......oKKKKo", "ooooooo.......oooooo"],{"o": "#0b0a12", "H": "#6a6290", "h": "#3b3554", "d": "#262140", "s": "#e0a882", "S": "#b07a58", "v": "#3ef2e0", "V": "#c8fff8", "J": "#3c3860", "j": "#27243d", "c": "#3ef2e0", "P": "#2e2c46", "p": "#1b1a2c", "k": "#1a1824", "K": "#3a3550"});
-const MINA=spriteHi([".....oooooooo.....", "...ooccLLccccoo...", "..occLLcccccccco..", ".occcccccccccccCo.", ".occccCCCCCCcccCo.", ".occCssssssssCcCo.", ".occsswesswesscCo.", ".occsseesseessCCo.", ".occssssssssssCco.", ".oCcsSsssmmssSsCo.", "..oCcSsssssssSCo..", "..oCCoSSSSSSoCCo..", "..ookkKkkzkkKkko..", ".okkkKkkkzkkkKkkko", "okkkkKkkkzkkkKkkko", "okkokKkkkzkkkKokko", "okkokkkkkzkkkkokko", "osSokkkkkzkkkkoSso", "oSSoKKKKKKKKKKoSSo", ".oo.oPPpppppppo.oo", "....oPpppppppPo...", "....oPppoooppPo...", "....oPpo...oPpo...", "....oPpo...oPpo...", "....oPpo...oPpo...", "...oBBBo...oBBBo..", "...oBBBBo..oBBBBo.", "...oooooo..oooooo."],{"o": "#0b0a12", "c": "#3ef2e0", "C": "#1a9e94", "L": "#c8fff8", "s": "#e8b48e", "S": "#c08a68", "e": "#07060d", "w": "#ffffff", "m": "#c0306a", "k": "#ff3d8b", "K": "#a3245a", "z": "#ffd0e4", "P": "#2e2c46", "p": "#1b1a2c", "B": "#3a1a30"});
-const DOC=spriteHi(["......................", "......oooooooo........", "....ooGGGgggggoo......", "...oGGgggggggggGo.....", "...oGgggggggggggo.....", "...oggsssssssmmmo.....", "...ogssssssssmMMo.....", "...ossewssssmrRmo.....", "...osseessssmrrmo.....", "...ossssssssmmmso.....", "...oSssssSSssssso.....", "....oSsssssssssSo.....", ".....oSSSSSSSSSo......", "....oollcctttcclloo...", "...olllccctttccclllo..", "..olcclcccttcccclcclo.", "..olcclccccxcccclcclo.", "..occclccccxcccclccco.", "..occclcccccxccclccco.", "..occclcccccxccclccco.", "..occCoccccccccocCcco.", "..osssoccccccccosssso.", "..oSSSoCcccccccoSSSSo.", "...ooooCcccccccCoooo..", "......oCccccccCo......", "......oCccccccCo......", "......oCcccccccCo.....", "......oCccooocCo......", "......oPppo.oPppo.....", "......oPppo.oPppo.....", "......oPppo.oPppo.....", "......oPppo.oPppo.....", "......oPppo.oPppo.....", ".....okkkko.okkkko....", "....okkkkko.okkkkko...", "....oooooooo.ooooooo.."],{"o": "#0b0a12", "G": "#c0c0d4", "g": "#8a8aa0", "s": "#e0a882", "S": "#b07a58", "e": "#07060d", "w": "#ffffff", "r": "#ff4a5c", "R": "#ffc0c8", "m": "#5c6378", "M": "#9aa2b8", "l": "#f0eef8", "c": "#d6d2e4", "C": "#9a96b2", "t": "#3a3550", "x": "#6a7088", "P": "#2e2c46", "p": "#1b1a2c", "k": "#1a1824"});
+const P_A=sprite(["...hhhh...","..hHHHHh..",".hHhhhhHh.",".hhsssshh.",".hhsvvvvh.",".hhsssshh.","..hhsshh..",".jjjjjjjj.","jjjjcjjjjj","jjjjcjjjjj","sjjjcjjjjs","..pppppp..","..pp..pp..","..pp..pp..","..pp..pp..",".bbb..bbb."],PP);
+const P_B=sprite(["...hhhh...","..hHHHHh..",".hHhhhhHh.",".hhsssshh.",".hhsvvvvh.",".hhsssshh.","..hhsshh..",".jjjjjjjj.","jjjjcjjjjj","jjjjcjjjjj","sjjjcjjjjs","..pppppp..","..ppp.pp..",".pp....pp.",".pp....pp.","bbb....bbb"],PP);
+const MINA=sprite(["..cccc...",".ccCCcc..",".cssssc..",".csesec..",".cssssc..","..ssss...",".kkkkkk..","kkKkkKkk.","skkkkkks.",".kkkkkk..","..pppp...","..p..p...","..p..p...",".bb..bb.."],{c:'#3ef2e0',C:'#1a9e94',s:'#d9a07a',e:'#07060d',k:'#ff3d8b',K:'#a3245a',p:'#191828',b:'#0b0a12'});
+const DOC=sprite(["...gggg....","..gggggg...","..gsssmg...","..sesrms...","..sssmms...","...ssss....","..wwwwwww..",".wwWwwwWww.",".wwWwmwWww.",".swWwwwWws.","..wWwwwWw..","..wWwwwWw..","..wWwwwWw..","..wwpppww..","...pp.pp...","...pp.pp...","...pp.pp...","..bbb.bbb.."],{g:'#8a8aa0',s:'#d9a07a',e:'#07060d',r:'#ff4a5c',m:'#5c6378',w:'#c9c6d8',W:'#8e8aa6',p:'#191828',b:'#0b0a12'});
 
-const GENJI=spriteHi(["....................", "....................", "......oooooooo......", "....oowwWWWwwwoo....", "...owwwWWwwwwwwwo...", "...orrRRrrrrrrrrro..", "...orrrrrrrrrrrrro..", "...osssssssssssso...", "...ossesssssesss.o..", "...osseesssseesso...", "...ossssssssssssoo..", "...oSssmmmmmmssSo...", "....oSmmmmmmmmSo....", ".....oSSmmmmSSo.....", "....oobbbbbbbboo....", "...obbaaaaaaaabbo...", "..obbaaaaaaaaaabbo..", "..obaaaaaaaaaaaabo..", "..obaaaAaaaaAaaabo..", "..osaaaaaaaaaaaaso..", "..oSSaaaaaaaaaaSSo..", "...oo.aaaaaaaa.oo...", "......aAaaaaAa......", ".....oaaaaaaaao.....", ".....oAaaaaaaAo.....", "......oPppppPo......", "......oPpppppo......", "......oPpooPpo......", "......oPpo.oPpo.....", "......oPpo.oPpo.....", "......oPpo.oPpo.....", ".....okkko.okkko....", "....okkkko.okkkko...", "....oooooo.oooooo..."],{"o": "#0b0a12", "W": "#ffffff", "w": "#d8d4e0", "r": "#c8323c", "R": "#ff6a6a", "s": "#d29870", "S": "#a87050", "e": "#07060d", "m": "#b8b4c4", "b": "#3a3550", "a": "#ece6d4", "A": "#bcb4a0", "p": "#1b1a2c", "P": "#2e2c46", "k": "#1a1824"});
-const RAY=spriteHi(["......oooooooo......", "....ooCCCCCCccoo....", "...oCCCcccccccccdo..", "..oCCccccccccccccdo.", "..oCcvvvvvvvvvvvcdo.", "..ocvVVvvvvvvvvvvdo.", "..ocvvvvvvvvvvvvcdo.", "..occccccccccccccdo.", "..ocCccccccccccccdo.", "...ocdcccccccccddo..", "....odddccccdddo....", ".....ooddccddoo.....", "......oddccddo......", "...oooCCCCCCcccooo..", "..oCCcccccccccccCCo.", ".oCCcccdcccccdcccCCo", ".oCcccddcLLlcddcccCo", ".occco.cLLLLlc.occco", ".occco.ccLLcc..occco", ".odcco.ccccccc.occdo", ".oCCo.oCCccccCo.oCCo", "..oo..odccccccdo.oo.", "......occcccccco....", "......odcccoocdo....", "......oCco..oCco....", "......occo..occo....", "......odcCoooCcdo...", "......oCco..oCco....", "......occo..occo....", "......odco..odco....", "......oCco..oCco....", "......occo..occo....", ".....occco..occco...", "....oCCCco..oCCCco..", "....odddddo.oddddo..", "....ooooooo.oooooo.."],{"o": "#0b0a12", "C": "#e6eaf4", "c": "#9aa2b8", "d": "#5c6378", "v": "#3ef2e0", "V": "#c8fff8", "L": "#5fb8ff", "l": "#a8d8ff"});
-const DAIMON=spriteHi(["....................", "....................", "......oooooooo......", "....ooYYYyyyyyoo....", "...oYYyyyyyyyyyyo...", "..oDyyyyyyyyyyyyDo..", "..oooooooooooooooo..", "...osssssssssssso...", "...ossesssssessso...", "...osseesssseesso...", "...ossssssssssssso..", "...oSsBBBBBBBBsSo...", "....oSBBbbbbBBSo....", ".....oSSBBBBSSo.....", "...oottttttttttoo...", "..ouuttttttttttuuo..", ".ouutttttttttttuuuo.", ".outtttTttttTtttuuo.", ".outttTTttttTTtttuo.", ".ossstttttttttttssso", ".oSSStttttttttttSSSo", ".oSSottttggttttoSSo.", "..oo.ottttttttto.oo.", ".....oTtttttttTo....", ".....oTttttttttTo...", "......oTttooTtto....", "......oTto..oTto....", "......oTto..oTto....", "......oTto..oTto....", "......oTto..oTto....", ".....okkko..okkko...", "....okkkko..okkkko..", "....oKKKKo..oKKKKo..", "....oooooo..oooooo.."],{"o": "#0b0a12", "Y": "#ffe070", "y": "#f2c230", "D": "#b08a1a", "s": "#c98a5a", "S": "#9a6440", "e": "#07060d", "B": "#3a2a22", "b": "#5a4030", "t": "#c0662a", "T": "#8a4418", "u": "#e08a4a", "g": "#5a5048", "p": "#1b1a2c", "k": "#2a1e18", "K": "#4a3a30"});
-const TSUGI=spriteHi(["....................", "....................", "....oooooooooo......", "...ohhHHhhhhhhoo....", "..ohhHHhhhhhhhhho...", "..ohgggggggggghho...", "..ohgGGgggGGggghho..", "..ohgggggggggghho...", "..ohsssssssssshho...", "..ohssesssessshho...", "..ohsseesseessho....", "..ohssssssssssho....", "..ohhSsssmmssSho....", "..ohho.oSSSSSoo.....", "...ooowwwwwwwwoo....", "..occwwwwwwwwwwwo...", ".occCwwwwwwwwwwwwo..", ".oCcdwwwwrwwwwwwwo..", ".occdwwWwwwwwWwwwo..", ".occdwwWwwwwwWwwwo..", ".oCcco.wwwwwwwwoSso.", ".oddco.wwwwwwwwoSSo.", "..ooo..oWwwwwwWo.oo.", ".......oWwwwwwWo....", ".......owwwwwwwo....", ".......oWwwwwwWo....", "........oppppo......", "........opooppo.....", "........opo.opo.....", "........opo.opo.....", "........opo.opo.....", ".......okko.okko....", "......okkko.okkko...", "......ooooo.ooooo..."],{"o": "#0b0a12", "h": "#2a2a3a", "H": "#4a4a60", "g": "#3ef2e0", "G": "#c8fff8", "s": "#e0a882", "S": "#b07a58", "e": "#07060d", "m": "#c0306a", "w": "#c8d2de", "W": "#8a96a6", "r": "#ff4a5c", "c": "#9aa2b8", "C": "#e6eaf4", "d": "#5c6378", "p": "#2a2838", "k": "#1a1824"});
+const GENJI=sprite(["...wwww...","..wwwwww..","..rrrrrr..","..ssssss..","..sesses..","..ssssss..","...smms...","..oooooo..",".oaaaaaao.","oaaaaaaaao","saaaaaaaas",".aaaaaaaa.","..aaaaaa..","..pp..pp..","..pp..pp..","..pp..pp..",".bbb..bbb."],{w:'#d8d4e0',r:'#c8323c',s:'#c98f6a',e:'#07060d',m:'#9a96a8',o:'#3a3550',a:'#e8e2d0',p:'#191828',b:'#0b0a12'});
+const RAY=sprite(["...cccc...","..cCCCCc..","..cvvvvc..","..cCCCCc..","...cccc...","....cc....","..cccccc..",".cCCccCCc.","cCccLLccCc","cCccccccCc","c.cCCCCc.c","..cccccc..","..cc..cc..","..cC..Cc..","..cc..cc..","..cC..Cc..","..cc..cc..",".ccc..ccc."],{c:'#8f97ad',C:'#d6dbe8',v:'#3ef2e0',L:'#5fb8ff'});
+const DAIMON=sprite(["...yyyy...","..yyyyyy..","..ssssss..","..sesses..","..sBBBBs..","...BBBB...",".oooooooo.","sooooooooo","sooooooooo","ss.oooo.ss","s..oooo..s","...oooo...","..oo..oo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb..bbb."],{y:'#f2c230',s:'#b9805a',e:'#07060d',B:'#3a2a22',o:'#c0662a',b:'#0b0a12'});
+const TSUGI=sprite(["..hhhhhh..",".hhhhhhhh.",".hgggghhh.",".hsssssh..",".hsesesh..",".hssssshh.","..sssss...",".wwwwwwww.","cwwwwwwwws","Cwwwrwwwws","cwwwwwwww.","..wwwwww..","..wwwwww..","..pp..pp..","..pp..pp..","..pp..pp..",".bbb..bbb."],{h:'#2a2a3a',g:'#3ef2e0',s:'#d9a07a',e:'#07060d',w:'#b8c4d0',r:'#ff4a5c',c:'#8f97ad',C:'#d6dbe8',p:'#2a2838',b:'#0b0a12'});
 /* 沈殿街の住人（人間が多く、サイボーグは少し） */
 const wk=(pal)=>sprite(["...yyyy...","..yyyyyy..","..ssssss..","..sesses..","..ssssss..","...ssss...",".tooooot..","toooooooot","toooooooot","s.oooooo.s","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb..bbb."],{s:'#c98f6a',e:'#07060d',b:'#0b0a12',...pal});
 const WK_A=wk({y:'#f2c230',o:'#2f4a7a',t:'#8a8a96'}),WK_B=wk({y:'#e85a2a',o:'#5a4a2a',t:'#6a6a74',s:'#a8704c'}),WK_C=wk({y:'#d8d4e0',o:'#3a5a3a',t:'#7a7a84',s:'#d9a07a'});
@@ -404,16 +401,18 @@ const RUBBLE=[];{const R=rng(91);for(const cx of [34,238,352,548,684,786]){const
 /* 層ごとの住人と設備 */
 const AREAS={
   out:{nm:'圏外 · ピラミッドの外',floor:'ふもと · 圏外',label:'ピラミッドの外の、見捨てられたスラム街。遠くにピラミッド都市・東京の光が見える',
-    npcs:[{id:'mina',x:200},{id:'lift',x:398},{id:'doc',x:462},{id:'gate',x:856}]},
+    npcs:[{id:'jiro',x:116},{id:'take',x:154},{id:'mina',x:200},{id:'yuki',x:300},{id:'lift',x:398},{id:'doc',x:462},{id:'gate',x:856}]},
   lower:{nm:'沈殿街 · 第1層',floor:'第1層 · 沈殿街',label:'ピラミッドの底の街、沈殿街。上の層の床が空を塞いでいる。屋台の灯りと工場',
-    npcs:[{id:'lift',x:30},{id:'genji',x:322},{id:'daimon',x:428},{id:'ray',x:590},{id:'tsugi',x:700},{id:'gate',x:856}]}
+    npcs:[{id:'lift',x:30},{id:'mina',x:72},{id:'genji',x:322},{id:'daimon',x:428},{id:'ray',x:590},{id:'tsugi',x:700},{id:'gate',x:856}]}
 };
 const AREA_ORDER=['out','lower'];
 const area=()=>AREAS[S.area]?S.area:'out';
-const following=()=>!!(S.st&&S.st.follow);
-const npcsHere=()=>AREAS[area()].npcs.filter(n=>!(n.id==='mina'&&following()));
+/* ミナはゲートを通ったあと、沈殿街の昇降機のそばで勉強している（同行はしない） */
+const following=()=>false;
+const minaIn=()=>S.st&&S.st.join?'lower':'out';
+const npcsHere=()=>AREAS[area()].npcs.filter(n=>n.id!=='mina'||minaIn()===area());
 /* 人の見え方（知覚）に使う情報 */
-const PEOPLE={mina:{nm:'ミナ',sex:'f',age:'20代'},doc:{nm:'ドク・カゲロウ',sex:'m',age:'50代'},genji:{nm:'ゲンジ',sex:'m',age:'60代'},daimon:{nm:'ダイモン',sex:'m',age:'40代'},tsugi:{nm:'ツギハギ',sex:'f',age:'40代'},ray:{nm:'レイ',model:'RAY-07 ／ 運送用義体 ／ 稼働14年'}};
+const PEOPLE={jiro:{nm:'ジロウ',sex:'m',age:'70代'},take:{nm:'タケ',sex:'m',age:'10代'},yuki:{nm:'ユキ',sex:'f',age:'30代'},mina:{nm:'ミナ',sex:'f',age:'20代'},doc:{nm:'ドク・カゲロウ',sex:'m',age:'50代'},genji:{nm:'ゲンジ',sex:'m',age:'60代'},daimon:{nm:'ダイモン',sex:'m',age:'40代'},tsugi:{nm:'ツギハギ',sex:'f',age:'40代'},ray:{nm:'レイ',model:'RAY-07 ／ 運送用義体 ／ 稼働14年'}};
 const drops=[];{const R=rng(3);for(let i=0;i<90;i++)drops.push({x:R()*W,y:R()*H,v:150+R()*90,l:2+Math.round(R()*3)})}
 /* 沈殿街：配管、店の灯り、ホログラム広告の切れ端、柱 */
 const L_SHOPS=[],L_HOLO=[],L_PIPES=[];
@@ -432,7 +431,7 @@ function draw(t){ctx.setTransform(2,0,0,2,0,0);ctx.imageSmoothingEnabled=false;
   drawPeople(t);
   perceive(t);
   /* 話しかけられる印 */
-  const n=near();if(n&&mode==='play'&&!(n.id==='mina'&&following())){const sx=X(n.x),bob=Math.round(Math.sin(t*5)*1.5),y=markY(n)+bob;
+  const n=near();if(n&&mode==='play'){const sx=X(n.x),bob=Math.round(Math.sin(t*5)*1.5),y=markY(n)+bob;
     ctx.fillStyle='#3ef2e0';ctx.fillRect(sx-3,y,7,1);ctx.fillRect(sx-2,y+1,5,1);ctx.fillRect(sx-1,y+2,3,1);ctx.fillRect(sx,y+3,1,1)}
   tagsUp()}
 const markY=n=>n.id==='gate'?84:n.id==='lift'?GY-52:n.id==='doc'?GY-26:n.id==='ray'?GY-26:n.id==='genji'?GY-25:n.id==='daimon'||n.id==='tsugi'?GY-25:GY-22;
@@ -627,14 +626,17 @@ function drawSpr(spr,x,flip,alpha=1){const sx=Math.round(x-camX-spr.lw/2),sy=GY-
   if(flip){ctx.save();ctx.translate(sx+spr.lw,sy);ctx.scale(-1,1);ctx.drawImage(spr,0,0,spr.lw,spr.lh);ctx.restore()}else ctx.drawImage(spr,sx,sy,spr.lw,spr.lh);ctx.globalAlpha=1}
 function drawPeople(t){const a=area();
   if(a==='out'){const m=docMood();for(const c of OUT_CROWD)drawSpr(m>=3?(c.sex==='f'?SIL_F:SIL_M):c.spr,c.x,c.d<0);
-    if(!following())drawSpr(personSprite('mina',MINA),200,false);drawSpr(personSprite('doc',DOC),462,true);
+    if(minaIn()==='out')drawSpr(personSprite('mina',MINA),200,false);drawSpr(personSprite('doc',DOC),462,true);
     if(docMood()<3){ctx.fillStyle='#ff4a5c';if(Math.floor(t*1.2)%4)ctx.fillRect(Math.round(462-camX)+5,GY-15,1,1)}}
   else{const m=docMood();
     for(const c of CROWD){const alpha=c.cy?(m===0?0.55:m===1?0.75:1):1,spr=!c.cy&&m>=3?(c.sex==='f'?SIL_F:SIL_M):c.spr;drawSpr(spr,c.x,c.d<0,alpha)}
+    /* 昇降機のそばで勉強するミナ（木箱に本と端末） */
+    if(minaIn()==='lower'){const bx=Math.round(80-camX);ctx.fillStyle='#4a3424';ctx.fillRect(bx,GY-7,12,7);ctx.fillStyle='#6a4a30';ctx.fillRect(bx,GY-7,12,1);
+      ctx.fillStyle='#d8d0b8';ctx.fillRect(bx+1,GY-9,5,2);ctx.fillStyle='#3ef2e0';ctx.fillRect(bx+7,GY-9,4,2);ctx.globalAlpha=0.25;ctx.fillRect(bx+5,GY-14,8,6);ctx.globalAlpha=1;
+      drawSpr(personSprite('mina',MINA),72,false)}
     drawSpr(personSprite('genji',GENJI),322,false);drawSpr(personSprite('daimon',DAIMON),428,false);
     /* レイ：全身義体なので、生身の目にはぼやけ、機械の目にははっきり映る */
     const jit=m<2?Math.round(Math.sin(t*9)*1):0;drawSpr(RAY,590+jit,true,m===0?0.5:m===1?0.7:1);drawSpr(personSprite('tsugi',TSUGI),700,true)}
-  if(following())drawSpr(personSprite('mina',MINA),fol.x,fol.dir<0);
   const spr=player.moving&&Math.floor(player.step*8)%2?P_B:P_A;drawSpr(spr,player.x,player.dir<0)}
 /* 知覚のフィルター：機械化で色が抜け、走査線、線画になる。澄みで色が深まる */
 function perceive(t){const m=docMood(),c=clarityLv();
@@ -656,8 +658,7 @@ function perceive(t){const m=docMood(),c=clarityLv();
 let tagsHTML='';
 function tagsUp(){const m=docMood(),el=$('#tags');let h='';
   if(m>=2&&(mode==='play'||mode==='dialog')){const list=[];const add=(id,x,spr)=>list.push({id,x,y:GY-spr.lh-3});
-    if(area()==='out'){if(!following())add('mina',200,MINA);add('doc',462,DOC)}else{add('genji',322,GENJI);add('daimon',428,DAIMON);add('ray',590,RAY);add('tsugi',700,TSUGI)}
-    if(following())add('mina',fol.x,MINA);
+    if(area()==='out'){add('jiro',116,OUT_CROWD[0].spr);add('take',154,OUT_CROWD[1].spr);add('yuki',300,OUT_CROWD[2].spr);if(minaIn()==='out')add('mina',200,MINA);add('doc',462,DOC)}else{if(minaIn()==='lower')add('mina',72,MINA);add('genji',322,GENJI);add('daimon',428,DAIMON);add('ray',590,RAY);add('tsugi',700,TSUGI)}
     const ids={};let n=0;
     for(const p of list){const sx=p.x-camX;if(sx<-10||sx>W+10)continue;const P=PEOPLE[p.id];let tx;
       if(P.model)tx=P.model;else if(m>=4){ids[p.id]=ids[p.id]||('対象'+'ABCD'[n++]);tx=ids[p.id]}else tx=m>=3?`${P.sex==='f'?'女性':'男性'}・${P.age}`:`${P.nm} ／ ${P.sex==='f'?'女性':'男性'}・${P.age}`;
@@ -666,8 +667,7 @@ function tagsUp(){const m=docMood(),el=$('#tags');let h='';
 /* 澄み：生身のまま層を進み、本人の実力が伸びるほど上がる（0〜3） */
 function clarityLv(){const f=flesh();if(f<40)return 0;const o=overall(S.cur),b=overall(S.base),grow=o&&b?o.avg-b.avg:0;
   const v=Math.min(3,(S.reached||['out']).length-1+(grow>=5?1:0));return f>=70?v:Math.min(1,v)}
-function near(){let best=null,bd=24;for(const n of npcsHere()){const d=Math.abs(n.x-player.x);if(d<bd){bd=d;best=n}}
-  if(!best&&following())return{id:'mina',x:fol.x};return best}
+function near(){let best=null,bd=24;for(const n of npcsHere()){const d=Math.abs(n.x-player.x);if(d<bd){bd=d;best=n}}return best}
 
 let mode='title',last=0,titlePan=0,stepIdx=0,lastBright=-1;
 function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
@@ -696,7 +696,7 @@ function toast(msg,ms=4200){const el=$('#toast');el.textContent=msg;el.hidden=fa
 
 /* ===== 会話 ===== */
 let D=null,typeT=0;
-const WHO={me:'あなた',mina:'ミナ',doc:'ドク・カゲロウ',gate:'SENTRY',genji:'ゲンジ',daimon:'ダイモン',tsugi:'ツギハギ',ray:'レイ',kago:'カゴ'};
+const WHO={me:'あなた',jiro:'ジロウ',take:'タケ',yuki:'ユキ',mina:'ミナ',doc:'ドク・カゲロウ',gate:'SENTRY',genji:'ゲンジ',daimon:'ダイモン',tsugi:'ツギハギ',ray:'レイ',kago:'カゴ'};
 /* 名前欄：機械化が進むと、名前の代わりに「女性・20代」などの識別になる */
 function whoName(id){const P=PEOPLE[id],m=docMood();if(!P)return WHO[id];
   if(P.model)return m>=2?'RAY-07':'レイ';
@@ -721,33 +721,62 @@ $('#dlg').addEventListener('click',advance);
 
 /* ===== 会話の中身 ===== */
 const L=(who,text,choices)=>({who,text,choices});
-function interact(){const n=near();if(!n)return;({mina:talkMina,doc:talkDoc,gate:area()==='lower'?talkGate2:talkGate,lift:liftTalk,genji:talkGenji,daimon:talkDaimon,tsugi:talkTsugi,ray:talkRay})[n.id]()}
+/* 裏コマンド：同じ相手に10回続けて話しかけると、本音を聞ける */
+let streakId=null,streak=0;
+function interact(){const n=near();if(!n)return;
+  if(HONNE[n.id]){if(streakId===n.id)streak++;else{streakId=n.id;streak=1}
+    if(streak>=10){streak=0;return honne(n.id)}}
+  ({mina:talkMina,doc:talkDoc,gate:area()==='lower'?talkGate2:talkGate,lift:liftTalk,genji:talkGenji,daimon:talkDaimon,tsugi:talkTsugi,ray:talkRay,jiro:talkFire,take:talkFire,yuki:talkFire})[n.id](n.id)}
+/* 話すたびに内容が変わる（3通りを順番に） */
+function nth(id){const n=(S.talkN&&S.talkN[id])||0;S.talkN={...S.talkN,[id]:n+1};save();return n}
+const pick3=(id,arr)=>arr[nth(id)%arr.length];
+function honne(id){const first=!(S.honne&&S.honne[id]);S.honne={...S.honne,[id]:1};save();
+  talk([L('me',{n:'……何度も話しかけるうちに、相手の顔から、いつもの表情が消えた。',c:'……何度も話しかけるうちに、相手の目が、ふっと遠くを見た。',m:'対象の応答パターンが変化。防御反応の解除を検出。'}),...HONNE[id].map(t=>L(id,t))],
+    ()=>{if(first)toast(`本音を聞いた（${Object.keys(S.honne).length} / ${Object.keys(HONNE).length}人）`)})}
+const HONNE={
+  mina:['ほんとはね、怖いんだ。','検査に落ちた日、母さんはあたしの手を離した。ソウの手だけ握って、ゲートの向こうに戻ってった。','インプラントを入れたくないのは……生身のあたしを捨てた街に、機械の体で認められても、意味がないから。','……今のは忘れて。勉強、戻るね。'],
+  doc:['……俺にも娘がいた。脳スペックが足りなくてな、俺が自分の手で拡張を入れた。','手術は成功したよ。数字は上がった。ゲートも通った。','……ただ、娘は俺の顔を覚えていなかった。','それから、人の脳をいじる手が震える。それでも俺は、他の生き方を知らねえ。'],
+  genji:['俺は昔、企業区でネットワーク技師をやってた。俺が組んだ回線で、街が動いてた。','ある日、俺の仕事はAIに置き換わった。……正確には、俺が育てたAIにな。','だから屋台をやってる。湯気と出汁だけは、AIには作れねえ。','……作れねえと、信じてる。そう信じてねえと、ここに立っていられねえんだ。'],
+  daimon:['あのアームが、人を潰したことがある。','……俺の弟だ。','企業区の連中は、事故報告を一行で済ませた。「人為的な操作ミス」。','だから俺が握る。機械は責任を取らねえ。取るのは、いつも人間だ。'],
+  ray:['……型番で呼ばれるのは、楽だぞ。名前には、過去がついてくる。','俺にも名前があった。家族も。全身を換えた日、俺は家の顔認証に通らなくなった。','ドアの前で、三時間立ってた。……誰も、開けてくれなかった。','それから名前を捨てた。ソウにも、同じ道を勧めちまった。……俺のせいかもしれねえ。'],
+  tsugi:['この腕、自分で継いだって言ったでしょ。ほんとは、継ぐしかなかったの。','工場の事故で腕をなくしてね。企業の病院は治療を断った。スペックが足りないからって。','だから、落ちてくる部品で自分を直した。','……誰かが捨てた腕で、あたしは生きてる。だから、捨てられたものを直すのが好きなの。'],
+  jiro:['昔は、東京の中にいたんだ。第2層の会社員さ。','年を取って、脳スペックが落ちた。毎年の再検査で、一層ずつ下に落とされて……最後は、ここだ。','東京はな、年を取ることを許してくれねえ街なんだよ。','……あんたは若い。上に行け。わしみたいに、落ちてくるんじゃねえぞ。'],
+  take:['俺、ゲートの検査、三回落ちてるんだ。','四回落ちたら、もう二度と受けさせてもらえない。','だから……怖くて、もう受けに行けない。','火にあたってると、何もしなくていい気がするんだ。……情けないだろ。'],
+  yuki:['赤ちゃんがいたの。生まれてすぐ、脳スペックの予測検査をされて。','数字がよかったから、あの子だけ中に連れていかれた。あたしは外。','今ごろ、第何層にいるのかな。','……あたしの顔、知らないで育つのね。それでいいの。……いいのよ。']
+};
+/* 圏外：ドラム缶の火にあたる人たち */
+const FIRE={
+  jiro:['寒いだろ。火にあたっていけ。','ピラミッドの上は、雨が降らないらしいな。……一度でいいから、乾いた空を見たかった。','ここにいる連中はな、みんな、どこかの層から落ちてきたのさ。'],
+  take:['……なんだよ。見てんじゃねえよ。','ゲート？ ……行けるやつは、いいよな。','ミナさん、たまに食いもん分けてくれたんだ。……もう、下に行っちまったけど。'],
+  yuki:['雨、やまないね。','あのピラミッドの灯り、きれいでしょう。……遠いけど。','あなた、ゲートを通るの？ ……そう。気をつけてね。']
+};
+function talkFire(id){talk([L(id,pick3(id,FIRE[id]))])}
 function talkMina(){const o=overall(S.cur);
   if(!o){S.mina=Math.max(S.mina,1);save();return talk([L('mina','見ない顔だね。ここは圏外。東京の光が届かない場所だよ。'),L('mina','東京に入りたいなら、まず脳を測ってもらいな。この先の闇医者、ドク・カゲロウのとこ。'),L('mina','スペックがわからない奴には、仕事も回せないからさ。')])}
   let ls;
-  if(following())return talkMinaFollow();
+  if(area()==='lower')return talkMinaLower();
   if(S.passed){ls=[L('mina','ゲート、通ったんだってね。……やるじゃん。'),L('mina','……ねえ。次にゲートをくぐるとき、声かけて。話があるんだ。',[{label:'仕事をもらう',fn:jobBoard},{label:'わかった'}])];return talk(ls)}
   if(S.mina<2){S.mina=2;save();ls=[L('mina',`${o.tier.name}、ね。まあ、ここから上がればいいだけだよ。`),L('mina','スペックがわかったなら仕事を回せる。運び、侵入、映像解析、錠前破り。どれも脳を使う仕事さ。'),L('mina','稼いだクレジットは、そのうちドクのインプラント代になる。ゲートの判定も、奥で確かめてきな。')]}
   else if(S.gate===1){S.gate=2;save();ls=[L('mina','ゲート、通れなかったでしょ。顔に書いてある。'),L('mina','稼いで、鍛えて、もう一度。ここではみんなそうしてる。')]}
-  else{const pool=['また来たね。仕事ならあるよ。','圏外じゃ、脳しか売るものがないからね。',flesh()>0?'ドクのとこのインプラント、最初は400だってさ。貯めときな。':'全部入れたんだ。……目の色、変わったね。',`今の手持ちは ${S.cr} クレジットか。まだまだだね。`];ls=[L('mina',pool[Math.floor(Math.random()*pool.length)])]}
+  else ls=[L('mina',pick3('mina_out',['また来たね。仕事ならあるよ。','圏外じゃ、脳しか売るものがないからね。',flesh()>0?'ドクのとこのインプラント、最初は400だってさ。貯めときな。':'全部入れたんだ。……目の色、変わったね。']))];
   ls.push(L('mina','で、どうする？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
 function talkDoc(){const o=overall(S.cur),rec=siteRecord();
   if(!o){const ch=[{label:'スキャンを受ける',fn:scanIntro}];if(rec)ch.push({label:'診断サイトの記録を渡す',fn:()=>useRecord(rec)});ch.push({label:'やめておく'});
     return talk([L('doc','客か。……ふん、旧式の匂いがするな。'),L('doc','脳を見せろ。スキャンは4つ。反応、記憶、識別、演算だ。3分で終わる。'),L('doc','どうする？',ch)])}
   const md=docMood(),first=!S.docShop;if(first){S.docShop=1;save()}
   let ls;
-  if(md===0)ls=first?[L('doc','インプラントが入荷した。反射、記憶、視覚、演算。Lv3まで強化できる。最初は400だ。'),L('doc','スキャンの数字は変わらんぞ。測るのはお前の脳そのものだからな。だが、ゲートの機械は拡張込みで見る。')]:[L('doc','また来たか。測り直すか、入れるか。伸びていれば数字に出る。')];
+  if(md===0)ls=first?[L('doc','インプラントが入荷した。反射、記憶、視覚、演算。Lv3まで強化できる。最初は400だ。'),L('doc','スキャンの数字は変わらんぞ。測るのはお前の脳そのものだからな。だが、ゲートの機械は拡張込みで見る。')]:[L('doc',pick3('doc0',['また来たか。測り直すか、入れるか。伸びていれば数字に出る。','雨漏りがひどくてな。……医者の看板だけは、濡らさねえようにしてる。','脳ってのはな、使えば応える。機械と違って、錆びても磨ける。']))];
   else if(md===4)ls=DOC_TALK[4].map(t=>L('doc',t));
-  else{const pool=DOC_TALK[md];ls=[L('doc',pool[Math.floor(Math.random()*pool.length)])]}
+  else ls=[L('doc',pick3('doc'+md,DOC_TALK[md]))];
   if(S.reached.includes('lower')&&!S.st.docParts){S.st={...S.st,docParts:1};save();
     ls.push(L('doc','沈殿街に行ったそうだな。鋼組のツギハギには会ったか。'),L('doc','うちの部品は、あいつが改良し終えて要らなくなった型落ちだ。安く譲ってもらってる。'),L('doc','……圏外の医者にできるのは、それくらいだ。上のものは、上から順に落ちてくる。'))}
   ls.push(L('doc','どうする？',[{label:'再スキャン',fn:scanIntro},{label:'インプラント',fn:()=>shopPanel('out')},{label:'結果を見る',fn:()=>resultPanel(false)},{label:'やめておく'}]));talk(ls)}
 /* ドクの心情：0=生身100%（皮肉っぽい商売人）→ 4=生身0%（変わっちまったな） */
 const docMood=()=>{const f=flesh();return f>=100?0:f>=70?1:f>=40?2:f>0?3:4};
 const DOC_TALK={
-  1:['調子はどうだ。拒絶反応が出たら、すぐ来い。','次はどれだ。金さえあれば何でも入れる。……それが俺の仕事だ。'],
-  2:['最近、お前の目を見ると、機械が見返してくる気がする。','入れるのは簡単だ。抜くのは、もうできねえがな。'],
-  3:['……俺はこうやって、何人も生身を削ってきた。','お前、ここに初めて来たときの自分を覚えてるか。'],
+  1:['調子はどうだ。拒絶反応が出たら、すぐ来い。','次はどれだ。金さえあれば何でも入れる。……それが俺の仕事だ。','頭の奥の音、まだ鳴ってるか。……そのうち、聞こえなくなる。それが慣れってやつだ。'],
+  2:['最近、お前の目を見ると、機械が見返してくる気がする。','入れるのは簡単だ。抜くのは、もうできねえがな。','半分か。……ちょうど、迷うのにいちばん苦しい場所だ。'],
+  3:['……俺はこうやって、何人も生身を削ってきた。','お前、ここに初めて来たときの自分を覚えてるか。','手が震えるんだ。お前の頭を開くたびにな。'],
   4:['……変わっちまったな。','初めて来たときの、あの旧式の匂い。もう、どこにもねえ。']
 };
 function shopPanel(tier){tier=SHOPS[tier]?tier:area();const sh=SHOPS[tier],pr=lv=>priceAt(lv,tier);
@@ -776,9 +805,9 @@ function doBuy(id,after,tier='out'){const m=IMPLANTS.find(x=>x.id===id),lv=impLv
 /* 鋼組の施術師ツギハギ（片腕が義体。機械寄りの客には親しげ） */
 function talkTsugi(){const fc=fac(),first=!S.st.tsugi,ch=[{label:'インプラント',fn:()=>shopPanel('lower')},{label:'やめておく'}];
   if(first){S.st={...S.st,tsugi:1};save()}
-  const head=fc==='open'?(first?[L('tsugi','あら、生身のお客さん。この街じゃ、珍しくもないけど。'),L('tsugi','ここは鋼組の施術所。上の層から落ちてくる廃棄品を拾って、磨いて、継ぎ直して、インプラントにしてるの。'),L('tsugi','企業区のゴミも、ここじゃ宝物よ。改良が済んで型落ちになったのは、圏外のドクに回してる。だから、あの爺さんの店より、ちょっと高くて、ちょっといい。')]:[L('tsugi',['生身のまま来るのね。……まあ、見るだけならタダよ。','今朝も上から落ちてきたの。企業区の新型の腕。まだ温かかった。'][Math.floor(Math.random()*2)])])
-    :fc==='mid'?(first?[L('tsugi','半分こっち側ね。いい選択よ。'),L('tsugi','うちの部品は、上から落ちてきた廃棄品をあたしが改良したもの。ドクのとこに流れてるのは、その型落ち。'),L('tsugi','だから少し高い。そのぶん、よく効く。')]:[L('tsugi','その継ぎ目、ちゃんと馴染んでる？')])
-    :(first?[L('tsugi','おかえり、同類さん。'),L('tsugi','この腕も、上から落ちてきた部品を、半分は自分で継いだの。だから「ツギハギ」。'),L('tsugi','あんたの体に入ってる部品も、もとはあたしの手を通ったものかもね。ドクの爺さんには、型落ちを回してるから。')]:[L('tsugi',['調子はどう？ 換えたいところがあれば、言って。','いい部品が落ちてきたの。磨いたら、上の層のより良くなったわ。'][Math.floor(Math.random()*2)])]);
+  const head=fc==='open'?(first?[L('tsugi','あら、生身のお客さん。この街じゃ、珍しくもないけど。'),L('tsugi','ここは鋼組の施術所。上の層から落ちてくる廃棄品を拾って、磨いて、継ぎ直して、インプラントにしてるの。'),L('tsugi','企業区のゴミも、ここじゃ宝物よ。改良が済んで型落ちになったのは、圏外のドクに回してる。だから、あの爺さんの店より、ちょっと高くて、ちょっといい。')]:[L('tsugi',pick3('tsugi_open',['生身のまま来るのね。……まあ、見るだけならタダよ。','今朝も上から落ちてきたの。企業区の新型の腕。まだ温かかった。','ゲンさんの屋台、行った？ あたしは行かない。……あそこは生身の店だから。']))])
+    :fc==='mid'?(first?[L('tsugi','半分こっち側ね。いい選択よ。'),L('tsugi','うちの部品は、上から落ちてきた廃棄品をあたしが改良したもの。ドクのとこに流れてるのは、その型落ち。'),L('tsugi','だから少し高い。そのぶん、よく効く。')]:[L('tsugi',pick3('tsugi_mid',['その継ぎ目、ちゃんと馴染んでる？','半分機械って、いちばん痛むのよ。生身の側が、拒むから。','次はどこを換える？ ……急がなくていいわ。部品は逃げないから。']))])
+    :(first?[L('tsugi','おかえり、同類さん。'),L('tsugi','この腕も、上から落ちてきた部品を、半分は自分で継いだの。だから「ツギハギ」。'),L('tsugi','あんたの体に入ってる部品も、もとはあたしの手を通ったものかもね。ドクの爺さんには、型落ちを回してるから。')]:[L('tsugi',pick3('tsugi_closed',['調子はどう？ 換えたいところがあれば、言って。','いい部品が落ちてきたの。磨いたら、上の層のより良くなったわ。','同類さんが増えるのは嬉しい。……でも、ときどき、寂しくもなるの。']))]);
   talk([...head,L('tsugi','どうする？',ch)])}
 function tsugiBuyTalk(id){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IMP_LV[lv],price=nx&&priceAt(lv,'lower');if(!nx||S.cr<price)return shopPanel('lower');
   const f=flesh(),yes=t=>({label:`入れる（${price} CR）`,fn:()=>doBuy(id,t,'lower')}),no={label:'やめておく',fn:()=>shopPanel('lower')};
@@ -806,11 +835,11 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
-  <p class="muted">試作版 v0.9 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
+  <p class="muted">試作版 v0.10 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
-function minaJoin(){S.st={...S.st,join:1,follow:1};save();fol.x=player.x-40;fol.dir=1;
+function minaJoin(){S.st={...S.st,join:1};save();
   talk([L('mina','……待って！'),L('mina','……通れたんだ。'),L('me','ミナ？'),
     L('mina','あたしも行く。……沈殿街に、探してる奴がいるんだ。'),
     L('me','ミナも、ゲートを通れるのか？'),
@@ -828,7 +857,10 @@ function arrive(to){if(to==='lower'&&!S.st.arrive){S.st={...S.st,arrive:1};save(
     L('mina','……変わってない。'),L('mina','あたしが変わったのか。'),
     L('mina','ここが沈殿街。ピラミッドのいちばん底。上から落ちてきたものが、溜まる場所。……あたしが生まれた街。'),
     L('mina','弟を探してる。ソウっていうんだ。十年前、あたしだけ検査に落ちて、ここを出された。'),
-    L('mina','屋台のゲンさんなら、何か知ってるかも。奥には鋼組の連中もいる。……行こう。')])}}
+    L('mina','あたしは、ここで待ってる。昇降機のそばにいるから。'),
+    L('mina','あたしはインプラントは入れたくない。だから、次のゲートを通れるように、ここで勉強してる。'),
+    L('mina','ソウのことは、屋台のゲンさんか、奥の鋼組の連中に聞いてみて。'),
+    L('mina','仕事がほしくなったら言って。仕事なら、いくらでもあるから。')])}}
 /* 昇降機「縦坑」と案内AIカゴ */
 function kagoHello(){const m=docMood();return m>=4?'同型機を確認。移送先を指定せよ。':m>=3?'乗客を確認。行き先を入力してください。':'ご乗車ありがとうございます、お客様。行き先をどうぞ。'}
 function liftTalk(){if(!S.reached.includes('lower'))return talk([L('kago','ゲートの認証記録がありません。'),L('kago','この昇降機は、認証を受けた層にだけ停止します。')]);liftPanel()}
@@ -843,28 +875,35 @@ function liftRide(to){const from=area(),fl={out:'ふもと',lower:'第1層'};
   sfx('lift');timers.push(setTimeout(()=>{const el=$('#ind');if(el)el.textContent='· · ·'},600));
   timers.push(setTimeout(()=>{const el=$('#ind');if(el)el.textContent=fl[to]},1250));
   timers.push(setTimeout(()=>closePanel(()=>travel(to,'lift')),1700))}
-/* 同行中のミナ */
-function talkMinaFollow(){const m=docMood(),ls=[];
-  if(m>=3&&!S.st.m3){S.st={...S.st,m3:1};save();ls.push(L('mina','……ねえ。'),L('mina','今、あたしのこと、名前で見てないでしょ。'))}
+/* 沈殿街のミナ（昇降機のそばで勉強している） */
+function talkMinaLower(){const m=docMood(),ls=[];
+  if(S.st.genji&&S.st.ray&&!S.st.done){S.st={...S.st,done:1};save();
+    ls.push(L('me','ソウのことがわかった。企業区で配送をしてる。……型番で呼ばれてるらしい。'),L('mina','……そっか。'),
+      L('me',{n:'ミナは本を閉じた。',c:'ミナは本を閉じた。指先が、表紙の上で白くなっていた。',m:'対象の心拍が上昇。動揺と推定。'}),
+      L('mina','型番で呼ばれて、あたしの顔も忘れて。……それでも、会いに行く。'),
+      L('mina','奥のゲートが企業区への入口。今は閉まってるみたいだけど。……開いたら、あんたも来てくれる？'))}
+  else if(m>=3&&!S.st.m3){S.st={...S.st,m3:1};save();ls.push(L('mina','……ねえ。'),L('mina','今、あたしのこと、名前で見てないでしょ。'))}
   else if(m>=4&&!S.st.m4){S.st={...S.st,m4:1};save();ls.push(L('mina','ソウもね、最後に会ったとき、そういう目をしてた。'))}
-  else if(area()==='lower'&&!S.st.done)ls.push(L('mina',!S.st.genji?'屋台のゲンさんに話を聞こう。あの人、昔からこの街のことは何でも知ってる。':'鋼組の運び屋なら、ソウの仕事を知ってるかも。奥にいるはず。'));
-  else if(S.st.done)ls.push(L('mina','ソウは企業区にいる。……絶対、会いに行く。'));
-  else ls.push(L('mina',area()==='out'?'昇降機なら、沈殿街まですぐだよ。':'沈殿街の仕事は工場がらみ。圏外より難しいけど、払いはいいよ。'));
+  else ls.push(...pick3('mina_lower',[
+    ['あたしはインプラントは入れたくない。だから、ゲートを通れるように、ここで勉強してる。','仕事がほしくなったら言って。仕事なら、いくらでもあるから。'],
+    ['この本、ゲンさんにもらったの。昔の技術者の教本。','読めば読むほど、頭が熱くなる。……生身の脳も、まだ捨てたもんじゃないよ。'],
+    [S.st.done?'ソウのこと？ ……焦ってもしかたない。まずは、あたしが次のゲートを通れるようにならなきゃ。':'ソウのこと、何かわかった？ 屋台のゲンさんか、鋼組の運び屋なら知ってるかも。','仕事、回そうか？']]).map(t=>L('mina',t)));
   ls.push(L('mina','で、どうする？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
 /* 生身派「灯」：ゲンジ */
 const fac=()=>{const f=flesh();return f>=70?'open':f>=40?'mid':'closed'};
 function talkGenji(){const fc=fac(),practice={label:'練習場を使う',fn:practicePanel},bye={label:'やめておく'};
   if(!S.st.genji){S.st={...S.st,genji:1};save();
-    const sou=[L('mina','ソウのこと、何か知らない？'),L('genji','……あいつは三年前、「上へ行く」って言ってな。鋼組の仕事を始めた。'),L('genji','体をいじって、運び屋になったって噂だ。それきり、この屋台には顔を出さねえ。'),L('mina','……そっか。'),
-      L('me',{n:'ミナが黙ってうつむいた。',c:'ミナの声が、少しだけ震えていた。湯気の向こうで、ゲンジが目をそらす。',m:'対象の心拍が上昇。動揺と推定。'})];
-    if(fc==='closed')return talk([L('genji','……機械とは話さねえ。帰んな。'),L('mina','ゲンさん、あたしだよ。ミナ。'),L('genji','……ミナ坊か。でかくなったな。'),...sou,L('genji','悪いがな、連れのそいつに練習場は貸せねえ。ここは生身の店だ。')],afterClue);
-    const head=fc==='open'?[L('genji',{n:'いらっしゃい。……見ねえ顔だな。',c:'いらっしゃい。……見ねえ顔だな。冷えるだろ、座りな。',m:'いらっしゃい。……見ねえ顔だな。'}),L('genji','……そっちは、ミナ坊か？'),L('mina','……久しぶり、ゲンさん。'),L('genji','十年ぶりか。でかくなったな。')]
-      :[L('genji','……あんた、半分は機械か。まあいい、座りな。'),L('genji','そっちは……ミナ坊か？'),L('mina','久しぶり、ゲンさん。')];
+    const sou=[L('me','ソウって人を探してる。ミナの弟なんだ。'),L('genji','……ミナ坊が、帰ってきたのか。'),L('genji','ソウは三年前、「上へ行く」って言ってな。鋼組の仕事を始めた。'),L('genji','体をいじって、運び屋になったって噂だ。それきり、この屋台には顔を出さねえ。'),
+      L('me',{n:'ゲンジは鍋に目を落とした。',c:'湯気の向こうで、ゲンジの目が少し赤かった。',m:'対象の心拍が上昇。動揺と推定。'}),L('genji','ミナ坊に伝えてやってくれ。……あの子は、昔から泣かない子だった。')];
+    if(fc==='closed')return talk([L('genji','……機械とは話さねえ。帰んな。'),L('me','ミナの弟を探してるんだ。'),L('genji','……ミナ坊の？'),...sou,L('genji','悪いがな、練習場は貸せねえ。ここは生身の店だ。')],afterClue);
+    const head=fc==='open'?[L('genji',{n:'いらっしゃい。……見ねえ顔だな。',c:'いらっしゃい。……見ねえ顔だな。冷えるだろ、座りな。',m:'いらっしゃい。……見ねえ顔だな。'})]
+      :[L('genji','……あんた、半分は機械か。まあいい、座りな。')];
     const tail=fc==='open'?[L('genji','あんた、生身だな。目でわかる。'),L('genji','奥に練習場がある。脳ってのは、使えば使っただけ応える。測れねえもんも、な。',[practice,bye])]
       :[L('genji','奥に練習場がある。使いたきゃ使え。……機械の分まで面倒は見ねえがな。',[practice,bye])];
     return talk([...head,...sou,...tail],afterClue)}
-  if(fc==='closed')return talk([L('genji','ここは生身の店だ。……ミナ坊の連れでも、それは変わらねえ。')]);
-  talk([L('genji',fc==='open'?{n:'よう。今日も練習か？',c:'よう。今日も練習か？ 一杯食ってけ、出汁がうまく取れた。',m:'よう。今日も練習か？'}:'練習場か。……好きにしな。',[practice,bye])])}
+  if(fc==='closed')return talk([L('genji',pick3('genji_closed',['ここは生身の店だ。……ミナ坊の知り合いでも、それは変わらねえ。','出汁の匂いも、もうわからねえんだろ。','……悪いな。俺は機械に、仕事も弟子も取られた。だから、機械とは話さねえと決めてる。']))]);
+  talk([L('genji',fc==='open'?pick3('genji_open',[{n:'よう。今日も練習か？',c:'よう。今日も練習か？ 一杯食ってけ、出汁がうまく取れた。',m:'よう。今日も練習か？'},'ミナ坊、毎日あそこで本を読んでる。……あの子は昔から、負けず嫌いだ。','この出汁は三十年、継ぎ足してる。街が変わっても、味は変えねえ。'])
+    :pick3('genji_mid',['練習場か。……好きにしな。','半分機械でも、腹は減るだろ。……食ってけ。','ダイモンのとこの若いのが、昨日も手を挟んだ。機械は、待っちゃくれねえ。']),[practice,bye])])}
 /* 沈殿第三工場：親方ダイモン（生身派寄り） */
 function talkDaimon(){const fc=fac();
   if(!S.st.daimon){S.st={...S.st,daimon:1};save();
@@ -874,29 +913,28 @@ function talkDaimon(){const fc=fac();
       L('daimon','あのアームは企業区のAIの払い下げでな。勝手に動かせば、半日で人を潰す。'),
       L('daimon','だから人が握る。レバーも、判断もだ。'),
       L('daimon','機械に使われるんじゃねえ。俺らが使うんだ。……それが沈殿街のやり方よ。'),
-      ...(following()?[L('mina','……ここ、昔は小さな町工場だったのに。'),L('daimon','十年でこうなった。上から落ちてきた機械を、拾って、直して、こき使ってな。')]:[])])}
+      L('daimon','そういや、ミナ坊が帰ってきたらしいな。あの子の親父さんも、昔ここでレバーを握ってた。')])}
   const pool=fc==='open'?['アームの調子がいい。今日は誰も潰れてねえ。','腹が減ったら、ゲンさんの屋台に行け。あそこの出汁は、体を人間に戻す。','企業区の連中は、AIに判断を任せる。だから人がいらなくなる。']
-    :fc==='mid'?['そのインプラント、どこの店だ？ ……ドク・カゲロウか。腕はいい。','半分機械でも、レバーを握るのは自分の手だ。忘れんなよ。']
-    :['あんたの目、アームのカメラと同じ色をしてやがる。','機械同士で通じ合うんなら、アームの機嫌でも聞いてきてくれ。'];
-  talk([L('daimon',pool[Math.floor(Math.random()*pool.length)])])}
+    :fc==='mid'?['そのインプラント、どこの店だ？ ……ドク・カゲロウか。腕はいい。','半分機械でも、レバーを握るのは自分の手だ。忘れんなよ。','迷ってるなら、一回レバーを握ってみろ。手が覚えてることもある。']
+    :['あんたの目、アームのカメラと同じ色をしてやがる。','機械同士で通じ合うんなら、アームの機嫌でも聞いてきてくれ。','……悪く思うな。ここの連中は、機械に何かを奪われた奴ばかりだ。'];
+  talk([L('daimon',pick3('daimon_'+fc,pool))])}
 /* サイボーグ側「鋼組」：レイ */
 function talkRay(){const fc=fac();
   if(!S.st.ray){S.st={...S.st,ray:1};save();
     const first=fc==='open'?[L('ray','……旧式か。この辺じゃ珍しい。'),L('ray','用がないなら、道を空けろ。')]
       :fc==='mid'?[L('ray','半端な体だな。生身にも、こっちにも、なりきれてない。')]
       :[L('ray','いい体だ。どこの店で入れた？'),L('ray','……ドク・カゲロウか。あの爺さん、腕は確かだ。')];
-    const sou=[L('mina','ソウって運び屋、知らない？ あたしの弟なんだ。'),L('ray','ソウ……？ ああ、SO-U だろう。企業区の配送をやってる。'),L('ray','名前？ あいつはもう、型番で呼ばれてる。'),L('mina','……型番。')];
-    const tail=fc==='closed'?[L('ray','あいつ、最後に会ったとき言ってた。「姉ちゃんの顔、もう思い出せない」ってな。'),L('mina','…………'),L('ray','悪いな。機械同士だと、つい口が軽くなる。')]
+    const sou=[L('me','ソウって運び屋を知らないか。ミナって子の弟なんだ。'),L('ray','ソウ……？ ああ、SO-U だろう。企業区の配送をやってる。'),L('ray','名前？ あいつはもう、型番で呼ばれてる。')];
+    const tail=fc==='closed'?[L('ray','あいつ、最後に会ったとき言ってた。「姉ちゃんの顔、もう思い出せない」ってな。'),L('ray','……悪いな。機械同士だと、つい口が軽くなる。')]
       :fc==='mid'?[L('ray','企業区のゲートは、今は閉まってる。開いたら、自分で確かめに行け。')]
       :[L('ray','これ以上は、旧式に話すことじゃない。')];
     return talk([...first,...sou,...tail],afterClue)}
-  talk([L('ray',fc==='open'?'……まだいたのか、旧式。':fc==='mid'?'迷ってる顔だな。どっちに転ぶか、見ものだ。':'調子はどうだ。換えたところ、馴染んだか？')])}
-function afterClue(){if(S.st.genji&&S.st.ray&&!S.st.done){S.st={...S.st,done:1};save();
-  talk([L('mina','ソウは企業区にいる。……型番で呼ばれて、あたしの顔も忘れて。'),L('mina','それでも、会いに行く。あんたも、来てくれる？'),
-    L('me',{n:'ミナは奥のゲートを見つめている。',c:'ミナは奥のゲートを見つめている。握った手が白くなっていた。',m:'対象、ゲート方向を注視。決意と推定。'}),
-    L('mina','奥のゲートが企業区への入口。……今は閉まってるみたいだけど。')])}}
+  talk([L('ray',pick3('ray_'+fc,fc==='open'?['……まだいたのか、旧式。','生身の匂いがする。……懐かしい匂いだ。','鋼組に入りたきゃ、まず腕を一本換えてこい。冗談だ。']
+    :fc==='mid'?['迷ってる顔だな。どっちに転ぶか、見ものだ。','半分の体ってのは、どっちの側にも居場所がない。……俺も、そうだった。','ツギハギのとこの部品はいい。上の層のより、手が温かい。']
+    :['調子はどうだ。換えたところ、馴染んだか？','企業区の配送は、今日も時間どおりだ。……機械は遅れない。','名前、まだ覚えてるか？ ……自分のやつだ。']))])}
+function afterClue(){if(S.st.genji&&S.st.ray&&!S.st.done)talk([L('me','ソウは企業区にいる。……昇降機のそばのミナに、知らせよう。')])}
 function talkGate2(){
-  talk([L('gate','企業区ゲート。現在、通行の受付を停止しています。')],()=>{if(S.st.done)clearPanel();else talk([L('mina','まずはソウの手がかりを探そう。屋台のゲンさんか、鋼組の運び屋なら何か知ってるかも。')])})}
+  talk([L('gate','企業区ゲート。現在、通行の受付を停止しています。')],()=>{if(S.st.done)clearPanel();else talk([L('me',S.st.genji&&S.st.ray?'先に、昇降機のそばのミナに知らせよう。':'まずはソウの手がかりを探そう。屋台のゲンジか、鋼組の運び屋なら何か知ってるかも。')])})}
 /* ゲンジの練習場：スキャンと同じ4テストを、記録せずに何度でも */
 let practice=false;
 function practicePanel(){practice=true;
@@ -1096,11 +1134,11 @@ const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 function timeBar(end,T,onEnd){timers.push(setInterval(()=>{const left=Math.max(0,end()-performance.now());$('#tbar').style.width=(left/(T*10))+'%';$('#tleft').textContent=(left/1000).toFixed(1)+' 秒';if(left<=0)onEnd()},100))}
 const shake=el=>{el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')};
 
-function jobBoard(){const d=diffNow(),tier=area(),tp=TIER_PAY[tier]||1;
-  openPanel(`<div class="eyebrow">JOB BOARD · 情報屋ミナの仲介 · ${AREAS[tier].nm}</div><h3>仕事リスト</h3>
-  <p class="muted">${tier==='out'?'脳のパーツごとに向いた仕事がある。稼いだクレジットは、いずれインプラントの代金になる。':'沈殿街の仕事は、圏外より難しい。そのぶん、払いもいい。'}</p>
-  <div class="stats"><div class="stat"><span>所持クレジット</span><b>${S.cr.toLocaleString()} CR</b></div><div class="stat"><span>難易度 · 報酬倍率</span><b>${DIFF[d]} ×${r2(MULT[d]*tp)}</b></div></div>
-  <div class="jobs">${JOBS.filter(j=>j.tier===tier).map(j=>{const r=S.jobs[j.id];return `<div class="job"><span class="tag">${j.tag}</span><span class="nm">${j.nm}</span><button class="nbtn" type="button" data-j="${j.id}">受ける</button><span class="ex">${j.client} · ${r?`ベスト ${r.best} ${j.unit} · ${r.n} 回`:'未経験'}</span></div>`}).join('')}</div>
+function jobBoard(){const d=diffNow(),tiers=AREA_ORDER.filter(t=>S.reached.includes(t)).reverse();
+  openPanel(`<div class="eyebrow">JOB BOARD · 情報屋ミナの仲介</div><h3>仕事リスト</h3>
+  <p class="muted">${tiers.length>1?'上の層の仕事ほど難しい。そのぶん、払いもいい。':'脳のパーツごとに向いた仕事がある。稼いだクレジットは、いずれインプラントの代金になる。'}</p>
+  <div class="stats"><div class="stat"><span>所持クレジット</span><b>${S.cr.toLocaleString()} CR</b></div><div class="stat"><span>難易度 · 報酬倍率</span><b>${DIFF[d]} ×${MULT[d]}</b></div></div>
+  ${tiers.map(tier=>`${tiers.length>1?`<p class="note">${AREAS[tier].nm} の仕事 · 報酬 ×${r2(MULT[d]*(TIER_PAY[tier]||1))}</p>`:''}<div class="jobs">${JOBS.filter(j=>j.tier===tier).map(j=>{const r=S.jobs[j.id];return `<div class="job"><span class="tag">${j.tag}</span><span class="nm">${j.nm}</span><button class="nbtn" type="button" data-j="${j.id}">受ける</button><span class="ex">${j.client} · ${r?`ベスト ${r.best} ${j.unit} · ${r.n} 回`:'未経験'}</span></div>`}).join('')}</div>`).join('')}
   <div class="prow"><button class="nbtn ghost" id="back" type="button">街に戻る</button></div>`);
   $('#panel').querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>jobIntro(b.dataset.j));
   $('#back').onclick=()=>closePanel();$('#panel').querySelector('[data-j]').focus()}
