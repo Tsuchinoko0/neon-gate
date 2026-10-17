@@ -79,6 +79,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .dlg.npc-kago{border-left-color:var(--muted)} .dlg.npc-kago .who{color:var(--muted)}
 .tags{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .tags span{position:absolute;transform:translate(-50%,-100%);font-family:var(--f-data);font-size:clamp(8px,1.3vw,11px);line-height:1.3;color:var(--cyan);background:rgba(4,10,14,.72);border:1px solid rgba(62,242,224,.5);padding:0 4px;white-space:nowrap}
+/* 話せない住人のタグ：小さく、薄く */
+.tags span.sub{font-size:clamp(7px,1.05vw,9px);color:rgba(62,242,224,.75);background:rgba(4,10,14,.5);border-color:rgba(62,242,224,.25)}
+/* 仕事・スキャン・設定などの画面を開いているあいだは、タグを出さない */
+.frame.is-panel .tags{display:none}
 .fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .35s}
 .fade.on{opacity:1}
 .floors{display:grid;gap:8px;max-width:420px}
@@ -213,7 +217,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.11 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.12 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -253,7 +257,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.11"></script>
+<script src="sound.js?v=0.12"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -674,10 +678,19 @@ let tagsHTML='';
 function tagsUp(){const m=docMood(),el=$('#tags');let h='';
   if(m>=2&&(mode==='play'||mode==='dialog')){const list=[];const add=(id,x,spr)=>list.push({id,x,y:GY-spr.lh-3});
     if(area()==='out'){add('jiro',116,OUT_CROWD[0].spr);add('take',154,OUT_CROWD[1].spr);add('yuki',300,OUT_CROWD[2].spr);if(minaIn()==='out')add('mina',200,MINA);add('doc',462,DOC)}else{if(minaIn()==='lower')add('mina',72,MINA);add('genji',322,GENJI);add('daimon',428,DAIMON);add('ray',590,RAY);add('tsugi',700,TSUGI)}
-    const ids={};let n=0;
+    const tags=[],ids={};let n=0;const tgt=k=>ids[k]=ids[k]||('対象'+String.fromCharCode(65+(n++)%26));
     for(const p of list){const sx=p.x-camX;if(sx<-10||sx>W+10)continue;const P=PEOPLE[p.id];let tx;
-      if(P.model)tx=P.model;else if(m>=4){ids[p.id]=ids[p.id]||('対象'+'ABCD'[n++]);tx=ids[p.id]}else tx=m>=3?`${P.sex==='f'?'女性':'男性'}・${P.age}`:`${P.nm} ／ ${P.sex==='f'?'女性':'男性'}・${P.age}`;
-      h+=`<span style="left:${(sx/W*100).toFixed(2)}%;top:${(p.y/H*100).toFixed(2)}%">${esc(tx)}</span>`}}
+      if(P.model)tx=P.model;else if(m>=4)tx=tgt(p.id);else tx=m>=3?`${P.sex==='f'?'女性':'男性'}・${P.age}`:`${P.nm} ／ ${P.sex==='f'?'女性':'男性'}・${P.age}`;
+      tags.push({sx,y:p.y,tx,cls:''})}
+    /* 話せない住人にも、識別したふうのタグ（番号・性別・年代は自動で決める） */
+    if(area()==='lower')CROWD.forEach((c,i)=>{const sx=c.x-camX;if(sx<-10||sx>W+10)return;let tx;
+      if(c.cy)tx=`義体 ／ ${['KX','RV','TN','MK'][i%4]}-${String(100+i*37%900)}`;
+      else{const g=`${c.sex==='f'?'女性':'男性'}・${['20代','30代','40代','50代','60代'][(i*3)%5]}`;tx=m>=4?tgt('c'+i):m>=3?g:`#${String(1000+(i*2711)%9000)} ${g}`}
+      tags.push({sx,y:GY-c.spr.lh-3,tx,cls:'sub'})});
+    /* 重ならないように：近くにタグがあれば、一段上にずらす（話せる人のタグを優先） */
+    const placed=[];for(const g of tags){const wHalf=g.tx.length*(g.cls?2.1:2.6)+3;let lv=0;
+      while(lv<4&&placed.some(q=>q.lv===lv&&Math.abs(q.sx-g.sx)<q.wHalf+wHalf))lv++;
+      placed.push({...g,lv,wHalf});h+=`<span${g.cls?` class="${g.cls}"`:''} style="left:${(g.sx/W*100).toFixed(2)}%;top:${((g.y-lv*7)/H*100).toFixed(2)}%">${esc(g.tx)}</span>`}}
   if(h!==tagsHTML){tagsHTML=h;el.innerHTML=h}}
 /* 澄み：生身のまま層を進み、本人の実力が伸びるほど上がる（0〜3） */
 function clarityLv(){const f=flesh();if(f<40)return 0;const o=overall(S.cur),b=overall(S.base),grow=o&&b?o.avg-b.avg:0;
@@ -852,7 +865,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
-  <p class="muted">試作版 v0.11 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
+  <p class="muted">試作版 v0.12 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -966,7 +979,7 @@ function useRecord(rec){applyScan(rec);talk([L('doc','診断サイトの記録�
 /* ===== パネル ===== */
 let timers=[],offs=[];const clearTimers=()=>{timers.forEach(t=>{clearTimeout(t);clearInterval(t)});timers=[];offs.forEach(f=>f());offs=[]};
 const on=(el,ev,fn)=>{el.addEventListener(ev,fn);offs.push(()=>el.removeEventListener(ev,fn))};
-function openPanel(html){mode='panel';clearTimers();$('#frame').classList.add('is-panel');cv.hidden=true;$('#dlg').hidden=true;const p=$('#panel');p.hidden=false;p.innerHTML=html;return p}
+function openPanel(html){mode='panel';clearTimers();tagsHTML='';$('#tags').innerHTML='';$('#frame').classList.add('is-panel');cv.hidden=true;$('#dlg').hidden=true;const p=$('#panel');p.hidden=false;p.innerHTML=html;return p}
 function closePanel(after){clearTimers();document.activeElement&&document.activeElement.blur();$('#panel').hidden=true;$('#panel').innerHTML='';cv.hidden=false;$('#frame').classList.remove('is-panel');mode='play';hud();after&&after()}
 
 let scanData={},scanI=0;
