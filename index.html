@@ -248,7 +248,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.25 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.26 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -290,7 +290,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.25"></script>
+<script src="sound.js?v=0.26"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -826,96 +826,164 @@ function drawCorpBG(t){const prog=camX/Math.max(1,CAMMAX_OF('corp')),X=x=>Math.r
   for(const k of [0,1]){const dx=X(300+k*380+Math.sin(t*0.4+k*2)*60),dy=70+k*10+Math.round(Math.sin(t*2+k)*2);if(dx<-10||dx>W+10)continue;ctx.fillStyle='#4a5470';ctx.fillRect(dx-5,dy,10,3);ctx.fillRect(dx-7,dy-1,3,1);ctx.fillRect(dx+4,dy-1,3,1);ctx.fillStyle='#ff4a5c';ctx.fillRect(dx-1,dy+3,2,1);ctx.fillStyle='rgba(255,74,92,.07)';ctx.beginPath();ctx.moveTo(dx,dy+4);ctx.lineTo(dx-14,GY-9);ctx.lineTo(dx+14,GY-9);ctx.closePath();ctx.fill()}}
 /* ===== 第3層・天穹区と第4層・中央区の絵 ===== */
 /* ソウ（ミナの兄）：サイボーグ化に耐えきれなくなった体。すり切れた赤いコート、半分機械の顔 */
-const SOU=sprite(["...hhhh...","..hhhhhh..","..hssCCh..","..sesCvC..","..ssssCc..","...ssss...",".oooooooo.","ooCoooooCo","ooCoooooCo","c.oooooo.s","..oooooo..","..oooooo..","..pp..cc..","..pp..cC..","..pp..cc..",".bbb..ccc."],{h:'#2a2230',s:'#c98f6a',e:'#07060d',C:'#a8aec0',c:'#6a7088',v:'#ff9a3c',o:'#5a2626',p:'#191828',b:'#0b0a12'});
+const SOU=sprite(["..h.hhh.h.",".hhhhhhhh.",".hhssCCCh.",".hsesCvvC.",".hsssCcC..","..smsCC...","...sccc...",".OoooKoOO.","ooooKoooCc","orooKoooCc","s.ooKooo.C",".ooooooor.",".rpp..cco.","..pp..cC..","..pp..cc..",".bbb..ccc."],{h:'#2a2230',s:'#c98f6a',e:'#07060d',m:'#8a4a3a',C:'#a8aec0',c:'#5a6078',v:'#ff9a3c',o:'#7a2626',O:'#4a1820',r:'#a8483a',K:'#1e1a26',p:'#191828',b:'#0b0a12'});
 /* 天穹区の住人（ほとんどサイボーグ。白く、整っている） */
-const HISUI=sprite(["..cccc....",".cCCCCc...",".cCvvCc...",".cCCCCc...","..cccc....","...cc.....",".wwwwww...","wwwwwwwww.","cwwwwwwwc.","..wwwwww..","..wwwwww..","..ww..ww..","..cc..cc..","..cC..cC..",".ccc.ccc.."],{c:'#c4cad8',C:'#eef2f8',v:'#7ff8ee',w:'#e8e4f4'});
-const KANAME=sprite(["...gggg...","..gggggg..","..cCCCCc..","..cvCCvc..","..cCCCCc..","...cccc...",".aaaaaaaa.","aaaaaaaaaa","caaaaaaaac","c.aaaaaa.c","..aaaaaa..","..aaaaaa..","..cc..cc..","..cC..cC..","..cc..cc..",".ccc..ccc."],{g:'#d8d4e0',c:'#9aa2b8',C:'#d6dbe8',v:'#3ef2e0',a:'#5a7a5a'});
-const SKY_CY=sprite(["...cccc...","..cCCCCc..","..cvvvvc..","..cCCCCc..","...cccc...","....cc....","..wwwwww..",".wwCwwCww.","cwwwwwwwwc","c.wwwwww.c","..wwwwww..","..cc..cc..","..cC..cC..","..cc..cc..",".ccc..ccc."],{c:'#b4bccc',C:'#eef2f8',v:'#5fb8ff',w:'#dfe6f2'});
+const HISUI=sprite(["...HHHH...","..HhhhhH..",".HhCCCCH..",".HCvCvCH..",".HCCCCCH..",".Hh.CnC.H.","...kjk....","..nwgwn...",".nwwgwwn..","jnwwgwwnj.","C.nwgwn.C.","..nwwwn...",".nwwwwwn..","..jC.Cj...","..kk.kk..."],{H:'#a89cd0',h:'#c8c0e8',C:'#f2f4fa',v:'#3ef2e0',n:'#b4bccc',k:'#6a7090',j:'#8a94b0',w:'#e4e8f4',g:'#e0b85a'});
+const KANAME=sprite(["...yyyy...","..yYYYYy..","yyyyyyyyyy","..sssCCc..","..sesCvC..","..ssssCc..","...sssc...",".wwaaaaww.","wwaaaaaaCc","wwaaPaaaCc","s.aaaaaa.C","..aaaaaa..","..pp..cc..","..pp..cC..","..pp..cc..",".bbb..ccc."],{y:'#c8a860',Y:'#8a6a3a',s:'#a8704c',e:'#07060d',C:'#c4cad8',c:'#7a8296',v:'#3ef2e0',w:'#dfe4ee',a:'#4a6a4a',P:'#2e4a30',p:'#3a3a48',b:'#2a2018'});
+const SKY_CY=sprite(["...kkkk...","..kCCCCk..","..kvvvvk..","..kCCCCk..","...kCCk...","....jj....","..nwwwwn..",".nwwgwwwn.","jnwwgwwwnj","C.nwgwwn.C","..nwwwwn..","..jj..jj..","..nw..wn..","..nw..wn..",".kkk..kkk."],{k:'#7a849c',C:'#eef2f8',v:'#5fb8ff',j:'#9aa4bc',w:'#dfe6f2',n:'#aab4c8',g:'#e0b85a'});
 /* 敵 */
-const TROOPER=sprite(["..kkkkk...",".kKKKKKk..",".kvvvvvk..",".kKKKKKk..","..kkkkk...",".aaaaaaa..","aAaaaaaAgg","aAaaaaaAgg","a.aaaaa...","..aaaaa...","..aa.aa...","..aA.Aa...","..aa.aa...","..aa.aa...",".kkk.kkk.."],{k:'#1a1e2a',K:'#3a4458',v:'#ff3d5a',a:'#2a3348',A:'#5a6a88',g:'#8a94aa'});
-const CYBORG=sprite(["...cccc....","..cCCCCc...","..cvvvvc...","..cCCCCc...","...cccc....",".cccccccc..","cCCcrrcCCc.","cCccrrccCc.","cC.cccc.Cc.","c..cccc..c.","...cccc....","..cc..cc...","..cC..Cc...","..cc..cc...","..cC..Cc...",".ccc..ccc.."],{c:'#b4bccc',C:'#eef2f8',v:'#ff4a5c',r:'#ff4a5c'});
-const DRONE2=sprite(["gg..........gg","GGGG......GGGG","..gggggggggg..",".gGGGGGGGGGGg.",".gGGGgeegGGGg.","..gggggggggg..","....g....g....","...gg....gg..."],{g:'#4a5068',G:'#a8b0c8',e:'#ff4a5c'});
+const TROOPER=sprite(["......kkkk......",".....kKKKKk.....","....kKKvvvv.....","....kKKKKKk.....",".....kkkkk......","....aaAAAaa.....","...aaAaaaAsggggg","...aAAaaaaskkk..","...aaaaaaa.k....","....aaAaaa......","....aaaaaa......","....aa..aa......","....aA..Aa......","....aa...aa.....","...aa.....aa....","..kkk.....kkk..."],{k:'#1a1e2a',K:'#3a4458',v:'#ff3d5a',a:'#2a3348',A:'#5a6a88',s:'#4a5470',g:'#8a94aa',G:'#ff3d5a'});
+const CYBORG=sprite(["....kkkk....","...kCCCCk...","...kCCvvv...","...kCCCCk...","....kjjk....",".kkCCCCCCkk.","kCCwwRRwwCCk","kCwwRrrRwwCb","kCkwRrrRwkCb","kk.kwRRwk.kb","...kwwwwk..b","...kCwwCk...","....kjjk....","...kCk.kCk..","...kCk.kCk..","...kCk.kCk..","..kCCk.kCCk.","..kkkk.kkkk."],{k:'#6a748c',C:'#eef2f8',w:'#c4cad8',j:'#8a94aa',v:'#ff4a5c',r:'#ff4a5c',R:'#ffb0bc',b:'#ff8090'});
+const DRONE2=sprite(["kkkk......kkkk","..k...kk...k..",".kkkkkkkkkkkk.","kCCCCkrrkCCCCk","kCwwwkRrkwwwCk",".kCCCCkkCCCCk.","..kk......kk..","..k........k.."],{k:'#4a5068',C:'#a8b0c8',w:'#e4e8f2',r:'#ff4a5c',R:'#ffb0bc'});
 /* 天穹区の住人（歩く人。戦いの区画の外だけ） */
 const CROWD_SKY=[{spr:SKY_CY,x0:100,x1:280,sp:14,z:7,sex:'f',cy:1},{spr:SKY_CY,x0:200,x1:200,sp:0,z:-6,sex:'m',cy:1,dir:-1},{spr:HISUI,x0:1290,x1:1400,sp:10,z:-5,sex:'f',cy:1}].map((c,i)=>({...c,x:c.x0+(c.x1-c.x0)*((i*0.41)%1),d:c.dir||(i%2?1:-1)}));
 function drawFoe(f,sx,fy,t){const fl=f.dir<0,wh=T<f.hit;
-  if(f.k==='drone'){const x=sx-7,y=fy-4;ctx.drawImage(DRONE2,x,y,DRONE2.lw,DRONE2.lh);if(f.st==='wind'&&Math.floor(t*20)%2){ctx.fillStyle='#ffd0d6';ctx.fillRect(sx-1,fy,2,1)}
-    ctx.fillStyle='rgba(120,200,255,.5)';ctx.fillRect(x+Math.floor(t*30)%3,y,2,1);ctx.fillRect(x+10+Math.floor(t*30)%3,y,2,1)}
+  if(f.k==='drone'){const x=sx-7,y=fy-9;ctx.drawImage(DRONE2,x,y,DRONE2.lw,DRONE2.lh);if(f.st==='wind'&&Math.floor(t*20)%2){ctx.fillStyle='#ffd0d6';ctx.fillRect(sx-1,fy-6,2,2)}
+    ctx.fillStyle='rgba(200,230,255,.55)';ctx.fillRect(x+Math.floor(t*30)%3,y,3,1);ctx.fillRect(x+9+Math.floor(t*30)%3,y,3,1);ctx.fillStyle='rgba(120,200,255,.25)';ctx.fillRect(x+4,y+8,6,1)}
   else if(f.k==='warden')drawWarden(f,sx,fy,t);
   else{const spr=f.k==='trooper'?TROOPER:CYBORG;drawAt(spr,f.x,fy,fl);
-    if(f.st==='wind'&&f.k==='trooper'&&Math.floor(t*20)%2){ctx.fillStyle='#ffd0d6';ctx.fillRect(sx+(fl?-6:5),fy-10,1,1)}
-    if(f.st==='atk'&&f.k==='cyborg'){ctx.fillStyle='rgba(255,74,92,.35)';ctx.fillRect(sx-(fl?-6:12),fy-12,6,8)}}
+    if(f.st==='wind'&&f.k==='trooper'&&Math.floor(t*20)%2){ctx.fillStyle='#ffd0d6';ctx.fillRect(sx+(fl?-10:8),fy-10,2,1);ctx.fillStyle='rgba(255,61,90,.5)';ctx.fillRect(sx+(fl?-11:9),fy-11,2,3)}
+    if(f.st==='atk'&&f.k==='cyborg'){ctx.fillStyle='rgba(255,74,92,.35)';ctx.fillRect(sx-(fl?-6:12),fy-12,6,8);ctx.fillStyle='rgba(255,176,188,.3)';ctx.fillRect(sx-(fl?-12:18),fy-10,6,4)}}
   if(wh){ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,255,255,.55)';const d=FOE[f.k];ctx.fillRect(sx-d.w/2,fy-d.h,d.w,d.h);ctx.globalCompositeOperation='source-over'}}
 /* 中央区ゲートの番人：脚の長い白い警備機。胸の赤い核が弱点 */
-function drawWarden(f,sx,fy,t){const x=sx,y=fy,w=f.st==='wind';
-  ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x-22,y-1,44,2);
-  ctx.fillStyle='#8a92a8';ctx.fillRect(x-16,y-20,4,20);ctx.fillRect(x+12,y-20,4,20);ctx.fillStyle='#c4cad8';ctx.fillRect(x-17,y-3,6,3);ctx.fillRect(x+11,y-3,6,3);
-  ctx.fillStyle='#dfe4ee';ctx.fillRect(x-18,y-46,36,28);ctx.fillStyle='#f4f6fa';ctx.fillRect(x-18,y-46,36,3);ctx.fillStyle='#9aa2b8';ctx.fillRect(x-18,y-21,36,3);
-  ctx.fillStyle='#5a6278';ctx.fillRect(x-24,y-42,6,14);ctx.fillRect(x+18,y-42,6,14);ctx.fillStyle='#3a4050';ctx.fillRect(x-28,y-38,4,5);
-  ctx.fillStyle='#c4cad8';ctx.fillRect(x-8,y-54,16,8);ctx.fillStyle=w?'#ff4a5c':'#5fb8ff';ctx.fillRect(x-6,y-51,12,2);
-  const pul=0.5+0.5*Math.sin(t*6);ctx.fillStyle=`rgba(255,74,92,${0.5+0.4*pul})`;ctx.fillRect(x-4,y-36,8,8);ctx.fillStyle='#ffd0d6';ctx.fillRect(x-2,y-34,4,4);
-  if(w&&f.pat==='laser'){ctx.fillStyle=`rgba(255,61,90,${0.4+0.4*Math.sin(t*40)})`;ctx.fillRect(x-30,y-8,10,5)}}
+function drawWarden(f,sx,fy,t){const x=sx,y=fy,w=f.st==='wind',p=f.pat,R=(c,a,b,ww,hh)=>{ctx.fillStyle=c;ctx.fillRect(x+a,y+b,ww,hh)},O='#4a5470',D='#8a94aa',M='#c4cad8',L='#eef2f8',G='#e0b85a';
+  R('rgba(40,50,80,.25)',-22,-1,44,2);
+  /* 後ろの脚（逆関節） */
+  R(O,5,-24,7,9);R(D,6,-23,5,8);R(O,7,-16,6,4);R(O,8,-13,4,10);R(D,9,-13,2,9);R(O,4,-4,12,4);R(D,5,-4,10,3);
+  /* 背中のひれと、ドローンの格納口 */
+  R(O,14,-47,6,20);R(M,15,-46,4,18);R(G,16,-44,1,14);const hatch=w&&p==='drones';R(hatch?'#ff8090':'#5a6278',15,-30,4,3);
+  /* 胴：白い装甲 */
+  R(O,-17,-50,34,30);R(M,-16,-49,32,28);R(L,-16,-49,32,4);R(L,-16,-45,4,20);R(D,-16,-25,32,4);R(D,11,-45,5,20);R(G,-16,-44,32,1);
+  for(const vy of [-41,-39,-37])R(D,8,vy,3,1);
+  /* 胸の核（弱点）：開くと装甲がずれる */
+  const op=w?2:0;R(O,-7,-39,14,14);R('#1a1e2a',-6,-38,12,12);
+  const pul=0.5+0.5*Math.sin(t*(w?14:6));R(`rgba(255,74,92,${0.45+0.4*pul})`,-5,-37,10,10);R('#ff4a5c',-4,-36,8,8);R('#ff9aa8',-3,-35,6,6);R(`rgba(255,240,244,${0.6+0.4*pul})`,-2,-34,4,4);
+  R(M,-10-op,-40,4,16);R(M,6+op,-40,4,16);R(L,-10-op,-40,1,16);R(O,9+op,-40,1,16);
+  /* 肩の砲（ここから弾が出る） */
+  R(O,-25,-47,13,9);R(D,-24,-46,11,7);R(L,-24,-46,11,2);R(O,-29,-44,5,3);R('#2a3040',-29,-43,2,1);
+  if(w&&p==='shot'){R(`rgba(255,90,120,${0.5+0.4*Math.sin(t*30)})`,-31,-45,4,5)}
+  /* 頭：前（左）を向いたセンサー */
+  R(O,-13,-55,17,8);R(L,-12,-54,15,6);R(M,-12,-50,15,2);R(w?'#ff4a5c':'#5fb8ff',-12,-53,8,2);R(w?'#ffd0d6':'#c8f0ff',-11,-53,2,1);R(D,1,-58,1,4);R(w&&p==='pillar'?'#c8f8ff':G,0,-59,3,1);
+  /* 前の脚と、腰の下のレーザー */
+  R(O,-15,-24,7,9);R(M,-14,-23,5,8);R(O,-16,-16,6,4);R(L,-15,-15,4,2);R(O,-13,-13,4,10);R(M,-12,-13,2,9);R(O,-19,-4,12,4);R(L,-18,-4,10,2);R(D,-18,-2,10,1);
+  R(O,-24,-11,8,7);R(D,-23,-10,6,5);R(O,-26,-9,3,3);R(w&&p==='laser'?'#ff4a5c':'#8a2a3a',-26,-8,2,1);
+  if(w&&p==='laser'){ctx.fillStyle=`rgba(255,61,90,${0.4+0.4*Math.sin(t*40)})`;ctx.fillRect(x-32,y-10,8,5)}
+  if(w&&p==='pillar'){ctx.fillStyle=`rgba(160,230,255,${0.35+0.3*Math.sin(t*30)})`;ctx.fillRect(x-1,y-66,3,7)}}
 /* 天穹区：人工の空と、整いすぎた白い街。手配書が至るところにある */
-const SKY_DOMES=[],SKY_TREES=[];{const R=rng(91);let x=-20;while(x<1100){if(R()<0.5)SKY_DOMES.push({x,r:Math.round(10+R()*16),h:Math.round(6+R()*14)});else SKY_TREES.push({x,h:Math.round(8+R()*6)});x+=Math.round(26+R()*30)}}
-function drawSkyBG(t){const prog=camX/Math.max(1,CAMMAX_OF('sky'));
-  /* 作り物の空：上は淡い青、下は白。六角のパネルの継ぎ目がうっすら見える */
-  const sky=['#7fa8e0','#93b8ea','#a8c8f0','#bdd6f4','#d2e4f8','#e6f0fb'];ctx.fillStyle=sky[0];ctx.fillRect(0,-OY,W,OY+1);for(let i=0;i<6;i++){ctx.fillStyle=sky[i];ctx.fillRect(0,i*20,W,20)}ctx.fillStyle=sky[5];ctx.fillRect(0,120,W,60);
-  const ho=Math.round(camX*0.04);ctx.fillStyle='rgba(255,255,255,.22)';for(let y=-OY+6;y<110;y+=18)for(let x=-((ho+(y/18%2)*12)%24)-24;x<W+24;x+=24){ctx.fillRect(x,y,12,1);ctx.fillRect(x+12,y+9,12,1)}
-  /* 作り物の太陽（丸い照明） */
-  {const sx=Math.round(250-camX*0.03),sy=30;ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(sx-14,sy-14,28,28);ctx.fillStyle='rgba(255,255,255,.6)';ctx.fillRect(sx-10,sy-10,20,20);ctx.fillStyle='#fffdf4';ctx.fillRect(sx-7,sy-7,14,14);
-    if(Math.floor(t*0.5)%9===0){ctx.fillStyle='rgba(120,140,170,.25)';ctx.fillRect(sx-7,sy-1,14,1)}}
-  /* 上に見える中央区の塔（てっぺん） */
-  {const tx=Math.round(W*0.72-camX*0.06);ctx.fillStyle='rgba(255,255,255,.55)';ctx.fillRect(tx-14,-OY,28,120+OY);ctx.fillStyle='rgba(240,246,255,.85)';ctx.fillRect(tx-8,-OY,16,120+OY);ctx.fillStyle='#ffffff';ctx.fillRect(tx-2,-OY,4,120+OY);
-    for(let i=0;i<4;i++){const y=20+i*24;ctx.fillStyle='rgba(255,154,200,.55)';ctx.fillRect(tx-20+(i%2)*4,y,40-(i%2)*8,2)}
-    ctx.fillStyle='rgba(255,255,255,.5)';ctx.fillRect(tx-1,-OY,2,10+OY)}
-  /* 遠景：白いドームと、きれいに刈られた木（×0.15） */
+const SKY_DOMES=[],SKY_TREES=[];for(let i=0;i<40;i++){SKY_DOMES.push({x:i*96-30,r:16,h:12});SKY_TREES.push({x:i*96+18,h:22})}
+function drawSkyBG(t){
+  /* 作り物の空：上から下へ、段のついた青から白。いちばん上（スマホでだけ見える）は空を映すドームの骨組み */
+  const sky=['#6f9be0','#7fa8e6','#8fb4ea','#a0c0ee','#b2ccf2','#c4d8f5','#d4e4f8','#e2edfa','#eef4fc'];ctx.fillStyle=sky[0];ctx.fillRect(0,-OY,W,OY+1);for(let i=0;i<9;i++){ctx.fillStyle=sky[i];ctx.fillRect(0,i*13,W,13)}ctx.fillStyle=sky[8];ctx.fillRect(0,117,W,63);
+  if(OY>0){const ro=Math.round(camX*0.04);ctx.fillStyle='#4a6ab0';ctx.fillRect(0,-OY,W,3);ctx.fillStyle='rgba(60,90,160,.5)';for(let x=-(ro%40);x<W;x+=40){ctx.fillRect(x,-OY,2,OY+2);ctx.fillRect(x-6,-OY+3,14,1)}ctx.fillStyle='rgba(255,255,255,.5)';for(let x=-(ro%40)+20;x<W;x+=40)ctx.fillRect(x,-OY+4,2,1)}
+  /* 六角のパネルの継ぎ目（空を映す板の境目） */
+  const ho=Math.round(camX*0.04);ctx.fillStyle='rgba(255,255,255,.2)';for(let r=0,y=-OY+8;y<104;r++,y+=12){const off=-((ho+(r%2)*10)%20)-20;for(let x=off;x<W+20;x+=20){ctx.fillRect(x,y,10,1);ctx.fillRect(x+10,y+6,10,1);ctx.fillRect(x+10,y+1,1,5);ctx.fillRect(x,y-5,1,5)}}
+  /* ときどき1枚だけ映りが乱れる */
+  {const k=Math.floor(t*0.7),on=(t*0.7)%1<0.18&&k%3===0;if(on){const gx=Math.round(hsh(k,1)*W/20)*20-(ho%20),gy=8+Math.round(hsh(k,2)*6)*12;ctx.fillStyle='rgba(150,190,240,.7)';ctx.fillRect(gx,gy+1,10,5);ctx.fillStyle='rgba(255,255,255,.6)';ctx.fillRect(gx,gy+3,10,1)}}
+  /* 同じ形の雲が、同じ間隔で、同じ速さで流れる */
+  for(let row=0;row<3;row++){const sp=4,ox=Math.round((t*sp+row*30)%90+camX*(0.05+row*0.02));for(let x=-ox;x<W+90;x+=90){const y=18+row*22;ctx.fillStyle='rgba(255,255,255,.75)';ctx.fillRect(x,y,26,4);ctx.fillRect(x+4,y-3,12,3);ctx.fillRect(x+10,y-5,8,2);ctx.fillStyle='rgba(200,220,245,.8)';ctx.fillRect(x+1,y+4,24,1)}}
+  /* 作り物の太陽：四角い照明と、それを吊る金具 */
+  {const sx=Math.round(250-camX*0.03),sy=26;ctx.fillStyle='rgba(80,110,170,.5)';ctx.fillRect(sx-1,-OY,2,sy-9+OY);ctx.fillRect(sx-10,sy-11,20,2);ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(sx-15,sy-15,30,30);ctx.fillStyle='rgba(255,255,255,.55)';ctx.fillRect(sx-11,sy-11,22,22);ctx.fillStyle='#fffdf4';ctx.fillRect(sx-8,sy-8,16,16);
+    ctx.fillStyle='rgba(220,230,245,.9)';ctx.fillRect(sx-8,sy-1,16,1);ctx.fillRect(sx-1,sy-8,1,16);if(Math.floor(t*0.5)%9===0){ctx.fillStyle='rgba(120,140,170,.35)';ctx.fillRect(sx-8,sy+3,16,1)}}
+  /* 上に見える中央区の塔（ピラミッドのてっぺん）。段ごとに細くなり、桃色の光の輪がまわる */
+  {const tx=Math.round(W*0.72-camX*0.06);ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(tx-3,-OY,6,120+OY);
+    const tiers=[[30,118,22],[24,96,22],[18,74,22],[13,52,22],[9,30,22],[6,8,22],[4,-14,22]];for(const [hw,by,hh] of tiers){ctx.fillStyle='#e6eefa';ctx.fillRect(tx-hw,by-hh,hw*2,hh);ctx.fillStyle='#f8fbff';ctx.fillRect(tx-hw,by-hh,Math.ceil(hw*0.6),hh);ctx.fillStyle='#c4d2ea';ctx.fillRect(tx+hw-3,by-hh,3,hh);ctx.fillStyle='#b0c0dc';ctx.fillRect(tx-hw,by-1,hw*2,1);
+      ctx.fillStyle='rgba(160,190,235,.6)';for(let wy=by-hh+4;wy<by-3;wy+=5)ctx.fillRect(tx-hw+2,wy,hw*2-6,1)}
+    ctx.fillStyle='#ffffff';ctx.fillRect(tx-1,-OY,2,120+OY);
+    for(let i=0;i<5;i++){const y=104-i*22,rw=[38,32,26,20,15][i],ph=(t*0.8+i*0.7)%1;ctx.fillStyle='rgba(255,154,200,.35)';ctx.fillRect(tx-rw,y,rw*2,1);ctx.fillStyle='rgba(255,120,180,.85)';const bx=Math.round(tx-rw+ph*rw*2);ctx.fillRect(bx-2,y,5,1)}}
+  /* 遠景（×0.15）：同じ形の白い塔とドームが、同じ間隔で並ぶ。リニアの線路 */
   const fo=Math.round(camX*0.15);
-  for(const d of SKY_DOMES){const x=d.x-fo;if(x<-40||x>W+40)continue;ctx.fillStyle='#e4ecf8';for(let i=0;i<d.r;i++){const hh=Math.round(Math.sqrt(1-(i/d.r)**2)*d.h);ctx.fillRect(x+i,GY-40-hh,1,hh+1);ctx.fillRect(x-i,GY-40-hh,1,hh+1)}ctx.fillStyle='#c8d6ec';ctx.fillRect(x-d.r,GY-40,d.r*2,2)}
-  for(const tr of SKY_TREES){const x=tr.x-fo;if(x<-10||x>W+10)continue;ctx.fillStyle='#7ab88a';ctx.fillRect(x-3,GY-40-tr.h,7,tr.h-2);ctx.fillStyle='#9ad0a8';ctx.fillRect(x-2,GY-40-tr.h,5,2);ctx.fillStyle='#b4bccc';ctx.fillRect(x,GY-42,1,2)}
-  ctx.fillStyle='#d6e0f0';ctx.fillRect(0,GY-38,W,38);
-  /* 中景：白い建物の列（×0.5）。金の線と、回る手配書のホログラム */
+  for(const d of SKY_DOMES){const x=d.x-fo;if(x<-40||x>W+40)continue;ctx.fillStyle='#e4ecf8';for(let i=0;i<d.r;i++){const hh=Math.round(Math.sqrt(1-(i/d.r)**2)*d.h);ctx.fillRect(x+i,GY-40-hh,1,hh+1);ctx.fillRect(x-i-1,GY-40-hh,1,hh+1)}ctx.fillStyle='#f6f9fd';ctx.fillRect(x-6,GY-40-d.h,5,2);ctx.fillStyle='#c8d6ec';ctx.fillRect(x-d.r,GY-40,d.r*2,2)}
+  for(const tr of SKY_TREES){const x=tr.x-fo;if(x<-20||x>W+20)continue;ctx.fillStyle='#dbe5f4';ctx.fillRect(x-4,GY-40-tr.h*2,8,tr.h*2);ctx.fillStyle='#f2f6fc';ctx.fillRect(x-4,GY-40-tr.h*2,3,tr.h*2);ctx.fillStyle='#e0b85a';ctx.fillRect(x-4,GY-40-tr.h*2,8,1);ctx.fillRect(x,GY-46-tr.h*2,1,6);
+    ctx.fillStyle='rgba(150,180,220,.7)';for(let wy=GY-36-tr.h*2;wy<GY-42;wy+=4)ctx.fillRect(x-2,wy,5,1);ctx.fillStyle='#8ac49a';ctx.fillRect(x+10,GY-48,7,8);ctx.fillRect(x+21,GY-48,7,8);ctx.fillStyle='#a8d8b4';ctx.fillRect(x+10,GY-48,7,2);ctx.fillRect(x+21,GY-48,7,2)}
+  {const ry=GY-62;ctx.fillStyle='rgba(170,190,220,.8)';ctx.fillRect(0,ry,W,1);ctx.fillStyle='rgba(170,190,220,.5)';for(let x=-(fo%24);x<W;x+=24)ctx.fillRect(x,ry+1,1,22);for(let k=0;k<3;k++){const cx=Math.round(((t*30+k*120)%(W+60))-30);ctx.fillStyle='#ffffff';ctx.fillRect(cx,ry-3,14,3);ctx.fillStyle='#5fb8ff';ctx.fillRect(cx+1,ry-2,12,1)}}
+  ctx.fillStyle='#d6e0f0';ctx.fillRect(0,GY-38,W,38);ctx.fillStyle='#c6d2e8';ctx.fillRect(0,GY-38,W,1);
+  /* 中景（×0.5）：同じ白い建物が同じ間隔で並ぶ。ガラスの帯、金の線、屋上の丸く刈った木、回る手配書のホログラム */
   const mo=Math.round(camX*0.5);
-  for(let i=0;i<40;i++){const bx=i*70-mo,bw=52,bh=46+(i*37%5)*6;if(bx<-bw||bx>W)continue;ctx.fillStyle='#eef2f8';ctx.fillRect(bx,GY-bh,bw,bh);ctx.fillStyle='#c8d2e4';ctx.fillRect(bx,GY-bh,bw,2);ctx.fillStyle='#e0b85a';ctx.fillRect(bx,GY-bh+6,bw,1);
-    ctx.fillStyle='#a8bcdc';for(let wy=GY-bh+10;wy<GY-10;wy+=8)for(let wx=bx+4;wx<bx+bw-6;wx+=8)ctx.fillRect(wx,wy,5,5);
-    if(i%3===1){const px=bx+bw/2-5,py=GY-bh+12,sc=Math.abs(Math.cos(t*1.2+i));ctx.fillStyle='rgba(255,90,120,.18)';ctx.fillRect(px-2,py-2,14,18);ctx.save();ctx.translate(px+5,0);ctx.scale(Math.max(0.15,sc),1);drawPoster(-5,py,{});ctx.restore()}}
-  /* 地面：白い石の床、継ぎ目、金の線 */
-  ctx.fillStyle='#e8edf6';ctx.fillRect(0,GY,W,180-GY+2);ctx.fillStyle='#cfd8e8';for(let x=-(camX%20);x<W;x+=20)ctx.fillRect(Math.round(x),GY,1,180-GY);ctx.fillStyle='#e0b85a';ctx.fillRect(0,GY,W,1);ctx.fillStyle='#f8fafd';ctx.fillRect(0,GY+1,W,1)}
+  for(let i=0;i<40;i++){const bx=i*70-mo,bw=52,bh=50+(i%2)*8;if(bx<-bw-8||bx>W+8)continue;const top=GY-bh;
+    ctx.fillStyle='#b8c6de';ctx.fillRect(bx-1,top,bw+2,bh);ctx.fillStyle='#eef2f8';ctx.fillRect(bx,top,bw,bh);ctx.fillStyle='#fafcff';ctx.fillRect(bx,top,8,bh);ctx.fillStyle='#d4dcea';ctx.fillRect(bx+bw-6,top,6,bh);ctx.fillStyle='#c8d2e4';ctx.fillRect(bx,top,bw,2);ctx.fillStyle='#e0b85a';ctx.fillRect(bx,top+6,bw,1);
+    for(let wy=top+11;wy<GY-12;wy+=9){ctx.fillStyle='#a8bcdc';ctx.fillRect(bx+3,wy,bw-6,4);ctx.fillStyle='#c4d6f0';ctx.fillRect(bx+3,wy,bw-6,1);ctx.fillStyle='#8aa0c4';for(let k=bx+11;k<bx+bw-3;k+=10)ctx.fillRect(k,wy,1,4)}
+    ctx.fillStyle='#c8d2e4';ctx.fillRect(bx+bw/2-6,GY-12,12,12);ctx.fillStyle='#a8c8f0';ctx.fillRect(bx+bw/2-5,GY-11,10,11);ctx.fillStyle='#e8f2ff';ctx.fillRect(bx+bw/2,GY-11,1,11);
+    for(const k of [8,26,44]){ctx.fillStyle='#d8e0ee';ctx.fillRect(bx+k-3,top-3,6,3);ctx.fillStyle='#5aa878';ctx.fillRect(bx+k-3,top-9,6,6);ctx.fillRect(bx+k-2,top-10,4,1);ctx.fillStyle='#7ac898';ctx.fillRect(bx+k-2,top-9,2,2)}
+    if(i%3===1){const px=bx+bw/2-5,py=top+12,sc=Math.abs(Math.cos(t*1.2+i));ctx.fillStyle='rgba(255,90,120,.18)';ctx.fillRect(px-2,py-2,14,18);ctx.save();ctx.translate(px+5,0);ctx.scale(Math.max(0.15,sc),1);drawPoster(-5,py,{holo:1});ctx.restore()}}
+  /* 地面：白い石の床。継ぎ目、金の縁、映り込み、床に流れる案内の光 */
+  ctx.fillStyle='#e8edf6';ctx.fillRect(0,GY,W,180-GY+2);ctx.fillStyle='#f4f7fc';ctx.fillRect(0,GY+2,W,6);ctx.fillStyle='#cfd8e8';for(let x=-(camX%20);x<W;x+=20){ctx.fillRect(Math.round(x),GY,1,180-GY)}ctx.fillRect(0,GY+14,W,1);
+  ctx.fillStyle='#e0b85a';ctx.fillRect(0,GY,W,1);ctx.fillStyle='#f8fafd';ctx.fillRect(0,GY+1,W,1);
+  ctx.fillStyle='rgba(95,184,255,.55)';for(let x=-((camX+Math.floor(t*24))%16);x<W;x+=16)ctx.fillRect(Math.round(x),GY+20,4,1)}
 /* 浮いている足場（白い板。縁が光る） */
-function drawPlats(t){for(const p of ST().plats||[]){const x0=Math.round(p.x0-camX),w=p.x1-p.x0;if(x0>W||x0+w<0)continue;const y=p.y;
-  ctx.fillStyle='rgba(60,80,120,.18)';ctx.fillRect(x0+2,y+5,w,2);ctx.fillStyle=area()==='top'?'#fff8e8':'#f4f7fc';ctx.fillRect(x0,y,w,4);ctx.fillStyle='#9aa8c4';ctx.fillRect(x0,y+3,w,1);ctx.fillStyle=`rgba(62,242,224,${0.6+0.3*Math.sin(t*3+p.x0)})`;ctx.fillRect(x0,y,w,1);
-  ctx.fillStyle='rgba(120,220,255,.35)';ctx.fillRect(x0+Math.round(w/2)-3,y+4,6,2)}}
+function drawPlats(t){const top=area()==='top';for(const p of ST().plats||[]){const x0=Math.round(p.x0-camX),w=p.x1-p.x0;if(x0>W||x0+w<0)continue;const y=p.y,a=0.6+0.3*Math.sin(t*3+p.x0);
+  /* 床に落ちる影（高さがわかるように） */
+  ctx.fillStyle='rgba(60,80,120,.12)';ctx.fillRect(x0+4,GY,w-8,2);ctx.fillRect(x0+8,GY+2,w-16,1);
+  /* 浮かせている光 */
+  ctx.fillStyle=`rgba(120,220,255,${0.12+0.08*Math.sin(t*5+p.x0)})`;ctx.fillRect(x0+6,y+6,w-12,6);ctx.fillRect(x0+10,y+12,w-20,3);
+  ctx.fillStyle='#6a7898';ctx.fillRect(x0,y,w,5);ctx.fillStyle=top?'#fff8e8':'#f4f7fc';ctx.fillRect(x0,y,w,3);ctx.fillStyle='#ffffff';ctx.fillRect(x0+1,y+1,w-2,1);ctx.fillStyle='#9aa8c4';ctx.fillRect(x0+1,y+3,w-2,1);
+  ctx.fillStyle=`rgba(62,242,224,${a})`;ctx.fillRect(x0,y,w,1);ctx.fillStyle='#e0b85a';ctx.fillRect(x0,y+4,2,1);ctx.fillRect(x0+w-2,y+4,2,1);
+  ctx.fillStyle='#4a5470';ctx.fillRect(x0+Math.round(w/2)-5,y+5,10,2);ctx.fillStyle=`rgba(160,240,255,${a})`;ctx.fillRect(x0+Math.round(w/2)-3,y+6,6,1)}}
 /* 中央区：まぶしい光。真ん中に大規模AIの機械。人間はいない */
 function drawTopBG(t){const ax=Math.round(STAGES.top.ai-camX);
-  ctx.fillStyle='#fffaf0';ctx.fillRect(0,-OY,W,180+OY);const g=ctx.createLinearGradient(0,-OY,0,GY);g.addColorStop(0,'#fff3dc');g.addColorStop(1,'#ffffff');ctx.fillStyle=g;ctx.fillRect(0,-OY,W,GY+OY);
-  /* 遠くの白い柱の列 */
-  const fo=Math.round(camX*0.3);for(let i=0;i<30;i++){const x=i*40-fo;if(x<-10||x>W+10)continue;ctx.fillStyle='rgba(220,210,190,.5)';ctx.fillRect(x,-OY,6,GY-30+OY);ctx.fillStyle='rgba(255,255,255,.8)';ctx.fillRect(x+1,-OY,2,GY-30+OY)}
-  ctx.fillStyle='rgba(230,220,200,.6)';ctx.fillRect(0,GY-30,W,30);
-  /* 大規模AI：太い柱と回る光の輪、上へ伸びる光 */
-  ctx.fillStyle='rgba(255,220,160,.25)';ctx.fillRect(ax-60,-OY,120,GY+OY);ctx.fillStyle='rgba(255,255,255,.6)';ctx.fillRect(ax-4,-OY,8,GY+OY);
-  ctx.fillStyle='#e8e2d4';ctx.fillRect(ax-34,GY-118,68,118);ctx.fillStyle='#f8f4ea';ctx.fillRect(ax-30,GY-118,10,118);ctx.fillStyle='#c8bea8';ctx.fillRect(ax+24,GY-118,10,118);
-  for(let i=0;i<6;i++){const y=GY-110+i*18;ctx.fillStyle='#bfb6a2';ctx.fillRect(ax-34,y,68,2)}
-  const eye=0.6+0.4*Math.sin(t*1.3);ctx.fillStyle=`rgba(255,80,110,${0.25*eye})`;ctx.fillRect(ax-16,GY-92,32,32);ctx.fillStyle=`rgba(255,120,150,${0.6*eye})`;ctx.fillRect(ax-9,GY-85,18,18);ctx.fillStyle='#fff0f4';ctx.fillRect(ax-4,GY-80,8,8);
-  for(let k=0;k<3;k++){const a=t*(0.6+k*0.25)+k*2,rx=48+k*14,yy=GY-60-k*24;for(let i=0;i<24;i++){const b=a+i*Math.PI/12,x=Math.round(ax+Math.cos(b)*rx),y=Math.round(yy+Math.sin(b)*rx*0.18);ctx.fillStyle=Math.sin(b)>0?'rgba(255,154,200,.9)':'rgba(255,200,120,.45)';ctx.fillRect(x,y,2,1)}}
-  /* ケーブルとデータの光 */
-  ctx.fillStyle='#d8cfbc';for(const dx of [-70,-50,50,70]){ctx.fillRect(ax+dx,GY-6,dx<0?-dx-34:34-dx,2)}
-  for(let i=0;i<10;i++){const y=Math.round(((t*40+i*37)%(GY+OY))-OY);ctx.fillStyle='rgba(255,154,200,.7)';ctx.fillRect(ax-2+(i%3)*2,y,1,4)}
-  /* 床：光る格子 */
-  ctx.fillStyle='#f4efe4';ctx.fillRect(0,GY,W,182-GY);ctx.fillStyle='rgba(255,180,120,.45)';for(let x=-(camX%16);x<W;x+=16)ctx.fillRect(Math.round(x),GY,1,180-GY);ctx.fillStyle='#ffd8a0';ctx.fillRect(0,GY,W,1)}
+  /* まぶしい光：上から白く降りそそぐ */
+  const g=ctx.createLinearGradient(0,-OY,0,GY);g.addColorStop(0,'#fff1d6');g.addColorStop(0.6,'#fffaf0');g.addColorStop(1,'#ffffff');ctx.fillStyle=g;ctx.fillRect(0,-OY,W,GY+OY+1);
+  /* 天井の機械：同じ形の部品がすき間なく並び、細い光が走る */
+  {const co=Math.round(camX*0.3);ctx.fillStyle='#e8dcc4';ctx.fillRect(0,-OY,W,14+OY);ctx.fillStyle='#d4c4a4';ctx.fillRect(0,13,W,2);for(let x=-(co%24);x<W;x+=24){ctx.fillStyle='#f4ecdc';ctx.fillRect(x+2,-OY,18,12+OY);ctx.fillStyle='#d4c4a4';ctx.fillRect(x+10,4,2,8);ctx.fillStyle=(Math.floor(t*3+x*0.37)%5===0)?'#ff6a90':'#ffc070';ctx.fillRect(x+6,8,2,1)}
+    for(let k=0;k<2;k++){const lx=Math.round((t*90+k*170)%(W+40))-20;ctx.fillStyle='rgba(255,154,200,.8)';ctx.fillRect(lx,14,12,1)}}
+  /* 光の柱が斜めに差す */
+  for(let i=0;i<5;i++){const bx=Math.round(i*90-(camX*0.2)%90);ctx.fillStyle='rgba(255,255,255,.28)';for(let y=15;y<GY;y+=4)ctx.fillRect(bx+Math.round((y-15)*0.3),y,14,4)}
+  /* 大規模AIの本体（奥。広間のどこからでも見える巨大な塔）：輪の段、小さな光の点、中を流れるデータ */
+  {const fx=Math.round(W*0.55+(STAGES.top.ai-camX-W*0.55)*0.1);ctx.fillStyle='rgba(255,236,200,.35)';ctx.fillRect(fx-70,15,140,GY-45);
+    for(let i=0;i<7;i++){const y=18+i*14,hw=56-Math.abs(i-3)*6;ctx.fillStyle='#ece2cc';ctx.fillRect(fx-hw,y,hw*2,12);ctx.fillStyle='#f8f2e4';ctx.fillRect(fx-hw,y,hw*2,2);ctx.fillStyle='#d6c8a8';ctx.fillRect(fx-hw,y+11,hw*2,1);ctx.fillRect(fx+hw-6,y,6,12);
+      for(let k=-hw+4;k<hw-8;k+=5){const on=hsh(k+i*31,Math.floor(t*2+k))>0.62;ctx.fillStyle=on?(hsh(k,i)>0.7?'#ff6a90':'#ffb050'):'#d6c8a8';ctx.fillRect(fx+k,y+5,2,2)}}
+    ctx.fillStyle='#fff8ee';ctx.fillRect(fx-6,15,12,GY-45);for(let i=0;i<8;i++){const y=Math.round(15+((t*50+i*19)%(GY-50)));ctx.fillStyle='rgba(255,120,170,.8)';ctx.fillRect(fx-3+(i%3)*2,y,1,5)}}
+  /* 両側の計算機の列（×0.4）：同じ白い箱が並び、ランプがまたたく */
+  {const mo=Math.round(camX*0.4);for(let i=0;i<30;i++){const x=i*34-mo;if(x<-30||x>W+4)continue;const h=58;ctx.fillStyle='#d6cab0';ctx.fillRect(x-1,GY-30-h,26,h);ctx.fillStyle='#f2ebdc';ctx.fillRect(x,GY-30-h,24,h);ctx.fillStyle='#fcf8f0';ctx.fillRect(x,GY-30-h,5,h);ctx.fillStyle='#e0d4bc';ctx.fillRect(x+20,GY-30-h,4,h);
+    for(let r=0;r<8;r++){const y=GY-26-h+r*7;ctx.fillStyle='#e4d8c0';ctx.fillRect(x+6,y,13,5);for(let k=0;k<3;k++){const on=hsh(i*9+r,Math.floor(t*4)+k)>0.5;ctx.fillStyle=on?(k===2?'#ff6a90':'#ffb050'):'#cbbd9e';ctx.fillRect(x+8+k*4,y+2,2,1)}}}}
+  ctx.fillStyle='#efe6d4';ctx.fillRect(0,GY-30,W,30);ctx.fillStyle='#e2d6be';ctx.fillRect(0,GY-30,W,1);
+  /* 大規模AIの核（手前、ai の位置）：台座、まわる光の輪、桃色の目。床へ広がる太いケーブル */
+  ctx.fillStyle='rgba(255,220,160,.3)';ctx.fillRect(ax-50,-OY,100,GY+OY);ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillRect(ax-3,-OY,6,GY-100+OY);
+  for(const s of [-1,1])for(let k=0;k<3;k++){const x0=ax+s*28,ex=ax+s*(62+k*40),y0=GY-8,ey=GY+2+k*4,ph=(t*0.6+k*0.33+(s>0?0.5:0))%1;for(let i=0;i<=24;i++){const f=i/24,x=Math.round(x0+(ex-x0)*f),y=Math.round(y0+(ey-y0)*Math.sin(f*Math.PI/2));ctx.fillStyle='#b8a888';ctx.fillRect(x,y,3,2);ctx.fillStyle='#ece2cc';ctx.fillRect(x,y,3,1)}
+    const px=Math.round(x0+(ex-x0)*(1-ph)),py=Math.round(y0+(ey-y0)*Math.sin((1-ph)*Math.PI/2));ctx.fillStyle='rgba(255,110,160,.9)';ctx.fillRect(px,py,3,1)}
+  ctx.fillStyle='#b8a888';ctx.fillRect(ax-40,GY-14,80,14);ctx.fillStyle='#e8dcc4';ctx.fillRect(ax-38,GY-14,76,3);ctx.fillStyle='#d6c8a8';ctx.fillRect(ax-30,GY-24,60,10);ctx.fillStyle='#f4ecdc';ctx.fillRect(ax-30,GY-24,60,2);
+  ctx.fillStyle='#d6c8a8';ctx.fillRect(ax-8,GY-100,16,78);ctx.fillStyle='#f4ecdc';ctx.fillRect(ax-8,GY-100,5,78);ctx.fillStyle='#b8a888';ctx.fillRect(ax+5,GY-100,3,78);
+  for(const s of [-1,1]){ctx.fillStyle='#c8b898';ctx.fillRect(ax+s*20-(s<0?6:0),GY-80,6,58);ctx.fillStyle='#e8dcc4';ctx.fillRect(ax+s*20-(s<0?6:0),GY-80,2,58);ctx.fillRect(ax+s*8-(s<0?14:0),GY-82,14,3)}
+  {const cy=GY-70,eye=0.6+0.4*Math.sin(t*1.3);
+    for(let dy=-22;dy<=22;dy++){const hw=Math.round(Math.sqrt(22*22-dy*dy));ctx.fillStyle=dy<-14?'#fffaf0':dy<8?'#f4ecdc':'#ddd0b4';ctx.fillRect(ax-hw,cy+dy,hw*2,1)}
+    ctx.fillStyle='#c8b898';ctx.fillRect(ax-22,cy-1,44,2);ctx.fillRect(ax-1,cy-22,2,44);
+    ctx.fillStyle=`rgba(255,80,120,${0.3*eye})`;ctx.fillRect(ax-12,cy-12,24,24);ctx.fillStyle='#5a3a48';ctx.fillRect(ax-9,cy-9,18,18);ctx.fillStyle=`rgba(255,90,130,${0.55+0.4*eye})`;ctx.fillRect(ax-7,cy-7,14,14);ctx.fillStyle='#ff9ab8';ctx.fillRect(ax-4,cy-4,8,8);ctx.fillStyle='#fff0f4';ctx.fillRect(ax-2,cy-2,4,4);
+    for(let k=0;k<2;k++){const a=t*(0.6+k*0.25)+k*2,rx=32+k*12,yy=cy+6-k*20;for(let i=0;i<64;i++){const b=a+i*Math.PI/32,x=Math.round(ax+Math.cos(b)*rx),y=Math.round(yy+Math.sin(b)*rx*0.16);if(Math.sin(b)<0&&Math.abs(x-ax)<22&&Math.abs(y-cy)<22)continue;ctx.fillStyle=Math.sin(b)>0?'rgba(255,120,170,.95)':'rgba(255,190,110,.5)';ctx.fillRect(x,y,1,1)}}}
+  for(let i=0;i<10;i++){const y=Math.round(((t*40+i*37)%(GY-100+OY))-OY);ctx.fillStyle='rgba(255,120,170,.75)';ctx.fillRect(ax-2+(i%3)*2,y,1,4)}
+  /* 床：光る石の床。格子と、AIへ向かって流れる光 */
+  ctx.fillStyle='#f4efe4';ctx.fillRect(0,GY,W,182-GY);ctx.fillStyle='#fffaf2';ctx.fillRect(0,GY+2,W,5);ctx.fillStyle='rgba(255,180,120,.45)';for(let x=-(camX%16);x<W;x+=16)ctx.fillRect(Math.round(x),GY,1,180-GY);ctx.fillRect(0,GY+12,W,1);ctx.fillRect(0,GY+24,W,1);
+  ctx.fillStyle='#ffd8a0';ctx.fillRect(0,GY,W,1);ctx.fillStyle='rgba(255,120,170,.6)';for(let x=-((camX-Math.floor(t*40))%24+24)%24;x<W;x+=24)ctx.fillRect(Math.round(x),GY+18,5,1)}
 /* 天穹区の手前：昇降機、手配書のホログラム柱、ソウの隠れている整備路、中央区ゲート */
 function drawSkyNear(t){const X=x=>Math.round(x-camX);
-  drawLift(X(64),t,true);
-  /* 手配書の柱：ソウ。再会のあとは、リクとミナも並ぶ */
-  for(const n of AREAS.sky.npcs){if(n.id!=='poster')continue;const sx=X(n.x);if(sx<-30||sx>W+30)continue;const three=S.st&&S.st.sou,ws=three?['riku','sou','mina']:['sou'];
-    ctx.fillStyle='#c8d2e4';ctx.fillRect(sx-1,n.py+14,2,GY-n.py-14);ctx.fillStyle='#9aa8c4';ctx.fillRect(sx-4,GY-2,8,2);
-    ws.forEach((w,i)=>{const px=sx-5+(i-(ws.length-1)/2)*12;ctx.fillStyle='rgba(255,90,120,.16)';ctx.fillRect(px-2,n.py-2,14,17);drawPoster(Math.round(px),n.py,{who:w,holo:1})})}
-  /* 整備路の入り口（白い壁のすき間。照明が壊れて暗い） */
-  {const sx=X(760);if(sx>-80&&sx<W+20){ctx.fillStyle='#eef2f8';ctx.fillRect(sx-10,GY-70,14,70);ctx.fillRect(sx+56,GY-70,14,70);ctx.fillStyle='#3a3e50';ctx.fillRect(sx+4,GY-62,52,62);ctx.fillStyle='#262838';ctx.fillRect(sx+8,GY-58,44,58);
-    ctx.fillStyle='#5a6278';ctx.fillRect(sx+10,GY-50,40,2);ctx.fillRect(sx+12,GY-30,36,2);ctx.fillStyle='#8a94aa';ctx.fillRect(sx+46,GY-58,2,58);
-    const on=Math.floor(t*3)%7!==0;ctx.fillStyle=on?'rgba(255,214,150,.55)':'rgba(255,214,150,.1)';ctx.fillRect(sx+24,GY-58,10,2);ctx.fillStyle='#e0b85a';ctx.fillRect(sx-10,GY-70,80,1)}}
-  /* 中央区ゲート：白い巨大な門。番人を倒すまでは赤く閉じている */
-  {const gx=X(1860),open=!!(S.st&&S.st.z_z3);if(gx<W+20&&gx>-90){ctx.fillStyle='#f4f6fa';ctx.fillRect(gx-8,GY-110,10,110);ctx.fillRect(gx+58,GY-110,10,110);ctx.fillRect(gx-8,GY-118,76,10);ctx.fillStyle='#e0b85a';ctx.fillRect(gx-8,GY-108,76,1);
-    if(open){const lg=ctx.createLinearGradient(gx,0,gx+58,0);lg.addColorStop(0,'rgba(255,250,235,.6)');lg.addColorStop(1,'rgba(255,255,255,.95)');ctx.fillStyle=lg;ctx.fillRect(gx+2,GY-108,56,108)}
-    else{ctx.fillStyle='rgba(255,61,90,.18)';ctx.fillRect(gx+2,GY-108,56,108);ctx.fillStyle=`rgba(255,90,120,${0.5+0.3*Math.sin(t*6)})`;for(let y=GY-104;y<GY;y+=6)ctx.fillRect(gx+2,y,56,1)}
-    ctx.fillStyle='#0d0b18';ctx.fillRect(gx-7,GY-60,8,8);ctx.fillStyle=open?'#3ef2e0':'#ff4a5c';ctx.fillRect(gx-5,GY-58,4,4)}}}
+  /* 昇降機（天穹区の白いカプセル） */
+  {const sx=X(64);if(sx>-40&&sx<W+40){ctx.fillStyle='#9aa8c4';ctx.fillRect(sx-15,GY-47,30,47);ctx.fillStyle='#eef2f8';ctx.fillRect(sx-14,GY-46,28,46);ctx.fillStyle='#fafcff';ctx.fillRect(sx-14,GY-46,4,46);ctx.fillStyle='#e0b85a';ctx.fillRect(sx-14,GY-40,28,1);
+    ctx.fillStyle='#a8c8f0';ctx.fillRect(sx-11,GY-36,10,36);ctx.fillRect(sx+1,GY-36,10,36);ctx.fillStyle='#d4e6fa';ctx.fillRect(sx-10,GY-35,2,34);ctx.fillRect(sx+2,GY-35,2,34);ctx.fillStyle='#7a8cb0';ctx.fillRect(sx-1,GY-36,2,36);
+    ctx.fillStyle=Math.floor(t*1.5)%2?'#3ef2e0':'#9af8ee';ctx.fillRect(sx-4,GY-44,8,2);ctx.fillStyle='#c8d2e4';ctx.fillRect(sx+15,GY-22,3,5);ctx.fillStyle='#3ef2e0';ctx.fillRect(sx+16,GY-21,1,2)}}
+  /* 手配書の柱：床の投影機からホログラムを映す。ソウ。再会のあとは、リクとミナも並ぶ */
+  for(const n of AREAS.sky.npcs){if(n.id!=='poster')continue;const sx=X(n.x);if(sx<-30||sx>W+30)continue;const three=S.st&&S.st.sou,ws=three?['riku','sou','mina']:['sou'],hw=three?20:9,fl=Math.floor(t*13+n.x)%23===0;
+    ctx.fillStyle='#c8d2e4';ctx.fillRect(sx-1,n.py+16,3,GY-n.py-20);ctx.fillStyle='#f4f7fc';ctx.fillRect(sx-1,n.py+16,1,GY-n.py-20);ctx.fillStyle='#9aa8c4';ctx.fillRect(sx-5,GY-4,11,4);ctx.fillStyle='#e8edf6';ctx.fillRect(sx-4,GY-4,9,1);ctx.fillStyle='#ff5a78';ctx.fillRect(sx,GY-3,1,1);
+    ctx.fillStyle='#9aa8c4';ctx.fillRect(sx-3,n.py+15,7,2);ctx.fillStyle='rgba(255,90,120,.22)';ctx.fillRect(sx-1,n.py+13,3,3);
+    ctx.fillStyle=`rgba(255,90,120,${fl?0.06:0.14})`;ctx.fillRect(sx-hw,n.py-3,hw*2+1,19);ctx.fillStyle='rgba(255,150,170,.5)';ctx.fillRect(sx-hw,n.py-3,hw*2+1,1);ctx.fillRect(sx-hw,n.py+15,hw*2+1,1);
+    if(!fl)ws.forEach((w,i)=>{const px=sx-5+(i-(ws.length-1)/2)*12;drawPoster(Math.round(px),n.py,{who:w,holo:1})});
+    ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(sx-hw,n.py-2+Math.floor(t*12+n.x)%17,hw*2+1,1)}
+  /* 整備路の入り口：白い壁にあいた、汚れた口。照明が壊れて暗い。この街でここだけが汚れている */
+  {const sx=X(760);if(sx>-90&&sx<W+20){ctx.fillStyle='#b8c6de';ctx.fillRect(sx-12,GY-73,86,73);ctx.fillStyle='#eef2f8';ctx.fillRect(sx-11,GY-72,84,72);ctx.fillStyle='#fafcff';ctx.fillRect(sx-11,GY-72,6,72);ctx.fillStyle='#e0b85a';ctx.fillRect(sx-11,GY-66,84,1);
+    ctx.fillStyle='#a8bcdc';ctx.fillRect(sx-8,GY-60,9,4);ctx.fillRect(sx+60,GY-60,9,4);ctx.fillRect(sx-8,GY-48,9,4);ctx.fillRect(sx+60,GY-48,9,4);
+    ctx.fillStyle='#3a3e50';ctx.fillRect(sx+3,GY-63,54,63);ctx.fillStyle='#1e2030';ctx.fillRect(sx+6,GY-60,48,60);ctx.fillStyle='#14151f';ctx.fillRect(sx+14,GY-52,32,52);
+    for(let k=0;k<54;k+=6){ctx.fillStyle=(k/6)%2?'#2a2a30':'#e0b040';ctx.fillRect(sx+3+k,GY-63,6,2)}
+    ctx.fillStyle='#4a5068';ctx.fillRect(sx+8,GY-56,44,2);ctx.fillRect(sx+10,GY-40,40,2);ctx.fillStyle='#6a7088';ctx.fillRect(sx+8,GY-56,44,1);ctx.fillStyle='#5a4a3a';ctx.fillRect(sx+12,GY-38,2,38);ctx.fillRect(sx+18,GY-38,2,38);for(let y=GY-34;y<GY;y+=5)ctx.fillRect(sx+12,y,8,1);
+    ctx.fillStyle='#2a2e40';ctx.fillRect(sx+44,GY-58,3,58);ctx.fillStyle='#3a4258';ctx.fillRect(sx+48,GY-52,2,52);ctx.fillStyle='rgba(120,90,60,.5)';ctx.fillRect(sx+30,GY-60,1,9);ctx.fillRect(sx+36,GY-60,1,5);
+    const on=Math.floor(t*3)%7!==0&&Math.floor(t*11)%5!==0;ctx.fillStyle='#4a4a58';ctx.fillRect(sx+23,GY-60,12,2);ctx.fillStyle=on?'rgba(255,214,150,.9)':'rgba(255,214,150,.15)';ctx.fillRect(sx+24,GY-58,10,1);if(on){ctx.fillStyle='rgba(255,214,150,.08)';ctx.fillRect(sx+16,GY-57,26,57)}
+    ctx.fillStyle='#9aa4bc';ctx.fillRect(sx+56,GY-60,8,46);ctx.fillStyle='#c4cad8';ctx.fillRect(sx+57,GY-59,6,44);ctx.fillStyle='#e0b040';ctx.fillRect(sx+57,GY-30,6,1);
+    ctx.fillStyle='rgba(60,60,70,.25)';ctx.fillRect(sx+2,GY-8,58,8);ctx.fillStyle='#6a5a48';ctx.fillRect(sx+8,GY-3,4,3);ctx.fillRect(sx+40,GY-2,6,2)}}
+  /* 中央区ゲート：白い巨大な門。上にAIの目の紋章。番人を倒すまでは赤い光の格子で閉じている */
+  {const gx=X(1860),open=!!(S.st&&S.st.z_z3);if(gx<W+30&&gx>-100){ctx.fillStyle='rgba(255,250,235,.25)';ctx.fillRect(gx-14,GY-130,88,130);
+    ctx.fillStyle='#b8c6de';ctx.fillRect(gx-9,GY-113,12,113);ctx.fillRect(gx+57,GY-113,12,113);ctx.fillStyle='#f4f6fa';ctx.fillRect(gx-8,GY-112,10,112);ctx.fillRect(gx+58,GY-112,10,112);ctx.fillStyle='#ffffff';ctx.fillRect(gx-8,GY-112,3,112);ctx.fillRect(gx+58,GY-112,3,112);ctx.fillStyle='#d4dcea';ctx.fillRect(gx,GY-112,2,112);ctx.fillRect(gx+66,GY-112,2,112);
+    ctx.fillStyle='#e0b85a';for(const y of [GY-90,GY-50,GY-12]){ctx.fillRect(gx-8,y,10,1);ctx.fillRect(gx+58,y,10,1)}
+    ctx.fillStyle='#b8c6de';ctx.fillRect(gx-12,GY-125,84,14);ctx.fillStyle='#f4f6fa';ctx.fillRect(gx-11,GY-124,82,12);ctx.fillStyle='#ffffff';ctx.fillRect(gx-11,GY-124,82,2);ctx.fillStyle='#e0b85a';ctx.fillRect(gx-11,GY-113,82,1);ctx.fillRect(gx+22,GY-131,16,7);ctx.fillStyle='#f4f6fa';ctx.fillRect(gx+23,GY-130,14,6);
+    const eo=0.6+0.4*Math.sin(t*1.5);ctx.fillStyle='#e0b85a';ctx.fillRect(gx+20,GY-122,20,8);ctx.fillStyle='#ffffff';ctx.fillRect(gx+22,GY-121,16,6);ctx.fillStyle=open?'#3ef2e0':`rgba(255,74,92,${eo})`;ctx.fillRect(gx+27,GY-120,6,4);ctx.fillStyle='#fff0f4';ctx.fillRect(gx+29,GY-119,2,2);
+    if(open){const lg=ctx.createLinearGradient(gx,0,gx+56,0);lg.addColorStop(0,'rgba(255,250,235,.7)');lg.addColorStop(1,'rgba(255,255,255,1)');ctx.fillStyle=lg;ctx.fillRect(gx+2,GY-112,56,112);ctx.fillStyle='rgba(255,236,200,.6)';for(let i=0;i<4;i++){const y=Math.round(GY-((t*30+i*28)%112));ctx.fillRect(gx+4,y,52,1)}}
+    else{ctx.fillStyle='rgba(255,61,90,.16)';ctx.fillRect(gx+2,GY-112,56,112);ctx.fillStyle=`rgba(255,90,120,${0.5+0.3*Math.sin(t*6)})`;for(let y=GY-108;y<GY;y+=6)ctx.fillRect(gx+2,y,56,1);for(let x=gx+8;x<gx+58;x+=12)ctx.fillRect(x,GY-112,1,112);ctx.fillStyle='#ff4a5c';ctx.fillRect(gx+2,GY-112,2,112);ctx.fillRect(gx+56,GY-112,2,112)}
+    ctx.fillStyle='#0d0b18';ctx.fillRect(gx-7,GY-62,8,8);ctx.fillStyle=open?'#3ef2e0':'#ff4a5c';ctx.fillRect(gx-5,GY-60,4,4)}}}
 /* ===== 壁（正面から見た建物）：窓、ドア、シャッター、雨どい、室外機、張り紙、看板 ===== */
 function drawWall(w,t,lo){const sx=Math.round(w.x-camX);if(sx>W+4||sx+w.w<-4)return;const base=GY-9,top=base-w.h;
   ctx.fillStyle=lo?'#2e2028':'#151226';ctx.fillRect(sx,top,w.w,w.h);ctx.fillStyle=lo?'#4a3640':'#262145';ctx.fillRect(sx,top,w.w,1);ctx.fillRect(sx,top,1,w.h);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(sx+w.w-1,top,1,w.h);
@@ -967,9 +1035,14 @@ function drawField(f,t){const x0=Math.round(f.x0-camX),x1=Math.round(f.x1-camX);
 /* 指名手配の紙（ソウの顔）。smear=雨でにじむ、graffiti=落書き */
 function drawPoster(sx,y,o={}){drawPosterG(ctx,sx,y,o)}
 /* who：sou（ソウ）・riku（リク）・mina（ミナ）。holo はホログラム（天穹区） */
-const WANTED_FACE={sou:{h:'#2a2028',s:'#b98a68',e:'#3ef2e0',c:'#8f97ad'},riku:{h:'#3b3554',s:'#d9a07a',e:'#3ef2e0',c:'#27243d'},mina:{h:'#3ef2e0',s:'#d9a07a',e:'#07060d',c:'#ff3d8b'}};
+const WANTED_FACE={
+  sou:{m:["ghghhhghhghg","ghhhhhhhhhhg","hhhhhhhhhhhg","ghhssssCCChg","ghssssCCCCCg","ghsesssCvvCg","ghssssCCCCcg","ghssmssCCccg","gghsssssCcgg","ggggsssccggg","gOOOoKKoOOOg","OOooooKooooO"],p:{h:'#2a2028',s:'#b98a68',e:'#07060d',C:'#a8aec0',c:'#5a6078',v:'#ff9a3c',m:'#8a4a3a',o:'#7a2626',O:'#4a1820',K:'#1e1a26'}},
+  riku:{m:["ggggHHHHgggg","ggHHhhhhHHgg","gHhhhhhhhhHg","gHhhsssshhHg","gHhsssssshHg","gHhvvvvvvhHg","gHhVVVVVVhHg","gHhsssssshHg","gHhhssmsshHg","ggHhhsssshHg","gjjjhhhhjjjg","jjjjjccjjjjj"],p:{h:'#3b3554',H:'#5d5680',s:'#d9a07a',v:'#3ef2e0',V:'#1a9e94',m:'#a8705a',j:'#27243d',c:'#3ef2e0'}},
+  mina:{m:["ggggccccgggg","ggccCCCCccgg","gcCCccccCCcg","gcCssssssCcg","gccssssssccg","gccsessesccg","gccssssssccg","gcccsmmscccg","gccgssssgccg","gcgkkkkkkgcg","gkkkkKKkkkkg","kkkkkkkkkkkk"],p:{c:'#3ef2e0',C:'#1a9e94',s:'#d9a07a',e:'#07060d',m:'#b86a5a',k:'#ff3d8b',K:'#a3245a'}}};
+  /* 顔の地図を、横につながった色ごとの長方形にしておく（0.5 刻み） */
+  for(const f of Object.values(WANTED_FACE)){f.r=[];f.m.forEach((row,y)=>{let x=0;while(x<row.length){const ch=row[x];let n=1;while(row[x+n]===ch)n++;f.r.push([ch,x*0.5,y*0.5,n*0.5]);x+=n}})}
 function drawPosterG(ctx,sx,y,o={}){const fc=WANTED_FACE[o.who||'sou'];ctx.fillStyle=o.holo?'rgba(255,236,240,.92)':o.old?'#a8a088':'#d8d0b8';ctx.fillRect(sx,y,10,13);ctx.fillStyle='#b8323c';ctx.fillRect(sx+1,y+1,8,1.5);
-  ctx.fillStyle=fc.h;ctx.fillRect(sx+3,y+3.5,4,4.5);ctx.fillStyle=fc.s;ctx.fillRect(sx+3.5,y+4.8,3,2.6);ctx.fillStyle=fc.e;o.who==='riku'?ctx.fillRect(sx+3.5,y+5.4,3,0.7):ctx.fillRect(sx+5.6,y+5.4,1,0.6);ctx.fillStyle=fc.c;ctx.fillRect(sx+3,y+7.6,4,0.8);
+  const bg=o.holo?'rgba(232,196,208,.9)':o.old?'#8e8672':'#bdb5a2';for(const [ch,fx,fy,w] of fc.r){ctx.fillStyle=ch==='g'?bg:fc.p[ch];ctx.fillRect(sx+2+fx,y+2.5+fy,w,0.5)}
   ctx.fillStyle='rgba(40,30,40,.7)';ctx.fillRect(sx+1.5,y+9,7,0.6);ctx.fillRect(sx+1.5,y+10.4,5,0.6);ctx.fillStyle='#b8323c';ctx.fillRect(sx+1.5,y+11.6,7,0.6);
   if(o.smear){ctx.fillStyle='rgba(50,50,70,.4)';ctx.fillRect(sx,y+6,10,7);ctx.fillRect(sx+2,y+8,1,6);ctx.fillRect(sx+6,y+9,1,5);ctx.fillRect(sx+8,y+7,1,6)}
   if(o.torn){ctx.fillStyle='#1a1416';ctx.fillRect(sx+7,y,3,3);ctx.fillRect(sx+8,y+3,2,1)}
@@ -1045,7 +1118,7 @@ function drawPeopleAndProps(t){const s=ST(),ents=[],m=docMood();
     /* パルスガン（天穹区から） */
     if(armed()){const gx=Math.round(player.x-camX)+(player.dir>0?3:-7),gy=Math.round(player.y)-9;ctx.fillStyle='#3a3e50';ctx.fillRect(gx,gy,5,2);ctx.fillStyle='#3ef2e0';ctx.fillRect(player.dir>0?gx+4:gx,gy,1,1);
       if(T<F.muzzle){ctx.fillStyle='#e8fffc';ctx.fillRect(player.dir>0?gx+5:gx-3,gy-1,3,3)}}
-    if(S.light){const hx=Math.round(player.x-camX+player.dir*5),hy=Math.round(player.y-9);ctx.fillStyle='#2a2838';ctx.fillRect(hx-1,hy,3,2);ctx.fillStyle='#fff6d8';ctx.fillRect(hx+(player.dir>0?1:-1),hy,1,1)}}});
+    if(S.light&&!actArea()){const hx=Math.round(player.x-camX+player.dir*5),hy=Math.round(player.y-9);ctx.fillStyle='#2a2838';ctx.fillRect(hx-1,hy,3,2);ctx.fillStyle='#fff6d8';ctx.fillRect(hx+(player.dir>0?1:-1),hy,1,1)}}});
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.draw())}
 
 /* ===== 灯りと暗さ ===== */
@@ -1053,7 +1126,7 @@ function drawPeopleAndProps(t){const s=ST(),ents=[],m=docMood();
 function liveLights(t){const out=[];
   for(const n of npcsHere()){const L=NPC_LIGHT[n.id];if(!L)continue;const fy=feetY(n),fl=!!FLIP[n.id];
     if(L.kind==='torch')out.push({x:n.x+(fl?-4:5),y:fy-8,cone:(fl?Math.PI-0.35:0.35)+0.25*Math.sin(t*0.7),len:80,sp:0.32,c:'255,246,220'});else out.push({x:n.x+(fl?-4:4),y:fy-6,r:42,c:'255,200,110',a:0.8+0.08*Math.sin(t*7)})}
-  if(S.light)out.push({x:player.x+player.dir*5,y:player.y-9,cone:player.dir>0?0.1:Math.PI-0.1,len:124,sp:0.36,c:'255,248,225'});
+  if(S.light&&!actArea())out.push({x:player.x+player.dir*5,y:player.y-9,cone:player.dir>0?0.1:Math.PI-0.1,len:124,sp:0.36,c:'255,248,225'});
   return out}
 function lighting(t){const s=ST(),lo=area()==='lower',prog=camX/Math.max(1,CAMMAX_OF(area()));
   if(!darkC||darkC.width!==cv.width||darkC.height!==cv.height){darkC=document.createElement('canvas');darkC.width=cv.width;darkC.height=cv.height}
@@ -1227,7 +1300,7 @@ function drawFightHud(t){if(!armed())return;ctx.setTransform(2,0,0,2,0,0);const 
 /* ===== 終章：中央区（STORY.md の 1〜8）。セリフは END_TEXT ===== */
 /* 出てくる人：ソウ、ミナ、広間のサイボーグ（動かない）、上から降りてくるサイボーグ部隊。足もとの y からの浮き dy と、向かう先 goal を持つ */
 const TOP={list:[],sou:null,mina:null};
-let endWalk=false,endWatch=null;
+let endWalk=false,endWatch=null,camT=null;/* camT：終章の場面で、カメラを寄せる相手 */
 function topReset(){const ai=STAGES.top.ai,mk=(spr,x,z,d,dy=0)=>({spr,x,z,d,dy,goal:null});
   TOP.sou=mk(SOU,0,3,1);TOP.mina=mk(MINA,0,-3,1);
   const still=[150,190,230,300,340,380,430,470].map((x,i)=>mk(i%3?SKY_CY:CYBORG,x,-8-(i%2)*2,1));
@@ -1243,20 +1316,20 @@ function stepTop(dt){for(const e of TOP.list){if(e.goal){const d=e.goal.tx-e.x,s
 async function endingSeq(){const ai=STAGES.top.ai;topReset();mode='cut';endWalk=false;player.x=40;player.dir=1;player.vx=0;TOP.sou.x=62;TOP.mina.x=24;camX=0;
   await waitP(500);await sayP(END_TEXT.a);mode='cut';
   /* 2：ソウが大規模AIに向かってダッシュ。3：サイボーグ部隊が取り囲む（予測済み） */
-  sfx('dash');await moveP(TOP.sou,ai-60,170);
+  camT=TOP.sou;sfx('dash');await moveP(TOP.sou,ai-60,170);
   sfx('alarm');await Promise.all(TOP.squad.map((e,i)=>waitP(i*120).then(()=>dropP(e))));
   await sayP(END_TEXT.b);mode='cut';
   /* 4：ミナが追いかけて、取り押さえられる */
   await sayP([L('mina','お兄ちゃん！')]);mode='cut';
   const g1=TOP.list[3],g2=TOP.list[4],mx=TOP.mina.x+110;
   await Promise.all([moveP(TOP.mina,mx,140),waitP(300).then(()=>Promise.all([moveP(g1,mx+10,170),moveP(g2,mx+22,170)]))]);
-  await sayP(END_TEXT.c);
+  await sayP(END_TEXT.c);camT=null;
   /* 5：リクは見回す（ゆっくり歩ける） */
   endWalk=true;mode='play';toast('……あたりを見回す（← → でゆっくり歩ける）',5200);
   await new Promise(r=>{endWatch={x0:player.x,t0:T,done:r}});
   keys.l=keys.r=false;mode='cut';player.vx=0;
   /* 6：モノローグ（本音と同じく、ゆっくり文字送り）のあと、リクも捕まる */
-  await sayP(END_TEXT.mono);mode='cut';
+  await sayP(END_TEXT.mono);mode='cut';camT=null;
   const a=TOP.list[1],b=TOP.list[2];await Promise.all([moveP(a,player.x-12,120),moveP(b,player.x+12,120)]);
   await sayP(END_TEXT.d);mode='cut';await waitP(600);
   $('#fade').classList.add('on');await waitP(1200);endWalk=false;endPanel();$('#fade').classList.remove('on')}
@@ -1327,7 +1400,7 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;T=
     camX=clamp(Math.round(player.x)-Math.round(W*0.42),0,cm);
     /* 右（ゲート）へ進むほど BGM が明るい */
     const pr=camX/Math.max(1,cm),br=Math.round((area()==='sky'?0.75+0.25*pr:area()==='top'?1:area()==='corp'?0.6+0.3*pr:area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
-  else if(mode==='cut'){camX=clamp(Math.round(player.x)-Math.round(W*0.42),0,CAMMAX_OF(area()))}
+  else if(mode==='cut'){const fx=camT?camT.x:player.x,tx=clamp(Math.round(fx)-Math.round(W*(camT?0.5:0.42)),0,CAMMAX_OF(area()));camX=Math.round(camX+(tx-camX)*Math.min(1,dt*3))}
   else if(mode==='title'){titlePan+=dt*14;camX=Math.round((Math.sin(titlePan/120)*0.5+0.5)*CAMMAX_OF(area())*0.6)}
   if(mode!=='panel'){stepFires(dt);if(area()==='lower')stepDrips(dt);for(const c of crowdHere()){if(!c.sp)continue;c.x+=c.d*c.sp*dt;if(c.x>c.x1){c.x=c.x1;c.d=-1}else if(c.x<c.x0){c.x=c.x0;c.d=1}}}
   if(gateLight!=='idle'&&ts>gateLightUntil)gateLight='idle';
@@ -1498,6 +1571,7 @@ const END_TEXT={
 };
 /* 手配書を見た住人の反応（STORY.md の表） */
 const WANTED={
+  mina_sky:[['mina','ここじゃ、誰もこの顔を見てない。……あたしだけが、毎日見てる。']],
   doc:[['doc','……あの手配書か。体を換えすぎた奴の顔だ。機械は、限界を超えたところで急に壊れる。'],['doc','反乱なんざ起こさなくても、あの体じゃ長くはもたなかったろうよ。']],
   jiro:[['jiro','上に逆らった奴は、こうして顔が貼られる。わしらみたいに黙って落ちてくる奴は、誰にも覚えられん。']],
   take:[['take','ゲートをぶち破ろうとしたんだってよ。……すげえよな。俺なんか、受けに行くことすらできねえのに。']],
@@ -1657,7 +1731,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">天穹区は次の版で</p>
-  <p class="muted">試作版 v0.25 はここまでです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
+  <p class="muted">試作版 v0.26 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">企業区に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -1908,9 +1982,10 @@ function goalTargets(){const g=goalNow(),st=S.st||{},a=area();
   if(g.k==='mina2')return a==='corp'?['mina']:['lift'];
   if(g.k==='ray2')return a==='corp'?['ray']:['lift'];
   if(g.k==='end')return a==='corp'?['gate']:['lift'];
-  if(g.k==='sou')return a==='sky'?['sou']:['lift'];
-  if(g.k==='top')return a==='sky'?['gate']:['lift'];
-  if(g.k==='sky1'||g.k==='sky2'||g.k==='boss')return a==='sky'?[]:['lift'];
+  const toSky=S.reached.includes('sky')?['lift']:a==='corp'?['gate']:['lift'];
+  if(g.k==='sou')return a==='sky'?['sou']:toSky;
+  if(g.k==='top')return a==='sky'?['gate']:toSky;
+  if(g.k==='sky1'||g.k==='sky2'||g.k==='boss')return a==='sky'?[]:toSky;
   return[]}
 /* ゲートの条件がそろっているか（ミナから、そのままゲートへ行ける） */
 function gateReady(){const o=overall(S.cur);if(!o||actArea())return false;if(area()==='out')return !S.st.join&&effective()>=gateReq('out');if(area()==='corp')return !!S.st.weapon&&!S.st.tenkyu&&effective()>=gateReq('corp');return !!S.st.done&&!S.st.corp&&effective()>=gateReq('lower')}
