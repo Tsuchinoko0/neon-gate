@@ -204,9 +204,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 .ctrl{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .keys{display:flex;gap:10px;align-items:center}
 .dir{display:flex;gap:10px}
-.keys.dpad .dir{display:grid;grid-template-columns:repeat(3,56px);grid-template-rows:42px 42px;gap:6px}
-.keys.dpad .dir .kbtn{width:56px;height:42px}
-.keys.dpad #kU{grid-column:2;grid-row:1}.keys.dpad #kL{grid-column:1;grid-row:2}.keys.dpad #kD{grid-column:2;grid-row:2}.keys.dpad #kR{grid-column:3;grid-row:2}
 .kbtn{width:64px;height:52px;background:var(--panel);border:1px solid var(--line);font-size:20px;border-radius:2px;user-select:none;-webkit-user-select:none;touch-action:none}
 .kbtn.act{width:auto;padding:0 18px;font-size:15px;color:var(--cyan);border-color:rgba(62,242,224,.45)}
 .kbtn.run{width:auto;padding:0 14px;font-size:14px;color:var(--muted)}
@@ -226,6 +223,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   .gauge{width:40px}
   .bar .sp{flex-basis:100%;height:0}
   .tbtn{flex:1;padding:4px 6px;font-size:11px}
+  .kbtn{height:60px}.dir .kbtn{width:72px}
 }
 @media (prefers-reduced-motion:reduce){.flash,.dlg .more{animation:none}}
 </style>
@@ -234,7 +232,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.18 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.19 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -265,19 +263,17 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 
   <div class="ctrl">
-    <div class="keys dpad" id="keys"><div class="dir">
-      <button class="kbtn" id="kU" type="button" aria-label="上へ歩く">▲</button>
-      <button class="kbtn" id="kD" type="button" aria-label="下へ歩く">▼</button>
+    <div class="keys" id="keys"><div class="dir">
       <button class="kbtn" id="kL" type="button" aria-label="左へ歩く">◀</button>
       <button class="kbtn" id="kR" type="button" aria-label="右へ歩く">▶</button></div>
       <button class="kbtn run" id="kRun" type="button" aria-pressed="false" aria-label="走る（押すたびに切り替え）">走る</button>
     </div>
-    <span class="hint" id="hint">キーボード：↑↓←→・WASD で移動（Shift で走る）／ Space・Enter で話す／ F でライト</span>
+    <span class="hint" id="hint">キーボード：← → / A D で移動（Shift で走る）／ Space・Enter で話す／ F でライト</span>
     <button class="kbtn act" id="kA" type="button">話す</button>
   </div>
 </div>
 
-<script src="sound.js?v=0.18"></script>
+<script src="sound.js?v=0.19"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -367,7 +363,7 @@ function siteRecord(){try{const r=JSON.parse(localStorage.getItem('brainspec')||
 
 /* ===== 画面 ===== */
 const cv=$('#cv'),ctx=cv.getContext('2d',{willReadFrequently:true});ctx.imageSmoothingEnabled=false;
-let W=320,H=180;
+let W=320,H=180;const GY=148;
 function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
 /* スプライト */
@@ -397,20 +393,20 @@ const WK_M=sprite(["...hhhh...","..rrrrrr..","..ssssss..","..sesses..","..ssssss
 const WK_F=sprite(["..hhhh....",".hhhhhh...",".hsssshh..",".hsesesh..",".hssssh.h.","..ssss..h.",".oooooo...","sooooooos.","sooooooos.","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb.bbb.."],{h:'#5a2a3a',s:'#d9a07a',e:'#07060d',o:'#7a3a2a',b:'#0b0a12'});
 const CY_A=sprite(["...cccc...","..cCCCCc..","..cCrrCc..","..cCCCCc..","...cccc...","....cc....",".oooooooo.","coooooooos","coooooooos","c.oooooo.s","..oooooo..","..oooooo..","..oo..cc..","..oo..cC..","..oo..cc..",".bbb..ccc."],{c:'#8f97ad',C:'#d6dbe8',r:'#ff4a5c',o:'#3a3a48',s:'#c98f6a',b:'#0b0a12'});
 const CY_B=sprite(["...cccc...","..cCCCCc..","..cvvvvc..","..cCCCCc..","...cccc...","..cccccc..",".cCCccCCc.","cCccccccCc","cCccccccCc","c.cCCCCc.c","..cccccc..","..cc..cc..","..cC..Cc..","..cc..cc..","..cC..Cc..",".ccc..ccc."],{c:'#7a8296',C:'#c4cad8',v:'#ff9a3c'});
-/* 沈殿街の住人。a から b へ行ったり来たり（b がなければ立ち止まり）。cy=サイボーグ */
+/* 沈殿街の住人。x0〜x1 を行ったり来たり（sp=0 は立ち止まり）。z は奥行き（マイナス＝奥）。cy=サイボーグ */
 const CROWD=[
-  {spr:WK_M,a:[166,216],sex:'m',dir:1},
-  {spr:WK_A,a:[40,248],b:[296,248],sp:13,sex:'m'},
-  {spr:WK_F,a:[232,216],sex:'f',dir:-1},
-  {spr:WK_C,a:[420,214],sex:'m',dir:1},
-  {spr:WK_B,a:[636,214],sex:'m',dir:-1},
-  {spr:WK_A,a:[316,100],b:[316,430],sp:11,sex:'m'},
-  {spr:CY_A,a:[440,240],b:[690,240],sp:16,sex:'m',cy:1},
-  {spr:WK_M,a:[536,214],sex:'m',dir:-1},
-  {spr:WK_F,a:[388,120],b:[388,420],sp:12,sex:'f'},
-  {spr:CY_B,a:[512,366],sex:'m',cy:1,dir:-1},
-  {spr:WK_B,a:[560,262],b:[684,262],sp:9,sex:'m'}
-].map((c,i)=>({...c,x:c.a[0],y:c.a[1],k:(i*0.37)%1,kd:1,d:c.dir||1}));
+  {spr:WK_M,x0:292,x1:292,sp:0,z:5,sex:'m',dir:1},
+  {spr:WK_A,x0:140,x1:262,sp:13,z:7,sex:'m'},
+  {spr:WK_F,x0:352,x1:352,sp:0,z:6,sex:'f',dir:-1},
+  {spr:WK_C,x0:404,x1:404,sp:0,z:-6,sex:'m',dir:1},
+  {spr:WK_B,x0:518,x1:518,sp:0,z:-5,sex:'m',dir:-1},
+  {spr:WK_A,x0:200,x1:380,sp:11,z:-4,sex:'m'},
+  {spr:CY_A,x0:560,x1:760,sp:16,z:7,sex:'m',cy:1},
+  {spr:WK_M,x0:546,x1:546,sp:0,z:-6,sex:'m',dir:-1},
+  {spr:WK_F,x0:744,x1:850,sp:12,z:6,sex:'f'},
+  {spr:CY_B,x0:644,x1:644,sp:0,z:-6,sex:'m',cy:1,dir:-1},
+  {spr:WK_B,x0:780,x1:860,sp:9,z:-5,sex:'m'}
+].map((c,i)=>({...c,x:c.x0+(c.x1-c.x0)*((i*0.37)%1),d:c.dir||(i%2?1:-1)}));
 /* 圏外：ドラム缶の火にあたる人たち（人間だけ） */
 const OUT_CROWD=[{spr:wk({y:'#4a3a3a',o:'#3a3430',t:'#5a5048',s:'#a8704c'}),x:116,d:1,sex:'m'},{spr:wk({y:'#5a3a2a',o:'#2a3030',t:'#4a4a48',s:'#c98f6a'}),x:154,d:-1,sex:'m'},{spr:sprite(["..hhhh....",".hhhhhh...",".hsssshh..",".hsesesh..",".hssssh.h.","..ssss..h.",".oooooo...","sooooooos.","sooooooos.","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb.bbb.."],{h:'#3a2a2a',s:'#c98f6a',e:'#07060d',o:'#4a3a40',b:'#0b0a12'}),x:300,d:-1,sex:'f'}];
 const HARU=sprite(["..hhhh....",".hhhhhh...",".hsssshh..",".hsesesh..",".hssssh...","..ssss....",".oooooo...","sooooooos.","sooooooos.","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb.bbb.."],{h:'#6a4a5a',s:'#b88a6a',e:'#07060d',o:'#4a4038',b:'#0b0a12'});
@@ -421,15 +417,34 @@ const flick=(t,s)=>(Math.sin(t*11.3+s*7.1)+Math.sin(t*3.7+s*2.3)*0.8+Math.sin(t*
 /* ピラミッド都市・東京（4層。上ほど明るい）。窓の灯りは層ごとに決めておく */
 const PYR=[{w:420,h:30,c:'#110d20',e:'#2e2446',win:'#6b4a1a',p:0.05},{w:316,h:28,c:'#18122e',e:'#4e366c',win:'#ffb547',p:0.14},{w:220,h:26,c:'#21183f',e:'#7e58ae',win:'#c9a0ff',p:0.28},{w:128,h:24,c:'#2e2254',e:'#ff9ac8',win:'#fff4d6',p:0.5}];
 const PYR_WIN=[];{const R=rng(77);PYR.forEach((tr,i)=>{for(let y=3;y<tr.h-2;y+=3)for(let x=-tr.w/2+3;x<tr.w/2-3;x+=3)if(R()<tr.p)PYR_WIN.push({i,x,y,s:R()*20})})}
+/* 遠景：東京（右ほど高く明るい） */
+const far=[],farWin=[];
+{const R=rng(7);let x=0;while(x<500){const t=x/500,tk=t>0.58;const w=Math.round(tk?7+R()*13:10+R()*22),h=Math.round(tk?36+R()*90*t:5+R()*20);
+  far.push({x,w,h,tk});
+  for(let wy=GY-18-h+4;wy<GY-20;wy+=3)for(let wx=x+2;wx<x+w-1;wx+=3){const pr=tk?0.45:0.03;if(R()<pr)farWin.push({x:wx,y:wy,c:tk?['#ff7ab8','#7ff8ee','#fff4d6','#c9a0ff'][Math.floor(R()*4)]:'#6b4a1a'})}
+  x+=w+(tk?1:Math.round(R()*6))}}
+/* 中景：スラム */
+const mid=[],midWin=[],signs=[];
+{const R=rng(21);let x=-10;while(x<700){const w=Math.round(30+R()*34),h=Math.round(46+R()*52);mid.push({x,w,h,tank:R()<0.35,ant:R()<0.4});
+  for(let wy=GY-h+6;wy<GY-10;wy+=7)for(let wx=x+4;wx<x+w-5;wx+=8)if(R()<0.07)midWin.push({x:wx,y:wy,f:R()<0.3,s:R()*9});
+  if(R()<0.6){const vert=R()<0.5;signs.push({x:x+4+Math.round(R()*(w-16)),y:GY-h+8+Math.round(R()*20),w:vert?4:10+Math.round(R()*8),h:vert?12+Math.round(R()*10):4,c:['#ff3d8b','#3ef2e0','#ffb547','#b77bff'][Math.floor(R()*4)],broken:R()<0.55,s:R()*20})}
+  x+=w+Math.round(2+R()*8)}}
+const PUDDLES=[{x:70,w:22},{x:250,w:30},{x:520,w:26},{x:700,w:34},{x:820,w:18}];
+/* 圏外の瓦礫・壊れた車・フェンス（見捨てられた場所） */
+const RUBBLE=[];{const R=rng(91);for(const cx of [34,238,352,548,684,786]){const n=6+Math.floor(R()*6);for(let i=0;i<n;i++){const w=3+Math.round(R()*9),h=2+Math.round(R()*6);RUBBLE.push({x:cx+Math.round((R()-0.5)*26),w,h,y:Math.round(R()*3),c:['#2a2430','#3a3030','#25202c','#3a2a24','#4a4048'][Math.floor(R()*5)]})}}}
+/* 沈殿街：配管、店の灯り、ホログラム広告の切れ端、柱 */
+const L_SHOPS=[],L_HOLO=[],L_PIPES=[];
+{const R=rng(41);let x=-20;while(x<720){const w=Math.round(40+R()*40);L_SHOPS.push({x,w,h:Math.round(40+R()*30),c:['#ffb547','#ff7ab8','#7ff8ee','#ffd9a0'][Math.floor(R()*4)],on:R()<0.7});x+=w+Math.round(6+R()*14)}
+  for(let i=0;i<14;i++)L_HOLO.push({x:Math.round(R()*700),y:Math.round(30+R()*40),w:Math.round(8+R()*20),h:Math.round(4+R()*8),c:['#ff3d8b','#3ef2e0','#b77bff','#ffb547'][Math.floor(R()*4)],s:R()*30});
+  for(let i=0;i<6;i++)L_PIPES.push({y:Math.round(4+i*5+R()*3),h:2+Math.round(R()*2),c:i%2?'#2a2036':'#221a2e'})}
 /* 層ごとの住人と設備 */
 const AREAS={
   out:{nm:'圏外 · ピラミッドの外',floor:'ふもと · 圏外',label:'ピラミッドの外の、見捨てられたスラム街。遠くにピラミッド都市・東京の光が見える',
-    top:true,npcs:[{id:'jiro',x:148,y:364},{id:'take',x:188,y:364},{id:'yuki',x:168,y:384},{id:'mina',x:248,y:236},{id:'lift',x:400,y:218},{id:'doc',x:480,y:220},{id:'gate',x:320,y:106},{id:'haru',x:544,y:300},{id:'ken',x:346,y:368},{id:'shiro',x:80,y:220}]},
+    npcs:[{id:'shiro',x:72,z:-6},{id:'jiro',x:114,z:-6},{id:'take',x:164,z:-6},{id:'yuki',x:188,z:4},{id:'mina',x:232,z:0},{id:'ken',x:300,z:5},{id:'lift',x:410},{id:'doc',x:486,z:2},{id:'haru',x:640,z:5},{id:'gate',x:856}]},
   lower:{nm:'沈殿街 · 第1層',floor:'第1層 · 沈殿街',label:'ピラミッドの底の街、沈殿街。上の層の床が空を塞いでいる。屋台の灯りと工場',
-    top:true,npcs:[{id:'lift',x:48,y:376},{id:'mina',x:84,y:382},{id:'genji',x:192,y:206},{id:'daimon',x:440,y:214},{id:'ray',x:488,y:352},{id:'tsugi',x:616,y:398},{id:'gate',x:352,y:58}]}
+    npcs:[{id:'lift',x:64},{id:'mina',x:106,z:-4},{id:'genji',x:322,z:-3},{id:'daimon',x:428,z:2},{id:'ray',x:590,z:2},{id:'tsugi',x:700,z:2},{id:'gate',x:856}]}
 };
 const AREA_ORDER=['out','lower'];
-const isTop=()=>!!AREAS[area()].top;
 const area=()=>AREAS[S.area]?S.area:'out';
 /* ミナはゲートを通ったあと、沈殿街の昇降機のそばで勉強している（同行はしない） */
 const following=()=>false;
@@ -438,282 +453,355 @@ const npcsHere=()=>AREAS[area()].npcs.filter(n=>n.id!=='mina'||minaIn()===area()
 /* 人の見え方（知覚）に使う情報 */
 const PEOPLE={haru:{nm:'ハル',sex:'f',age:'60代'},ken:{nm:'ケン',sex:'m',age:'10代'},shiro:{nm:'シロ',sex:'m',age:'40代'},jiro:{nm:'ジロウ',sex:'m',age:'70代'},take:{nm:'タケ',sex:'m',age:'10代'},yuki:{nm:'ユキ',sex:'f',age:'30代'},mina:{nm:'ミナ',sex:'f',age:'20代'},doc:{nm:'ドク・カゲロウ',sex:'m',age:'50代'},genji:{nm:'ゲンジ',sex:'m',age:'60代'},daimon:{nm:'ダイモン',sex:'m',age:'40代'},tsugi:{nm:'ツギハギ',sex:'f',age:'40代'},ray:{nm:'レイ',model:'RAY-07 ／ 運送用義体 ／ 稼働14年'}};
 const drops=[];{const R=rng(3);for(let i=0;i<90;i++)drops.push({x:R()*W,y:R()*H,v:150+R()*90,l:2+Math.round(R()*3)})}
-let camX=0,camY=0,player={x:0,y:0,dir:1,fx:0,fy:1,step:0,moving:false},keys={l:false,r:false,u:false,d:false,run:false,runT:false};
+let camX=0,player={x:30,y:GY,vx:0,vy:0,onGround:true,dir:1,step:0,moving:false},keys={l:false,r:false,run:false,runT:false};
+/* 動きの数値（アクションを足すときはここを使う）：歩く・走る速さ、加速、重力 */
+const PHYS={walk:62,run:140,accel:900,grav:640,maxFall:420};
 const running=()=>keys.run||keys.runT;
 let gateLight='idle',gateLightUntil=0;
 
-/* ===== 見下ろしのマップ（圏外・沈殿街）。16px のタイルで、上下左右に歩ける ===== */
-const TS=16;
-function grid(w,h,build){const g=Array.from({length:h},()=>Array(w).fill(','));build((x,y,ww,hh,c)=>{for(let j=y;j<y+hh;j++)for(let i=x;i<x+ww;i++)if(j>=0&&j<h&&i>=0&&i<w)g[j][i]=c});return g}
-/* タイル：, 地面 . 道 # 建物 C 診療所 L 昇降機 W 外壁 G ゲート r 瓦礫 c 焼けた車 x フェンス ~ 水たまり
-   Y ゲンジの屋台 F 工場 T ツギハギの施術所 P 柱 e 圏外へのシャッター */
-const MAPS={
-  out:{w:40,h:30,start:{x:300,y:276},lift:{x:400,y:234},dark:0.4,tint:'4,3,14',
-    g:grid(40,30,r=>{r(0,0,40,4,'S');r(0,4,40,2,'W');r(18,4,4,2,'G');          /* 空（遠くのピラミッド）、外壁とゲート */
-      r(17,6,6,24,'.');r(0,15,40,3,'.');                                      /* 大通りと横道 */
-      r(1,7,6,5,'#');r(9,7,6,4,'#');r(9,12,4,2,'#');r(35,7,4,6,'#');
-      r(26,7,8,6,'C');r(24,10,2,3,'L');                                       /* ドクの診療所と、その左の昇降機 */
-      r(1,19,6,7,'#');r(25,20,6,6,'#');r(33,19,6,7,'#');r(0,28,17,2,'#');r(23,28,17,2,'#');
-      for(const [x,y] of [[7,8],[15,12],[24,18],[32,14],[3,13],[37,17],[14,26],[23,24]])r(x,y,1,1,'r');
-      r(29,18,2,1,'c');r(8,26,6,1,'x');r(35,13,4,1,'x');
-      for(const [x,y] of [[18,9],[21,20],[5,16],[28,16],[12,17]])r(x,y,1,1,'~')}),
-    props:[...[[264,150],[376,150],[264,236],[376,300],[264,340],[376,420],[264,440],[120,236],[40,290],[200,290],[504,236],[600,290],[440,290],[120,404]].map(([x,y])=>({k:'lamp',x,y})),
-      {k:'barrel',x:168,y:356},
-      {k:'vend',x:40,y:200,c:'#c83a4a'},{k:'vend',x:552,y:216,c:'#3a6ac8'},{k:'vend',x:440,y:426,c:'#c8c8d0'},{k:'bags',x:72,y:200},{k:'bags',x:232,y:198},{k:'bags',x:520,y:424},
-      {k:'boxes',x:100,y:198},{k:'boxes',x:408,y:302},{k:'cone',x:288,y:232},{k:'cone',x:300,y:236},{k:'bike',x:216,y:330}],
-    fires:[{x:168,y:346,s:1}],
-    lights:[{x:480,y:150,r:76,c:'255,61,139',a:0.8,cross:1},{x:472,y:204,r:30,c:'255,122,184',a:0.6},{x:320,y:90,r:110,c:'220,240,255',a:0.9},{x:400,y:204,r:22,c:'62,242,224',a:0.6}]},
-  lower:{w:44,h:30,start:{x:352,y:452},lift:{x:48,y:392},gateIn:{x:352,y:452},dark:0.2,tint:'14,6,12',
-    g:grid(44,30,r=>{r(0,0,44,3,'W');r(20,0,4,3,'G');                           /* 天井の下の壁と、企業区へのゲート */
-      r(19,3,6,27,'.');r(0,14,44,4,'.');
-      r(1,4,7,5,'#');r(9,4,8,4,'#');r(9,10,6,2,'Y');                          /* 店並びと、ゲンジの屋台「灯」 */
-      r(26,3,16,8,'F');r(42,3,2,11,'#');                                      /* 沈殿第三工場 */
-      r(2,20,2,3,'L');r(0,25,10,5,'#');r(12,22,6,8,'#');
-      r(35,19,7,5,'T');r(26,27,18,3,'#');                                     /* 鋼組の施術所（ツギハギ） */
-      for(const [x,y] of [[5,10],[16,10],[16,19],[26,22],[42,21]])r(x,y,2,2,'P');
-      r(19,29,6,1,'e')}),
-    props:[{k:'stool',x:160,y:212},{k:'stool',x:224,y:212},{k:'desk',x:104,y:380},{k:'console',x:456,y:200},{k:'conveyor',x:488,y:200,w:144},{k:'arm',x:560,y:198},
-      {k:'crate',x:456,y:330},{k:'crate',x:472,y:330},{k:'crate',x:520,y:318},{k:'barrel',x:548,y:360},
-      {k:'vend',x:120,y:154,c:'#3a8a5a'},{k:'vend',x:280,y:136,c:'#c86a2a'},{k:'bags',x:40,y:154},{k:'bags',x:180,y:362},{k:'boxes',x:680,y:300},{k:'bike',x:300,y:200},
-      ...[[328,90],[376,150],[328,280],[376,330],[328,410],[80,236],[160,252],[250,236],[450,252],[560,236],[660,252]].map(([x,y])=>({k:'hang',x,y}))],
-    fires:[{x:548,y:350,s:0.75}],
-    lights:[{x:352,y:40,r:110,c:'240,250,255',a:0.9},{x:184,y:176,r:60,c:'255,170,90',a:0.75},{x:150,y:186,r:22,c:'255,70,50',a:0.7},{x:236,y:186,r:22,c:'255,70,50',a:0.7},
-      {x:600,y:168,r:64,c:'255,120,40',a:0.75,furnace:1},{x:488,y:320,r:56,c:'95,184,255',a:0.7},{x:616,y:380,r:56,c:'95,184,255',a:0.75},{x:48,y:356,r:24,c:'255,181,71',a:0.6},{x:104,y:372,r:20,c:'62,242,224',a:0.5,desk:1}]}
+/* ===== 横スクロールの街（圏外・沈殿街）。左右に歩く。アクションを足すための土台つき ===== */
+/* 画面の座標：横は camX だけずらす。縦は世界の y（地面 GY=148）をそのまま使い、画面が 180 より高いとき（スマホ）は OY だけ下にずらす */
+let OY=0;
+/* 層ごとの舞台。len=横の長さ、gy=地面の高さ。ground は段差（{x0,x1,y}）、plats は足場（あとでアクションに使う）。
+   人と物の z は奥行き（マイナス＝奥、プラス＝手前）。足もとの y は groundAt(x)+z */
+const STAGES={
+  out:{len:960,gy:GY,start:30,lift:410,ground:[],plats:[],dark:0.48,tint:'4,3,14',
+    walls:[{x:-10,w:80,h:70,k:'apt'},{x:200,w:100,h:58,k:'shop'},{x:300,w:92,h:46,k:'ruin'},{x:540,w:96,h:64,k:'shop'},{x:760,w:96,h:56,k:'apt'}],
+    props:[{k:'lamp',x:60,z:-8},{k:'lamp',x:250,z:-8,broken:1},{k:'lamp',x:380,z:-8},{k:'lamp',x:560,z:-8},{k:'lamp',x:700,z:-8,broken:1},{k:'lamp',x:820,z:-8},
+      {k:'barrel',x:140,z:-3},{k:'car',x:668,z:-6},{k:'vend',x:226,z:-9,c:'#3a6ac8'},{k:'vend',x:612,z:-9,c:'#c83a4a'},{k:'bags',x:246,z:-9},{k:'boxes',x:336,z:-8},
+      {k:'bike',x:556,z:-8},{k:'cone',x:838,z:6},{k:'cone',x:850,z:8}],
+    fires:[{x:140,y:GY-16,s:0.8}],
+    lights:[{x:480,y:GY-114,r:80,c:'255,61,139',a:0.85,cross:1},{x:460,y:GY-16,r:30,c:'255,122,184',a:0.6},{x:930,y:GY-60,r:150,c:'220,240,255',a:0.95},{x:410,y:GY-42,r:18,c:'255,181,71',a:0.6}]},
+  lower:{len:980,gy:GY,start:30,lift:64,gateIn:30,ground:[],plats:[],dark:0.2,tint:'14,6,12',
+    walls:[{x:140,w:132,h:62,k:'shop'},{x:740,w:122,h:58,k:'shop'}],
+    props:[{k:'desk',x:122,z:-4},{k:'vend',x:196,z:-9,c:'#3a8a5a'},{k:'bags',x:160,z:-9},{k:'boxes',x:252,z:-8},{k:'stool',x:298,z:4},{k:'stool',x:350,z:4},
+      {k:'barrel',x:618,z:-4},{k:'vend',x:800,z:-9,c:'#c86a2a'},{k:'bike',x:770,z:-8},
+      ...[96,226,372,600,830].map(x=>({k:'hang',x,y:36}))],
+    fires:[{x:618,y:GY-17,s:0.65}],
+    lights:[{x:930,y:GY-60,r:140,c:'240,250,255',a:0.9},{x:322,y:GY-30,r:62,c:'255,170,90',a:0.75},{x:297,y:GY-36,r:22,c:'255,70,50',a:0.7},
+      {x:510,y:GY-70,r:74,c:'255,120,40',a:0.75,furnace:1},{x:512,y:GY-12,r:22,c:'220,240,255',a:0.7,weld:1},{x:600,y:GY-40,r:60,c:'95,184,255',a:0.7},{x:702,y:GY-50,r:66,c:'95,184,255',a:0.75},
+      {x:64,y:GY-42,r:18,c:'255,181,71',a:0.6},{x:122,y:GY-12,r:22,c:'62,242,224',a:0.5,desk:1},{x:18,y:GY-30,r:30,c:'242,194,48',a:0.4}]}
 };
-const M=()=>MAPS[area()];
-const SOLID=new Set(['S','W','G','#','C','L','r','c','x','Y','F','T','P','e']);
-/* 物の当たり判定（足もとの四角。w×h） */
-const PROP_BOX={lamp:[4,3],barrel:[10,5],stool:[6,4],desk:[14,6],console:[14,6],crate:[14,8],vend:[12,5],bags:[12,5],boxes:[12,6],bike:[14,4],cone:[4,3]};
-const tileAt=(px,py)=>{const m=M(),i=Math.floor(px/TS),j=Math.floor(py/TS);return j<0||j>=m.h||i<0||i>=m.w?'#':m.g[j][i]};
-const blocked=(x,y)=>{if([[x-4,y-3],[x+4,y-3],[x-4,y],[x+4,y]].some(([a,b])=>SOLID.has(tileAt(a,b))))return true;
-  for(const p of M().props){if(p.k==='conveyor'){if(x+4>p.x&&x-4<p.x+p.w&&y>p.y-8&&y-3<p.y)return true;continue}const b=PROP_BOX[p.k];if(b&&Math.abs(x-p.x)<b[0]/2+4&&y>p.y-b[1]&&y-3<p.y)return true}return false};
+const ST=()=>STAGES[area()];
+const CAMMAX_OF=a=>STAGES[a].len-W;
+/* 地面の高さ（段差があればその高さ） */
+function groundAt(x){const s=ST();for(const g of s.ground)if(x>=g.x0&&x<g.x1)return g.y;return s.gy}
 const hsh=(i,j)=>{let h=i*374761393+j*668265263;h=(h^(h>>>13))*1274126177;return((h^(h>>>16))>>>0)/4294967296};
-/* 建物の正面に、ネオン看板を自動で付ける（層ごとに色と数が違う） */
-for(const [id,m] of Object.entries(MAPS)){m.neon=[];
-  m.g.forEach((r,j)=>r.forEach((c,i)=>{if(c!=='#'||(m.g[j+1]&&m.g[j+1][i]==='#')||j+1>=m.h)return;const v=hsh(i*7+1,j*3+2);if(v>(id==='lower'?0.45:0.62))return;
-    const cols=id==='lower'?['255,181,71','255,122,184','127,248,238','255,217,160','255,90,60']:['255,61,139','62,242,224','183,123,255','255,181,71'];
-    const n={x:i*TS+4+Math.round(hsh(i,j)*6),y:j*TS+5,c:cols[Math.floor(hsh(j,i)*cols.length)],v:hsh(i+9,j)<0.5,broken:id==='out'&&hsh(i,j+5)<0.35,s:i*13+j};
-    m.neon.push(n);m.lights.push({x:n.x+2,y:n.y+12,r:28,c:n.c,a:0.55,neon:n})}));
-  for(const p of m.props)if(p.k==='lamp')m.lights.push({x:p.x+4,y:p.y-18,r:64,c:'255,214,150',a:0.85,lamp:p,broken:hsh(p.x,p.y)<0.2});
-  else if(p.k==='hang')m.lights.push({x:p.x,y:p.y,r:56,c:'255,190,120',a:0.7});
-  else if(p.k==='vend')m.lights.push({x:p.x,y:p.y-6,r:38,c:'210,235,255',a:0.75});
-  for(const f of m.fires){f.parts=[];f.acc=0;m.lights.push({x:f.x,y:f.y,r:72*f.s+8,c:'255,140,50',a:0.85,fire:f})}}
-/* 人：会話できる人のスプライト（裏返す人は FLIP） */
+/* 壁のネオン看板と灯りを、壁ごとに決めておく（圏外のものは壊れかけで点滅） */
+for(const [id,s] of Object.entries(STAGES)){
+  for(const w of s.walls){const v=hsh(w.x+3,w.w),cols=id==='lower'?['255,181,71','255,122,184','127,248,238','255,90,60']:['255,61,139','62,242,224','183,123,255','255,181,71'];
+    w.neon={x:w.x+6+Math.round(v*(w.w-24)),y:GY-9-w.h+10+Math.round(hsh(w.w,w.x)*12),v:v<0.5,c:cols[Math.floor(hsh(w.x,7)*cols.length)],broken:id==='out'&&v>0.35,s:w.x};
+    s.lights.push({x:w.neon.x+(w.neon.v?2:9),y:w.neon.y+(w.neon.v?8:2),r:34,c:w.neon.c,a:0.6,neon:w.neon})}
+  for(const p of s.props){if(p.k==='lamp')s.lights.push({x:p.x+8,y:GY+p.z-48,r:62,c:'255,214,150',a:0.85,broken:p.broken?1:0,lampx:p.x},{x:p.x+8,y:GY,r:40,c:'255,214,150',a:0.55,broken:p.broken?1:0,lampx:p.x});
+    else if(p.k==='hang')s.lights.push({x:p.x,y:p.y+4,r:58,c:'255,190,120',a:0.7});
+    else if(p.k==='vend')s.lights.push({x:p.x,y:GY+p.z-10,r:38,c:'210,235,255',a:0.7})}
+  for(const f of s.fires){f.parts=[];f.acc=0;s.lights.push({x:f.x,y:f.y,r:70*f.s+10,c:'255,140,50',a:0.85,fire:f})}}
+/* 話しかけられる人：スプライト、奥行き z、向き（FLIP は左向き） */
 const NPC_SPR={jiro:()=>OUT_CROWD[0].spr,take:()=>OUT_CROWD[1].spr,yuki:()=>OUT_CROWD[2].spr,mina:()=>MINA,doc:()=>DOC,haru:()=>HARU,ken:()=>KEN,shiro:()=>SHIRO,genji:()=>GENJI,daimon:()=>DAIMON,ray:()=>RAY,tsugi:()=>TSUGI};
-const FLIP={doc:1,ray:1,tsugi:1,take:1,yuki:1};
+const FLIP={doc:1,ray:1,tsugi:1,take:1,yuki:1,haru:1};
+const feetY=n=>groundAt(n.x)+(n.z||0);
 let darkC=null;
+function drawOutBG(t){
+  const prog=camX/Math.max(1,CAMMAX_OF('out'));
+  /* 空 */
+  const sky=['#07060d','#0a0815','#0e0b1d','#130e26','#1a1230','#24163a'];
+  ctx.fillStyle=sky[0];ctx.fillRect(0,-OY,W,OY+1);for(let i=0;i<6;i++){ctx.fillStyle=sky[i];ctx.fillRect(0,i*24,W,24)}
+  ctx.fillStyle=sky[5];ctx.fillRect(0,144,W,36);
+  /* ピラミッド都市・東京（遠く。頂上ほど明るい） */
+  const pc=Math.round(230-camX*0.07),k=0.35+0.5*prog;let py=GY-22;const tops=[];
+  PYR.forEach(tr=>{py-=tr.h;tops.push(py);ctx.fillStyle=tr.c;ctx.fillRect(pc-tr.w/2,py,tr.w,tr.h);ctx.fillStyle=tr.e;ctx.fillRect(pc-tr.w/2,py,tr.w,0.5)});
+  for(const w of PYR_WIN){if(w.i>0&&!flick(t*0.3,w.s))continue;const tr=PYR[w.i];ctx.fillStyle=tr.win;ctx.globalAlpha=0.5+0.15*w.i;ctx.fillRect(pc+w.x,tops[w.i]+w.y,1,0.5)}ctx.globalAlpha=1;
+  const ax=pc,ay=py;ctx.fillStyle='#3a2a60';ctx.fillRect(ax-2,ay-14,4,14);ctx.fillStyle='#fff4d6';ctx.fillRect(ax-0.5,ay-20,1,6);if(Math.floor(t*1.2)%2){ctx.fillStyle='#ff9ac8';ctx.fillRect(ax-1,ay-21,2,1)}
+  let g=ctx.createRadialGradient(ax,ay-8,2,ax,ay-8,200);g.addColorStop(0,`rgba(255,200,230,${0.5*k})`);g.addColorStop(0.3,`rgba(180,110,255,${0.22*k})`);g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,-OY,W,180+OY);
+  /* 遠景 */
+  const fo=Math.round(camX*0.15);
+  for(const b of far){const sx=b.x-fo;if(sx>W||sx+b.w<0)continue;ctx.fillStyle=b.tk?'#1d1739':'#100d1e';ctx.fillRect(sx,GY-18-b.h,b.w,b.h+18);
+    if(b.tk&&b.h>70){ctx.fillStyle='#ff4a5c';if(Math.floor(t*1.5+b.x)%2===0)ctx.fillRect(sx+Math.floor(b.w/2),GY-19-b.h,1,1)}}
+  for(const w of farWin){const sx=w.x-fo;if(sx<0||sx>W)continue;ctx.fillStyle=w.c;ctx.fillRect(sx,w.y,0.5,0.5);ctx.globalAlpha=0.35;ctx.fillRect(sx+0.5,w.y,0.5,0.5);ctx.globalAlpha=1}
+  /* 中景 */
+  const mo=Math.round(camX*0.5);
+  for(const [i,b] of mid.entries()){const sx=b.x-mo;if(sx>W||sx+b.w<0)continue;ctx.fillStyle='#0c0a16';ctx.fillRect(sx,GY-b.h,b.w,b.h);ctx.fillStyle='#1a1630';ctx.fillRect(sx,GY-b.h,b.w,1);
+    /* 崩れた屋上と、ひび、板で塞いだ窓 */
+    if(i%3===0){const ty=GY-b.h;ctx.fillStyle=['#0e0b1d','#130e26','#1a1230'][Math.min(2,Math.floor(ty/40))];ctx.fillRect(sx+b.w-14,ty,14,6);ctx.fillRect(sx+b.w-9,ty+6,9,5);ctx.fillRect(sx+b.w-4,ty+11,4,4);ctx.fillStyle='#1a1630';ctx.fillRect(sx+b.w-15,ty,1,7);ctx.fillRect(sx+b.w-10,ty+6,1,6)}
+    ctx.fillStyle='#05040a';ctx.fillRect(sx+6+(i*7)%Math.max(1,b.w-12),GY-b.h+12,0.5,10);ctx.fillRect(sx+6.5+(i*7)%Math.max(1,b.w-12),GY-b.h+22,0.5,8);
+    if(i%2){ctx.fillStyle='#3a2a1c';const wx=sx+4+(i*11)%Math.max(1,b.w-16),wy=GY-b.h+20;ctx.fillRect(wx,wy,10,7);ctx.fillStyle='#2a1e14';ctx.fillRect(wx,wy+2,10,0.5);ctx.fillRect(wx,wy+4.5,10,0.5);ctx.fillStyle='#4a3a28';ctx.fillRect(wx-1,wy+1,12,1)}
+    if(b.tank){ctx.fillStyle='#0c0a16';ctx.fillRect(sx+6,GY-b.h-7,9,7);ctx.fillRect(sx+7,GY-b.h-9,7,2)}
+    if(b.ant){ctx.fillStyle='#151228';ctx.fillRect(sx+b.w-8,GY-b.h-12,1,12);ctx.fillRect(sx+b.w-11,GY-b.h-9,7,1)}}
+  for(const w of midWin){const sx=w.x-mo;if(sx<-3||sx>W)continue;if(w.f&&!flick(t,w.s))continue;ctx.fillStyle='#5a3d17';ctx.fillRect(sx,w.y,3,2)}
+  for(const s of signs){const sx=s.x-mo;if(sx<-20||sx>W)continue;const on=!s.broken||flick(t,s.s);
+    if(on){ctx.globalAlpha=0.18;ctx.fillStyle=s.c;ctx.fillRect(sx-3,s.y-3,s.w+6,s.h+6);ctx.globalAlpha=1}
+    ctx.fillStyle=on?s.c:'#2a2238';ctx.fillRect(sx,s.y,s.w,s.h)}
+  /* 垂れ下がった電線 */
+  ctx.strokeStyle='rgba(20,16,32,.9)';ctx.lineWidth=0.5;for(let i=0;i<mid.length-1;i+=2){const a=mid[i],b=mid[i+1],x1=a.x+a.w-mo,x2=b.x+4-mo;if(x2<0||x1>W)continue;const y1=GY-a.h+6,y2=GY-b.h+8;ctx.beginPath();ctx.moveTo(x1,y1);ctx.quadraticCurveTo((x1+x2)/2,Math.max(y1,y2)+14,x2,y2);ctx.stroke()}ctx.lineWidth=1;
 
-/* ===== タイル ===== */
-function drawTile(c,i,j,x,y,t){const v=hsh(i,j),lo=area()==='lower',g=M().g,same=(a,b)=>g[b]&&g[b][a]===c;
-  if(c==='.'||c==='~'){if(lo){ctx.fillStyle=v<0.5?'#2a2026':'#2c2228';ctx.fillRect(x,y,TS,TS);ctx.fillStyle='#1e161c';for(let k=0;k<TS;k+=4){ctx.fillRect(x+k,y,0.5,TS);ctx.fillRect(x,y+k,TS,0.5)}}
-    else{ctx.fillStyle=v<0.5?'#1e1c2a':'#211e2c';ctx.fillRect(x,y,TS,TS);ctx.fillStyle='#17151f';ctx.fillRect(x,y,TS,0.5);if(v>0.85){ctx.fillStyle='#15131c';ctx.fillRect(x+2+v*8,y+6,4,0.5)}
-      if((i===19||i===20)&&j%2===0&&j>5&&!(j===14||j===18)){ctx.fillStyle='#4a4458';ctx.fillRect(i===19?x+15:x,y+3,1,8)}}
-    if(c==='.')roadDetail(x,y,i,j,v,lo);
-    if(c==='~'){/* 水たまり：ふちのぼやけた形に、ネオンが映る */ctx.fillStyle='rgba(40,50,80,.55)';ctx.fillRect(x+1,y+6,14,5);ctx.fillRect(x+3,y+4,10,9);ctx.fillRect(x+5,y+3,5,11);ctx.fillStyle='rgba(120,140,200,.18)';ctx.fillRect(x+3,y+5,9,1);
-      ctx.fillStyle=flick(t,i*7+j)?'rgba(255,61,139,.35)':'rgba(62,242,224,.3)';ctx.fillRect(x+5,y+8,3,0.7);ctx.fillRect(x+8,y+10,2,0.7);const rp=(t*1.3+i)%1;ctx.fillStyle=`rgba(200,220,255,${0.3*(1-rp)})`;ctx.fillRect(x+7-rp*3,y+7-rp*2,1+rp*6,0.5)}
-    return}
-  if(c===','||c==='r'||c==='x'||c==='c'){if(lo){ctx.fillStyle=v<0.5?'#332830':'#352a32';ctx.fillRect(x,y,TS,TS);ctx.fillStyle='#2a2028';if(v>0.7)ctx.fillRect(x+v*10,y+3,4,0.5)}
-    else{ctx.fillStyle=v<0.5?'#2a2533':'#2c2736';ctx.fillRect(x,y,TS,TS);ctx.fillStyle='#363042';if(v>0.6)ctx.fillRect(x+v*12,y+v*10,1,1);if(v>0.75)ctx.fillRect(x+3,y+12,2,1)}}
-  if(c==='r'){/* 瓦礫：タイルいっぱいの山にして、通れないことが分かるように */
-    ctx.fillStyle='#3a3238';ctx.fillRect(x+1,y+5,14,10);ctx.fillRect(x+3,y+2,10,4);ctx.fillStyle='#4e444e';ctx.fillRect(x+3,y+2,10,1);ctx.fillRect(x+1,y+5,3,1);
-    const cols=['#5a4e58','#2a2430','#4a3a30','#5e5660','#3a2a24'];for(let k=0;k<7;k++){const a=hsh(i*3+k,j*5+k);ctx.fillStyle=cols[k%5];ctx.fillRect(x+2+a*9,y+3+((a*7)%9),2+a*4,2+a*2)}
-    ctx.fillStyle='#7a6a5a';ctx.fillRect(x+4+v*6,y+4,4,0.5);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x+1,y+15,14,1)}
-  else if(c==='x'){ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x,y+13,TS,2);ctx.fillStyle='#5a5470';ctx.fillRect(x,y+1,1.5,13);ctx.fillRect(x+8,y+1,1.5,13);
-    ctx.fillStyle='rgba(120,112,150,.7)';for(let k=0;k<16;k+=2){ctx.fillRect(x+k,y+3+((k/2)%2)*3,1,0.5);ctx.fillRect(x+k+1,y+8+((k/2)%2)*2,1,0.5)}ctx.fillStyle='#6a6488';ctx.fillRect(x,y+2,TS,0.5);ctx.fillRect(x,y+12,TS,0.5)}
-  else if(c==='c'){if(g[j][i-1]!=='c'){ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x+1,y+13,30,2);ctx.fillStyle='#2e2826';ctx.fillRect(x+1,y+2,30,12);ctx.fillStyle='#4a3a30';ctx.fillRect(x+3,y+4,26,8);ctx.fillStyle='#5a4638';ctx.fillRect(x+1,y+2,30,1);
-    ctx.fillStyle='#08070c';ctx.fillRect(x+8,y+5,6,6);ctx.fillRect(x+18,y+5,6,6);ctx.fillStyle='#7a3a1a';ctx.fillRect(x+4,y+11,5,1);ctx.fillRect(x+25,y+6,3,1)}}
-  else if(c==='S'){}
-  else if(c==='W'||c==='G'||c==='e'){const top=j===0||!same(i,j-1)&&c!=='e';
-    if(c==='e'){ctx.fillStyle='#3a3238';ctx.fillRect(x,y,TS,TS);ctx.fillStyle='#2a2228';for(let k=2;k<TS;k+=3)ctx.fillRect(x,y+k,TS,1);ctx.fillStyle='#f2c230';if(i%2)ctx.fillRect(x,y,TS,2);return}
-    ctx.fillStyle=c==='G'?'#0a0a14':lo?'#2a2030':'#1d1a34';ctx.fillRect(x,y,TS,TS);
-    if(c==='W'){ctx.fillStyle=lo?'#3a2c40':'#2a2648';if(top)ctx.fillRect(x,y,TS,1);ctx.fillRect(x+v*14,y,0.5,TS);if(!same(i,j+1)){ctx.fillStyle=lo?'#20182a':'#15122a';ctx.fillRect(x,y+10,TS,6);ctx.fillStyle='#ffb547';ctx.globalAlpha=0.4+0.3*(Math.floor(t*2+i)%2);ctx.fillRect(x+6,y+12,3,1);ctx.globalAlpha=1}}}
-  else if('#CLYFTP'.includes(c)){const front=!same(i,j+1),P=c==='P';
-    /* 屋根 */
-    const roof={'#':lo?(v<0.5?'#4a3644':'#4c3846'):(v<0.5?'#332e48':'#352f4a'),C:'#3e2a56',L:'#3a3650',Y:'#e8e2d0',F:'#4a4450',T:'#24304a',P:'#4a4048'}[c];
-    ctx.fillStyle=roof;ctx.fillRect(x,y,TS,TS);
-    if(c==='Y'){ctx.fillStyle='#c8323c';ctx.fillRect(x,y,8,TS);ctx.fillStyle='rgba(0,0,0,.15)';ctx.fillRect(x,y+TS-2,TS,2)}
-    else if(c==='F'){ctx.fillStyle='#3e3844';for(let k=0;k<TS;k+=3)ctx.fillRect(x+k,y,1,TS);if(!same(i,j-1)||!same(i-1,j)||!same(i+1,j)){ctx.fillStyle=(i+j)%2?'#f2c230':'#1a1416';if(!same(i,j-1))ctx.fillRect(x,y,TS,2);if(!same(i-1,j))ctx.fillRect(x,y,2,TS);if(!same(i+1,j))ctx.fillRect(x+TS-2,y,2,TS)}
-      if(i===29&&j===5||i===37&&j===4){ctx.fillStyle='#2a2428';ctx.fillRect(x+3,y+3,10,10);ctx.fillStyle='#120e12';ctx.fillRect(x+5,y+5,6,6)}}
-    else if(P){ctx.fillStyle='#5a5058';if(!same(i,j-1))ctx.fillRect(x,y,TS,2);if(!same(i-1,j))ctx.fillRect(x,y,2,TS);ctx.fillStyle='#2a2228';if(!same(i+1,j))ctx.fillRect(x+TS-2,y,2,TS)}
-    else{ctx.fillStyle={'#':lo?'#6a5060':'#4a4468',C:'#6a4a8a',L:'#58507a',T:'#3a4a6a',Y:'#fff'}[c];if(!same(i,j-1))ctx.fillRect(x,y,TS,1);if(!same(i-1,j))ctx.fillRect(x,y,1,TS);ctx.fillStyle='rgba(0,0,0,.3)';if(!same(i+1,j))ctx.fillRect(x+TS-1,y,1,TS);
-      if(c==='#')roofDetail(x,y,i,j,v,t,lo)}
-    if(!front)return;
-    /* 正面の壁 */
-    ctx.fillStyle={'#':lo?'#3a2a34':'#262036',C:'#2e2040',L:'#2c2840',Y:'#4a2e22',F:'#2a2226',T:'#1a2236',P:'#3a3238'}[c];ctx.fillRect(x,y+4,TS,12);
-    ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x,y+4,TS,1);ctx.fillStyle='#0b0a12';ctx.fillRect(x,y+15,TS,1);
-    if(c==='#'){frontDetail(x,y,i,j,t,lo);if(lo){if(v<0.55){ctx.fillStyle=flick(t*0.3,i+j)?'#ffb05a':'#b8743a';ctx.fillRect(x+3,y+7,10,6);ctx.fillStyle='#5a3418';ctx.fillRect(x+3,y+10,10,0.5);ctx.fillRect(x+8,y+7,0.5,6)}else{ctx.fillStyle='#4a3a40';ctx.fillRect(x+2,y+6,12,9);ctx.fillStyle='#3a2c32';for(let k=7;k<15;k+=2)ctx.fillRect(x+2,y+k,12,0.5)}}
-      else{if(v<0.3){ctx.fillStyle='#4a3a28';ctx.fillRect(x+4,y+7,8,5);ctx.fillStyle='#2a1e14';ctx.fillRect(x+4,y+9,8,0.5)}else if(v<0.62){ctx.fillStyle=flick(t*0.4,i+j)?'#8a6020':'#3a2c40';ctx.fillRect(x+5,y+7,5,4)}else{ctx.fillStyle='#0a090f';ctx.fillRect(x+5,y+7,5,4)}}}
-    else if(c==='C'){if(i===29||i===30){ctx.fillStyle='#4a1838';ctx.fillRect(x,y+6,TS,10);ctx.fillStyle='#ff7ab8';ctx.fillRect(x,y+6,TS,0.5);ctx.fillStyle='rgba(255,122,184,.25)';ctx.fillRect(x+1,y+7,TS-2,8)}
-      else{ctx.fillStyle='#0a090f';ctx.fillRect(x+4,y+7,8,4);ctx.fillStyle='#3ef2e0';if(i===32&&Math.floor(t*2)%3)ctx.fillRect(x+4,y+9,8,0.5)}}
-    else if(c==='L'){ctx.fillStyle='#3a3650';ctx.fillRect(x+1,y+5,14,11);ctx.fillStyle='#0c0a14';ctx.fillRect(x+(same(i+1,j)?15:0),y+5,1,11);const lit=lo||S.reached.includes('lower');ctx.fillStyle=lit?(Math.floor(t*1.5)%2?'#ffb547':'#a8742a'):'#4a2a2a';if(same(i+1,j))ctx.fillRect(x+12,y+3,8,1.5)}
-    else if(c==='Y'){ctx.fillStyle='#6a4430';ctx.fillRect(x,y+4,TS,2);ctx.fillStyle='rgba(255,190,110,.35)';ctx.fillRect(x+1,y+7,TS-2,7);if(i===10||i===14){ctx.fillStyle=flick(t,i)?'#ff5a3c':'#8a2a20';ctx.fillRect(x+(i===10?2:9),y+5,5,7);ctx.fillStyle='#2a1414';ctx.fillRect(x+(i===10?2:9),y+8,5,0.5)}}
-    else if(c==='F'){if(i>=36&&i<=39){const fl=0.55+0.25*Math.sin(t*3.1)+0.1*Math.sin(t*11);ctx.fillStyle=`rgba(255,120,40,${fl})`;ctx.fillRect(x+1,y+6,14,7);ctx.fillStyle='#1a1416';ctx.fillRect(x+7,y+6,1,7)}
-      else if(i>=28&&i<=31){ctx.fillStyle='#3a3238';ctx.fillRect(x,y+5,TS,11);ctx.fillStyle='#2a2428';for(let k=6;k<16;k+=2)ctx.fillRect(x,y+k,TS,0.5);if(i===28||i===31){ctx.fillStyle='#f2c230';ctx.fillRect(i===28?x:x+14,y+5,2,11)}}
-      else{ctx.fillStyle='#3a3034';ctx.fillRect(x+3,y+8,1,1);ctx.fillRect(x+11,y+8,1,1)}}
-    else if(c==='T'){if(i===38){ctx.fillStyle='rgba(95,184,255,.45)';ctx.fillRect(x+1,y+6,14,10);ctx.fillStyle='#5fb8ff';ctx.fillRect(x+1,y+6,14,0.5)}else{ctx.fillStyle='#0c1220';ctx.fillRect(x+3,y+7,10,5);ctx.fillStyle=i%2?'#8f97ad':'#3ef2e0';ctx.fillRect(x+5,y+9,2,2)}}}}
-/* 屋根の上：換気口、室外機、給水タンク、アンテナ、配管、洗濯物 */
-function roofDetail(x,y,i,j,v,t,lo){const u=hsh(i+31,j+17);
-  if(v>0.8){ctx.fillStyle=lo?'#3a2a36':'#28243e';ctx.fillRect(x+4,y+4,6,5);ctx.fillStyle=lo?'#5a4452':'#403a5a';ctx.fillRect(x+4,y+4,6,1)}
-  else if(v<0.12){ctx.fillStyle='#2a2630';ctx.fillRect(x+3,y+8,9,5);ctx.fillStyle='#4a4650';ctx.fillRect(x+3,y+8,9,1)}
-  else if(u<0.16){ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x+3,y+10,10,2);ctx.fillStyle='#6a6678';ctx.fillRect(x+3,y+3,10,7);ctx.fillStyle='#3a3648';ctx.fillRect(x+4,y+4,6,5);
-    const a=t*9+i;ctx.fillStyle='#9a96a8';ctx.fillRect(x+7+Math.cos(a)*2-0.5,y+6.5+Math.sin(a)*2-0.5,1,1);ctx.fillRect(x+7-Math.cos(a)*2-0.5,y+6.5-Math.sin(a)*2-0.5,1,1);ctx.fillStyle='#8a8698';ctx.fillRect(x+11,y+4,1,5)}
-  else if(u<0.25){ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x+2,y+11,12,2);ctx.fillStyle=lo?'#6a5a50':'#4a5a6a';ctx.fillRect(x+3,y+2,10,10);ctx.fillRect(x+2,y+3,12,8);ctx.fillStyle=lo?'#8a7a6a':'#6a7a8a';ctx.fillRect(x+4,y+3,8,1);ctx.fillRect(x+7,y+1,2,1)}
-  else if(u<0.33){ctx.fillStyle='#6a6488';ctx.fillRect(x+8,y+1,1,11);ctx.fillRect(x+5,y+4,7,0.7);ctx.fillRect(x+6,y+7,5,0.7);if(Math.floor(t*1.5+i)%3===0){ctx.fillStyle='#ff4a5c';ctx.fillRect(x+8,y,1,1)}}
-  else if(u<0.43){ctx.fillStyle=lo?'#5a4450':'#3e3a56';ctx.fillRect(x,y+9,TS,2);ctx.fillRect(x+5,y+5,2,5);ctx.fillStyle='rgba(255,255,255,.1)';ctx.fillRect(x,y+9,TS,0.5)}
-  else if(u<0.5){ctx.fillStyle='#2a2638';ctx.fillRect(x+1,y+5,14,0.5);const cols=['#c86a5a','#d8d0b8','#5a8ac8','#c8b85a'];for(let k=0;k<4;k++){ctx.fillStyle=cols[(i+k)%4];ctx.fillRect(x+2+k*3.4,y+5.5,2.4,3+((i+k)%2)*2)}}}
-/* 建物の正面：張り紙、雨どい、室外機、落書き */
-function frontDetail(x,y,i,j,t,lo){const w=hsh(i+5,j+11);
-  if(w<0.22){ctx.fillStyle=['#d8d0b8','#e8c0c8','#c8d8e8'][Math.floor(w*13)%3];ctx.fillRect(x+0.5,y+6,3.5,5);ctx.fillStyle='rgba(40,30,40,.7)';ctx.fillRect(x+1,y+7,2.5,0.5);ctx.fillRect(x+1,y+8.5,2,0.5);ctx.fillRect(x+1,y+10,2.5,0.5)}
-  else if(w<0.36){ctx.fillStyle=lo?'#5a4a50':'#4a4658';ctx.fillRect(x+14,y+4,1.5,12);ctx.fillRect(x+13,y+14,3,1);ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(x+14,y+4,0.5,12)}
-  else if(w<0.48){ctx.fillStyle='#6a6678';ctx.fillRect(x+10,y+10,6,5);ctx.fillStyle='#3a3648';ctx.fillRect(x+11,y+11,3,3);ctx.fillStyle='#4a4658';ctx.fillRect(x+15,y+5,0.7,5)}
-  else if(w<0.56&&!lo){ctx.fillStyle='rgba(255,61,139,.55)';ctx.fillRect(x+1,y+13,6,1);ctx.fillRect(x+3,y+12,1,3);ctx.fillStyle='rgba(62,242,224,.5)';ctx.fillRect(x+6,y+12.5,6,1);ctx.fillRect(x+9,y+12,1,2)}}
-/* 道：横断歩道とマンホール */
-function roadDetail(x,y,i,j,v,lo){const cw=lo?(j===13||j===18)&&i>=19&&i<=24:(j===14||j===18)&&i>=17&&i<=22;
-  if(cw){ctx.fillStyle=lo?'rgba(242,194,48,.22)':'rgba(210,210,230,.2)';for(let k=1;k<TS;k+=4)ctx.fillRect(x+k,y+3,2,10)}
-  else if(v>0.5&&v<0.535){ctx.fillStyle='#14121a';ctx.fillRect(x+5,y+4,7,7);ctx.fillRect(x+4,y+5,9,5);ctx.fillStyle='#2e2a38';ctx.fillRect(x+6,y+6,5,0.5);ctx.fillRect(x+6,y+8,5,0.5)}}
-/* ネオン看板（建物の正面。圏外のものは壊れかけで、たまに消える） */
-function drawNeon(n,t){const x=n.x-camX,y=n.y-camY;if(x<-12||x>W+12||y<-16||y>H+4)return;const on=!n.broken||flick(t,n.s);
-  ctx.fillStyle='#120e18';n.v?ctx.fillRect(x-1,y-1,6,13):ctx.fillRect(x-1,y+3,10,6);
-  ctx.fillStyle=on?`rgb(${n.c})`:'#2a2430';if(n.v){ctx.fillRect(x,y,4,0.7);ctx.fillRect(x,y+11,4,0.7);ctx.fillRect(x,y,0.7,11.7);ctx.fillRect(x+3.3,y,0.7,11.7);ctx.fillRect(x+1,y+3,2,1);ctx.fillRect(x+1,y+7,2,1)}
-  else{ctx.fillRect(x,y+4,8,0.7);ctx.fillRect(x,y+7.3,8,0.7);ctx.fillRect(x+1,y+5.5,2,1);ctx.fillRect(x+5,y+5.5,2,1)}}
+  const X=x=>Math.round(x-camX);
+  /* 街の壁（正面から見た建物） */
+  for(const w of STAGES.out.walls)drawWall(w,t,false);
+  /* 地面（奥の歩道と、車道） */
+  ctx.fillStyle='#100e1c';ctx.fillRect(0,GY-9,W,60);ctx.fillStyle='#2a2444';ctx.fillRect(0,GY-9,W,1);ctx.fillStyle='#0b0a14';ctx.fillRect(0,GY-4,W,60);ctx.fillStyle='#211c38';ctx.fillRect(0,GY-4,W,1);
+  ctx.fillStyle='#16132a';for(let x=-(camX%24);x<W;x+=24)ctx.fillRect(Math.round(x),GY+16,10,1);
+  for(const p of PUDDLES){const sx=X(p.x);if(sx>W||sx+p.w<0)continue;ctx.fillStyle='#141127';ctx.fillRect(sx,GY+6,p.w,3);ctx.fillStyle=flick(t,p.x)?'rgba(255,61,139,.45)':'rgba(62,242,224,.3)';ctx.fillRect(sx+3,GY+7,p.w-8,1)}
 
-/* ===== 物（足もとの y の順に人と一緒に描く） ===== */
-function drawProp(p,t){const x=Math.round(p.x-camX),y=Math.round(p.y-camY);if(x<-80||x>W+80||y<-40||y>H+40)return;
-  if(p.k==='lamp'){ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x-2,y-1,5,2);ctx.fillStyle='#4a4468';ctx.fillRect(x-1,y-22,2,22);ctx.fillRect(x-1,y-22,7,1.5);ctx.fillStyle='#2a2640';ctx.fillRect(x+3,y-21,4,2);
-    const L=M().lights.find(l=>l.lamp===p),on=!L.broken||flick(t,p.x);ctx.fillStyle=on?'#fff2c8':'#3a3020';ctx.fillRect(x+3,y-19.5,4,1.5)}
-  else if(p.k==='barrel'){ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x-6,y-1,12,2);ctx.fillStyle='#5a3a2a';ctx.fillRect(x-5,y-11,10,11);ctx.fillStyle='#7a5038';ctx.fillRect(x-5,y-11,10,1.5);ctx.fillRect(x-5,y-6,10,0.7);ctx.fillStyle='#3a2418';ctx.fillRect(x+3,y-10,2,10);
-    ctx.fillStyle='#1a0e0a';ctx.fillRect(x-4,y-12,8,2);const g=0.6+0.3*Math.sin(t*13+p.x);ctx.fillStyle=`rgba(255,150,60,${g})`;ctx.fillRect(x-4,y-12,8,1);ctx.fillStyle=`rgba(255,120,40,${g*0.8})`;ctx.fillRect(x-3,y-4,1,1);ctx.fillRect(x+1,y-3,1,1)}
-  else if(p.k==='vend'){/* 自販機：光るパネルと、並んだ商品 */
-    ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x-7,y-1,14,2);ctx.fillStyle=p.c;ctx.fillRect(x-6,y-19,12,19);ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x+4,y-19,2,19);
-    ctx.fillStyle='#e8f4ff';ctx.fillRect(x-5,y-17,8,8);const cols=['#ff5a5a','#5ab0ff','#ffd25a','#7aff9a'];for(let r=0;r<2;r++)for(let k=0;k<4;k++){ctx.fillStyle=cols[(k+r)%4];ctx.fillRect(x-4.5+k*2,y-16+r*4,1.2,2.5)}
-    ctx.fillStyle='#1a1820';ctx.fillRect(x-5,y-6,8,3);ctx.fillStyle='#3ef2e0';ctx.fillRect(x+4,y-12,1,1);ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(x-6,y-19,12,0.7)}
-  else if(p.k==='bags'){ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x-7,y-1,14,2);for(const [dx,w,h,c] of [[-6,7,6,'#1c1c26'],[0,7,7,'#22222e'],[-3,6,5,'#2a2a38']]){ctx.fillStyle=c;ctx.fillRect(x+dx,y-h,w,h);ctx.fillStyle='rgba(160,170,220,.25)';ctx.fillRect(x+dx+1,y-h+1,2,1)}
-    ctx.fillStyle='#4a4a58';ctx.fillRect(x+2,y-8,1,1)}
-  else if(p.k==='boxes'){ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x-7,y-1,14,2);ctx.fillStyle='#7a5a38';ctx.fillRect(x-6,y-7,8,7);ctx.fillStyle='#8a6a44';ctx.fillRect(x-1,y-12,7,6);ctx.fillStyle='#a8844e';ctx.fillRect(x-6,y-7,8,1);ctx.fillRect(x-1,y-12,7,1);
-    ctx.fillStyle='#5a4028';ctx.fillRect(x-2.5,y-7,0.7,7);ctx.fillRect(x+2,y-12,0.7,6)}
-  else if(p.k==='cone'){ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x-3,y-1,6,1.5);ctx.fillStyle='#ff6a2a';ctx.fillRect(x-1,y-7,2,6);ctx.fillRect(x-2,y-3,4,2);ctx.fillStyle='#fff';ctx.fillRect(x-1,y-5,2,1);ctx.fillStyle='#3a2a20';ctx.fillRect(x-3,y-1,6,1)}
+  /* フェンス（破れて、有刺鉄線が垂れている） */
+  ctx.save();ctx.translate(0,-9);{const fx0=X(640);if(fx0<W+10&&fx0+130>-10){ctx.fillStyle='#2a2638';for(let x=0;x<130;x+=10)if(x<60||x>80)ctx.fillRect(fx0+x,GY-30,1,30);
+    ctx.fillStyle='rgba(70,64,90,.55)';for(let y=GY-28;y<GY;y+=3)for(let x=0;x<130;x+=3)if(x<60||x>80)ctx.fillRect(fx0+x+((y/3)%2?1.5:0),y,0.5,0.5);
+    ctx.fillStyle='#3a3448';for(let x=0;x<130;x+=2)if(x<58||x>84)ctx.fillRect(fx0+x,GY-32+Math.sin(x*0.9)*1.2,1,0.5);ctx.fillRect(fx0+60,GY-30,1,12);ctx.fillRect(fx0+62,GY-20,6,0.5)}}
+  ctx.restore();
+  /* 瓦礫の山（奥の歩道ぎわ） */
+  ctx.save();ctx.translate(0,-8);
+  for(const r of RUBBLE){const sx=X(r.x);if(sx>W+10||sx<-20)continue;ctx.fillStyle=r.c;ctx.fillRect(sx,GY-r.h+r.y,r.w,r.h);ctx.fillStyle='rgba(255,255,255,.06)';ctx.fillRect(sx,GY-r.h+r.y,r.w,0.5)}
+  ctx.restore();
+  /* 診療所（屋根の上に大きなピンクの十字。遠くからでも見える） */
+  {const bx=X(430),by=GY-9;if(bx<W+20&&bx+100>-20){ctx.fillStyle='#120f22';ctx.fillRect(bx,by-92,100,92);ctx.fillStyle='#231e3d';ctx.fillRect(bx,by-92,100,1);ctx.fillRect(bx,by-92,1,92);ctx.fillRect(bx+99,by-92,1,92);
+    ctx.fillStyle='#ff3d8b';ctx.globalAlpha=0.25;ctx.fillRect(bx+20,by-30,20,30);ctx.globalAlpha=1;
+    ctx.fillStyle='#3a1630';ctx.fillRect(bx+22,by-28,16,28);ctx.fillStyle='#ff7ab8';ctx.fillRect(bx+23,by-27,14,1);
+    ctx.fillStyle='#1a1630';for(let i=0;i<3;i++)ctx.fillRect(bx+56+i*12,by-72,8,10);ctx.fillRect(bx+12,by-72,8,10);ctx.fillRect(bx+12,by-50,8,10);
+    ctx.fillStyle='#3ef2e0';if(Math.floor(t*2)%3)ctx.fillRect(bx+56,by-66,8,1);
+    ctx.fillStyle='#2e2a44';ctx.fillRect(bx+94,by-90,1.5,90);ctx.fillStyle='#4a4660';ctx.fillRect(bx+60,by-40,9,6);ctx.fillStyle='#2a2638';ctx.fillRect(bx+61,by-39,4,4);
+    /* 屋根の十字 */
+    const cx=bx+50,cy=by-108,b=Math.floor(t*0.8)%7===0;ctx.fillStyle='#2a2440';ctx.fillRect(cx-8,by-94,1.5,6);ctx.fillRect(cx+7,by-94,1.5,6);ctx.fillStyle='#1a1028';ctx.fillRect(cx-9,cy-9,19,19);
+    if(!b){ctx.globalAlpha=0.22;ctx.fillStyle='#ff3d8b';ctx.fillRect(cx-14,cy-14,29,29);ctx.globalAlpha=1}
+    ctx.fillStyle=b?'#8a2a5a':'#ff3d8b';ctx.fillRect(cx-2.5,cy-7,5,14);ctx.fillRect(cx-7,cy-2.5,14,5);ctx.fillStyle=b?'#a04070':'#ffc0dc';ctx.fillRect(cx-1,cy-6,2,12);ctx.fillRect(cx-6,cy-1,12,2)}}
+
+  /* ゲート（奥から光が漏れる） */
+  {const gx0=X(872);if(gx0<W+10){
+    let lg=ctx.createLinearGradient(gx0,0,gx0+120,0);lg.addColorStop(0,'rgba(220,245,255,0.05)');lg.addColorStop(1,'rgba(220,245,255,0.75)');ctx.fillStyle=lg;ctx.fillRect(gx0+12,30,140,GY-30);
+    ctx.fillStyle='rgba(255,180,230,.18)';ctx.fillRect(gx0+12,GY,140,H-GY);
+    ctx.fillStyle='#1c1932';ctx.fillRect(gx0,36,12,GY-36);ctx.fillStyle='#2c2750';ctx.fillRect(gx0,36,12,1);
+    for(let y=GY-14;y<GY;y+=4){ctx.fillStyle=((y/4)%2)?'#ffb547':'#1c1932';ctx.fillRect(gx0,y,12,2)}
+    ctx.fillStyle='#211d3a';for(const by of [62,90,118])ctx.fillRect(gx0+12,by,140,4);
+    const col=gateLight==='deny'?'#ff4a5c':gateLight==='ok'?'#3ef2e0':(Math.floor(t*2)%2?'#ffb547':'#7a5520');
+    ctx.fillStyle='#0d0b18';ctx.fillRect(gx0+1,96,10,10);ctx.fillStyle=col;ctx.fillRect(gx0+3,98,6,6);
+    ctx.globalAlpha=0.25;ctx.fillRect(gx0-4,92,20,18);ctx.globalAlpha=1}}
+
+  /* 昇降機（ドクの診療所の左） */
+  drawLift(X(410),t,S.reached.includes('lower'));
+}
+function drawLowerBG(t){
+  const prog=camX/Math.max(1,CAMMAX_OF('lower')),X=x=>Math.round(x-camX),cl=clarityLv();
+  /* 天井と奥の壁 */
+  const g0=ctx.createLinearGradient(0,0,0,GY);g0.addColorStop(0,'#160f1c');g0.addColorStop(0.45,'#2e1f34');g0.addColorStop(1,'#4a2e3e');ctx.fillStyle='#160f1c';ctx.fillRect(0,-OY,W,OY+1);ctx.fillStyle=g0;ctx.fillRect(0,0,W,GY);
+  const po=Math.round(camX*0.8);for(const p of L_PIPES){ctx.fillStyle=p.c;ctx.fillRect(0,p.y,W,p.h)}
+  ctx.fillStyle='#4a3850';for(let x=-(po%46);x<W;x+=46)ctx.fillRect(Math.round(x),0,3,34);
+  /* 奥の店並び */
+  const mo=Math.round(camX*0.5);
+  for(const b of L_SHOPS){const sx=b.x-mo;if(sx>W||sx+b.w<0)continue;ctx.fillStyle='#24182a';ctx.fillRect(sx,GY-b.h-20,b.w,b.h+20);
+    if(b.on){ctx.globalAlpha=0.3;ctx.fillStyle=b.c;ctx.fillRect(sx+3,GY-30,b.w-6,24);ctx.globalAlpha=1;ctx.fillStyle=b.c;ctx.fillRect(sx+3,GY-31,b.w-6,1)}
+    ctx.fillStyle='#3a2a40';ctx.fillRect(sx,GY-b.h-20,b.w,1)}
+  /* 街全体を照らす暖かい光 */
+  {const g1=ctx.createRadialGradient(W/2,GY-10,10,W/2,GY-10,260);g1.addColorStop(0,'rgba(255,170,110,.16)');g1.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g1;ctx.fillRect(0,-OY,W,180+OY)}
+  for(const h of L_HOLO){const sx=h.x-mo;if(sx<-30||sx>W)continue;if(!flick(t,h.s))continue;ctx.globalAlpha=0.5;ctx.fillStyle=h.c;ctx.fillRect(sx,h.y,h.w,h.h);ctx.globalAlpha=0.9;ctx.fillRect(sx,h.y+Math.floor((t*20+h.s)%h.h),h.w,1);ctx.globalAlpha=1}
+  /* 柱 */
+  for(let x=-(camX%160)+60;x<W+20;x+=160){ctx.fillStyle='#1c1320';ctx.fillRect(Math.round(x),-OY,12,GY+OY);ctx.fillStyle='#3a2a40';ctx.fillRect(Math.round(x),-OY,1,GY+OY)}
+  /* 店の壁（正面から見た建物） */
+  for(const w of STAGES.lower.walls)drawWall(w,t,true);
+  /* 床（格子） */
+  ctx.fillStyle='#1c1420';ctx.fillRect(0,GY-9,W,60);ctx.fillStyle='#5a4258';ctx.fillRect(0,GY-9,W,1);
+  ctx.fillStyle='#2a1e2e';for(let x=-(camX%8);x<W;x+=8)ctx.fillRect(Math.round(x),GY-7,1,60);for(let y=GY-3;y<180;y+=6)ctx.fillRect(0,y,W,1);
+  /* 圏外へのシャッター（左のはし。ゲートから来るとここに出る） */
+  {const sx=X(0);if(sx>-60){ctx.fillStyle='#2a2228';ctx.fillRect(sx,GY-70,36,61);ctx.fillStyle='#3a3238';for(let y=GY-64;y<GY-9;y+=3)ctx.fillRect(sx+2,y,32,1.5);
+    for(let k=0;k<36;k+=6){ctx.fillStyle=(k/6)%2?'#f2c230':'#1a1416';ctx.fillRect(sx+k,GY-70,6,4)}ctx.fillStyle='#ffb547';ctx.font='6px monospace';ctx.fillText('圏外',sx+8,GY-74)}}
+  /* 昇降機 */
+  drawLift(X(64),t,true);
+  /* ゲンジの屋台「灯」 */
+  {const sx=X(280);if(sx<W+10&&sx+90>-10){
+    ctx.fillStyle='rgba(255,190,110,.10)';ctx.beginPath();ctx.moveTo(sx+42,GY-46);ctx.lineTo(sx-10,GY);ctx.lineTo(sx+96,GY);ctx.closePath();ctx.fill();
+    for(let i=0;i<8;i++){ctx.fillStyle=i%2?'#e8e2d0':'#b8323c';ctx.fillRect(sx+4+i*10,GY-50,10,6)}
+    ctx.fillStyle='#2a1c1a';ctx.fillRect(sx+6,GY-44,2,44);ctx.fillRect(sx+78,GY-44,2,44);
+    ctx.fillStyle='#4a2e22';ctx.fillRect(sx,GY-16,86,16);ctx.fillStyle='#6a4430';ctx.fillRect(sx,GY-16,86,2);
+    ctx.fillStyle='#3a3a44';ctx.fillRect(sx+56,GY-22,12,6);
+    const lon=flick(t,7)||cl>=1;ctx.fillStyle=lon?'#ff5a3c':'#6a2a20';ctx.fillRect(sx+14,GY-40,6,8);ctx.fillStyle='rgba(255,90,60,.25)';if(lon)ctx.fillRect(sx+10,GY-44,14,16);
+    /* 湯気（澄みで濃くなる） */
+    const n=cl>=1?7:3;for(let i=0;i<n;i++){const k=((t*0.6+i/n)%1);ctx.fillStyle=`rgba(230,230,240,${(cl>=1?0.35:0.18)*(1-k)})`;ctx.fillRect(Math.round(sx+60+Math.sin(t*2+i)*3),Math.round(GY-24-k*26),2,2)}}}
+  /* 沈殿第三工場：人間がレバーを握り、払い下げのAIアームを動かす */
+  {const fx=X(380);if(fx<W+10&&fx+170>-10){
+    /* 建屋の壁、鋲、危険表示の帯 */
+    ctx.fillStyle='#2a2226';ctx.fillRect(fx,GY-96,168,96);ctx.fillStyle='#3a3034';for(let y=GY-92;y<GY-20;y+=10)for(let x=fx+4;x<fx+166;x+=12)ctx.fillRect(x,y,1,1);
+    for(let x=0;x<168;x+=8){ctx.fillStyle=(x/8)%2?'#f2c230':'#1a1416';ctx.fillRect(fx+x,GY-96,8,4)}
+    ctx.fillStyle='#4a3a30';ctx.fillRect(fx,GY-96,168,1);
+    /* 炉の窓（オレンジに揺れる） */
+    const fl=0.55+0.25*Math.sin(t*3.1)+0.1*Math.sin(t*11);ctx.fillStyle=`rgba(255,120,40,${fl})`;ctx.fillRect(fx+110,GY-80,40,18);ctx.fillStyle='#1a1416';ctx.fillRect(fx+129,GY-80,2,18);
+    ctx.fillStyle=`rgba(255,140,60,${fl*0.25})`;ctx.fillRect(fx+100,GY-90,60,38);
+    /* 天井のクレーン（レールを行き来し、鎖とフックが揺れる） */
+    ctx.fillStyle='#4a4048';ctx.fillRect(fx-4,GY-104,176,3);const cx0=fx+20+Math.round((Math.sin(t*0.4)*0.5+0.5)*120);
+    ctx.fillStyle='#5a5058';ctx.fillRect(cx0-5,GY-101,10,4);ctx.fillStyle='#6a6068';for(let y=GY-97;y<GY-70;y+=3)ctx.fillRect(cx0,y,1,2);ctx.fillRect(cx0-2,GY-70,5,2);ctx.fillRect(cx0+2,GY-68,1,3);
+    /* ベルトコンベアと流れる箱 */
+    ctx.fillStyle='#1a1618';ctx.fillRect(fx+60,GY-14,104,6);ctx.fillStyle='#3a3438';for(let x=(t*14)%6;x<104;x+=6)ctx.fillRect(Math.round(fx+60+x),GY-14,2,1);
+    ctx.fillStyle='#2a2428';ctx.fillRect(fx+64,GY-8,3,8);ctx.fillRect(fx+156,GY-8,3,8);
+    for(let i=0;i<3;i++){const bx=fx+60+((t*14+i*36)%100);ctx.fillStyle='#8a6a40';ctx.fillRect(Math.round(bx),GY-21,9,7);ctx.fillStyle='#6a5030';ctx.fillRect(Math.round(bx),GY-21,9,1)}
+    /* AIアーム（払い下げ品。人の操作に合わせて動く） */
+    const ax=fx+98,ay=GY-14,a1=-1.9+0.45*Math.sin(t*1.3),a2=0.9+0.6*Math.sin(t*1.3+1.2);
+    const jx=ax+Math.cos(a1)*20,jy=ay+Math.sin(a1)*20,hx=jx+Math.cos(a1+a2)*16,hy=jy+Math.sin(a1+a2)*16;
+    ctx.strokeStyle='#c8c0b0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(jx,jy);ctx.lineTo(hx,hy);ctx.stroke();ctx.lineWidth=1;
+    ctx.fillStyle='#4a4048';ctx.fillRect(ax-5,ay-2,10,4);ctx.fillStyle='#e8a040';ctx.fillRect(Math.round(jx)-1,Math.round(jy)-1,3,3);
+    ctx.fillStyle=Math.floor(t*3)%2?'#3ef2e0':'#1a7a70';ctx.fillRect(Math.round(hx)-1,Math.round(hy)-1,3,3);
+    /* 操作盤：ダイモンが握るレバーと、計器 */
+    ctx.fillStyle='#3a3238';ctx.fillRect(fx+38,GY-22,20,22);ctx.fillStyle='#ffb547';ctx.fillRect(fx+41,GY-20,10,5);ctx.fillStyle='#1a1416';ctx.fillRect(fx+42,GY-19,8,3);
+    ctx.fillStyle='#ffb547';ctx.fillRect(fx+42+Math.floor((t*4)%7),GY-18,1,1);
+    const lv=Math.round(3*Math.sin(t*1.3));ctx.fillStyle='#8a8090';ctx.fillRect(fx+53,GY-30+lv,1,9);ctx.fillStyle='#ff4a5c';ctx.fillRect(fx+52,GY-31+lv,3,2);
+    /* 溶接の火花（溶接工のそば） */
+    const sp=(t*1.7)%1;if(sp<0.45){for(let i=0;i<6;i++){const a=i*1.1+t*7,r=sp*14*(0.5+((i*37)%10)/10);ctx.fillStyle=i%2?'#fff4c0':'#ffb547';ctx.fillRect(Math.round(fx+132+Math.cos(a)*r),Math.round(GY-12+Math.sin(a)*r*0.6-sp*4),1,1)}
+      ctx.fillStyle='rgba(200,230,255,.35)';ctx.fillRect(fx+129,GY-15,6,6)}
+    /* 屋根の排気（澄みで濃く見える） */
+    const n=clarityLv()>=1?6:3;for(let i=0;i<n;i++){const k=((t*0.35+i/n)%1);ctx.fillStyle=`rgba(200,190,200,${0.22*(1-k)})`;ctx.fillRect(Math.round(fx+18+Math.sin(t+i)*4),Math.round(GY-104-k*30),3,3)}}}
+  /* 鋼組の溜まり場（レイ） */
+  {const sx=X(560);if(sx<W+10&&sx+80>-10){ctx.fillStyle='#1a1e2a';ctx.fillRect(sx,GY-14,22,14);ctx.fillRect(sx+44,GY-10,18,10);ctx.fillStyle='#5fb8ff';ctx.globalAlpha=0.6;ctx.fillRect(sx+2,GY-12,18,1);ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(95,184,255,.08)';ctx.fillRect(sx-6,GY-60,80,60)}}
+  /* 鋼組の施術所（ツギハギ）：青い手術灯と、壁の義体パーツ */
+  {const sx=X(672);if(sx<W+10&&sx+64>-10){
+    ctx.fillStyle='#1a1e2a';ctx.fillRect(sx,GY-70,60,70);ctx.fillStyle='#2a3448';ctx.fillRect(sx,GY-70,60,1);
+    ctx.fillStyle='rgba(95,184,255,.18)';ctx.beginPath();ctx.moveTo(sx+30,GY-62);ctx.lineTo(sx+4,GY);ctx.lineTo(sx+56,GY);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#5fb8ff';ctx.fillRect(sx+24,GY-64,12,2);
+    ctx.fillStyle='#8f97ad';for(let i=0;i<3;i++){ctx.fillRect(sx+6+i*6,GY-52,2,10);ctx.fillRect(sx+5+i*6,GY-53,4,2)}
+    ctx.fillStyle='#d6dbe8';ctx.fillRect(sx+44,GY-54,8,3);ctx.fillRect(sx+47,GY-51,2,6);
+    ctx.fillStyle='#2a3448';ctx.fillRect(sx+10,GY-12,40,4);ctx.fillRect(sx+12,GY-8,2,8);ctx.fillRect(sx+46,GY-8,2,8);
+    ctx.fillStyle=Math.floor(t*2)%2?'#3ef2e0':'#1a7a70';ctx.fillRect(sx+52,GY-24,3,2)}}
+  /* 企業区へのゲート（白い光） */
+  {const gx0=X(872);if(gx0<W+10){
+    let lg=ctx.createLinearGradient(gx0,0,gx0+120,0);lg.addColorStop(0,'rgba(240,250,255,0.08)');lg.addColorStop(1,'rgba(240,250,255,0.85)');ctx.fillStyle=lg;ctx.fillRect(gx0+12,30,140,GY-30);
+    ctx.fillStyle='#2a2438';ctx.fillRect(gx0,30,12,GY-30);for(let y=40;y<GY;y+=6){ctx.fillStyle='#3a3350';ctx.fillRect(gx0+12,y,140,2)}
+    ctx.fillStyle='#0d0b18';ctx.fillRect(gx0+1,96,10,10);ctx.fillStyle=Math.floor(t*2)%2?'#ff4a5c':'#7a2030';ctx.fillRect(gx0+3,98,6,6)}}
+}
+/* 昇降機の扉。lit=行き先が登録済み */
+function drawLift(sx,t,lit){if(sx<-40||sx>W+40)return;
+  ctx.fillStyle='#16131f';ctx.fillRect(sx-14,GY-44,28,44);ctx.fillStyle='#2b2640';ctx.fillRect(sx-14,GY-44,28,1);ctx.fillRect(sx-14,GY-44,1,44);ctx.fillRect(sx+13,GY-44,1,44);
+  ctx.fillStyle='#262236';ctx.fillRect(sx-11,GY-36,10,36);ctx.fillRect(sx+1,GY-36,10,36);ctx.fillStyle='#0c0a14';ctx.fillRect(sx,GY-36,1,36);
+  ctx.fillStyle=lit?(Math.floor(t*1.5)%2?'#ffb547':'#a8742a'):'#4a2a2a';ctx.fillRect(sx-4,GY-41,8,2);
+  ctx.fillStyle='#3a3550';ctx.fillRect(sx+15,GY-22,2,4);ctx.fillStyle=lit?'#3ef2e0':'#ff4a5c';ctx.fillRect(sx+15,GY-21,2,1)}
+/* ===== 壁（正面から見た建物）：窓、ドア、シャッター、雨どい、室外機、張り紙、看板 ===== */
+function drawWall(w,t,lo){const sx=Math.round(w.x-camX);if(sx>W+4||sx+w.w<-4)return;const base=GY-9,top=base-w.h;
+  ctx.fillStyle=lo?'#2e2028':'#151226';ctx.fillRect(sx,top,w.w,w.h);ctx.fillStyle=lo?'#4a3640':'#262145';ctx.fillRect(sx,top,w.w,1);ctx.fillRect(sx,top,1,w.h);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(sx+w.w-1,top,1,w.h);
+  /* 崩れた上端（廃墟） */
+  if(w.k==='ruin'){ctx.fillStyle=lo?'#120c14':'#0e0b1d';for(let k=0;k<w.w;k+=6){const d=Math.round(hsh(w.x+k,3)*12);ctx.fillRect(sx+k,top,6,d)}ctx.fillStyle='#05040a';ctx.fillRect(sx+30,top+20,10,8);ctx.fillRect(sx+56,top+26,6,10)}
+  /* 屋上：給水タンク・アンテナ・室外機 */
+  const r=hsh(w.x,w.h);if(w.k!=='ruin'){ctx.fillStyle=lo?'#3a2a32':'#1c1834';if(r<0.5){ctx.fillRect(sx+8,top-8,10,8);ctx.fillRect(sx+9,top-10,8,2);ctx.fillStyle=lo?'#5a4450':'#2e2850';ctx.fillRect(sx+8,top-8,10,1)}
+    else{ctx.fillRect(sx+w.w-14,top-14,1,14);ctx.fillRect(sx+w.w-18,top-10,9,1);if(Math.floor(t*1.5+w.x)%3===0){ctx.fillStyle='#ff4a5c';ctx.fillRect(sx+w.w-14,top-15,1,1)}}
+    ctx.fillStyle='#4a4660';ctx.fillRect(sx+w.w/2,top-5,9,5);ctx.fillStyle='#2a2638';ctx.fillRect(sx+w.w/2+1,top-4,4,3);const a=t*9+w.x;ctx.fillStyle='#8a86a0';ctx.fillRect(sx+w.w/2+3+Math.cos(a)*1.4-0.5,top-2.5+Math.sin(a)*1.2-0.5,1,1)}
+  /* 窓：明かり・暗い・板で塞いだ（圏外）・ブラインド */
+  for(let row=0,wy=top+8;wy<base-20;row++,wy+=13)for(let col=0,wx=sx+6;wx<sx+w.w-10;col++,wx+=15){const v=hsh(w.x+col*7,row*5+w.h);
+    if(w.k==='ruin'&&v<0.5){ctx.fillStyle='#05040a';ctx.fillRect(wx,wy,8,7);continue}
+    if(v<(lo?0.5:0.25)){const fl=lo||!flick(t*0.35,w.x+col+row);ctx.fillStyle=fl?(lo?'#ffb05a':'#c8902a'):'#3a2a1a';ctx.fillRect(wx,wy,8,7);ctx.fillStyle='rgba(60,30,10,.6)';ctx.fillRect(wx+3.5,wy,0.7,7);ctx.fillRect(wx,wy+3,8,0.7)}
+    else if(v<0.42&&!lo){ctx.fillStyle='#3a2a1c';ctx.fillRect(wx-1,wy,10,7);ctx.fillStyle='#2a1e14';ctx.fillRect(wx-1,wy+2,10,0.5);ctx.fillRect(wx-1,wy+4.5,10,0.5);ctx.fillStyle='#4a3a28';ctx.fillRect(wx-2,wy+1,12,1)}
+    else if(v<0.6){ctx.fillStyle=lo?'#4a3a40':'#1e1a32';ctx.fillRect(wx,wy,8,7);ctx.fillStyle=lo?'#3a2c32':'#16132a';for(let k=1;k<7;k+=2)ctx.fillRect(wx,wy+k,8,0.6)}
+    else{ctx.fillStyle='#08070e';ctx.fillRect(wx,wy,8,7);ctx.fillStyle='#1a1630';ctx.fillRect(wx,wy,8,0.6)}}
+  /* 1階：店のシャッター・ドア */
+  if(w.k==='shop'){const dx=sx+Math.round(w.w*0.3);ctx.fillStyle=lo?'#5a4048':'#2a2640';ctx.fillRect(dx,base-18,34,18);ctx.fillStyle=lo?'#3a2a30':'#1c1830';for(let y=base-17;y<base;y+=2)ctx.fillRect(dx,y,34,0.7);
+    ctx.fillStyle=lo?'rgba(255,170,90,.35)':'rgba(255,61,139,.25)';ctx.fillRect(dx,base-21,34,3);if(lo){ctx.fillStyle='#ffb05a';ctx.fillRect(dx+2,base-14,30,8);ctx.fillStyle='#5a3418';ctx.fillRect(dx+2,base-10,30,0.6)}}
+  else{const dx=sx+Math.round(w.w*0.55);ctx.fillStyle='#0a0910';ctx.fillRect(dx,base-15,9,15);ctx.fillStyle=lo?'#4a3a40':'#24203a';ctx.fillRect(dx-1,base-16,11,1)}
+  /* 雨どい・室外機・張り紙・落書き */
+  ctx.fillStyle=lo?'#5a4a50':'#2e2a44';ctx.fillRect(sx+w.w-5,top+2,1.5,w.h-2);ctx.fillRect(sx+w.w-7,base-2,4,1);
+  ctx.fillStyle='#4a4660';ctx.fillRect(sx+4,base-30,8,6);ctx.fillStyle='#2a2638';ctx.fillRect(sx+5,base-29,4,4);
+  for(let k=0;k<3;k++){const v=hsh(w.x+k,11);if(v<0.5){ctx.fillStyle=['#d8d0b8','#e8c0c8','#c8d8e8'][k];const px=sx+14+k*7+Math.round(v*10);ctx.fillRect(px,base-14,4,5);ctx.fillStyle='rgba(40,30,40,.7)';ctx.fillRect(px+0.5,base-13,3,0.5);ctx.fillRect(px+0.5,base-11.5,2.5,0.5)}}
+  if(!lo&&r>0.3){ctx.fillStyle='rgba(255,61,139,.45)';ctx.fillRect(sx+w.w-30,base-6,12,1);ctx.fillRect(sx+w.w-26,base-8,1,4);ctx.fillStyle='rgba(62,242,224,.4)';ctx.fillRect(sx+w.w-20,base-5,9,1)}
+  drawNeon(w.neon,t)}
+function drawNeon(n,t){const x=Math.round(n.x-camX),y=n.y;if(x<-20||x>W+20)return;const on=!n.broken||flick(t,n.s);
+  ctx.fillStyle='#0c0a14';n.v?ctx.fillRect(x-1,y-1,6,18):ctx.fillRect(x-1,y-1,20,7);
+  if(on){ctx.globalAlpha=0.2;ctx.fillStyle=`rgb(${n.c})`;n.v?ctx.fillRect(x-3,y-3,10,22):ctx.fillRect(x-3,y-3,24,11);ctx.globalAlpha=1}
+  ctx.fillStyle=on?`rgb(${n.c})`:'#2a2238';if(n.v){ctx.fillRect(x,y,4,0.8);ctx.fillRect(x,y+15.2,4,0.8);ctx.fillRect(x,y,0.8,16);ctx.fillRect(x+3.2,y,0.8,16);for(let k=3;k<15;k+=4)ctx.fillRect(x+1,y+k,2,2)}
+  else{ctx.fillRect(x,y,18,0.8);ctx.fillRect(x,y+4.2,18,0.8);for(let k=2;k<17;k+=4)ctx.fillRect(x+k,y+1.6,2,2)}}
+
+/* ===== 物（足もとの y の順に、人と一緒に描く） ===== */
+function drawProp(p,t){const x=Math.round(p.x-camX),y=GY+(p.z||0);if(x<-60||x>W+60)return;
+  if(p.k==='lamp'){ctx.fillStyle='#1a1630';ctx.fillRect(x,y-52,2,52);ctx.fillRect(x,y-52,9,2);const on=!p.broken||flick(t,p.x);ctx.fillStyle=on?'#fff2c8':'#3a3020';ctx.fillRect(x+7,y-50,3,2);
+    if(on){ctx.fillStyle='rgba(255,210,140,.09)';ctx.beginPath();ctx.moveTo(x+7,y-49);ctx.lineTo(x-10,GY+4);ctx.lineTo(x+28,GY+4);ctx.closePath();ctx.fill()}}
+  else if(p.k==='barrel'){ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x-6,y-1,12,2);ctx.fillStyle='#5a3a2a';ctx.fillRect(x-5,y-12,10,12);ctx.fillStyle='#7a5038';ctx.fillRect(x-5,y-12,10,1.5);ctx.fillRect(x-5,y-8,10,0.7);ctx.fillRect(x-5,y-4,10,0.7);ctx.fillStyle='#3a2418';ctx.fillRect(x+3,y-11,2,11);
+    const g=0.6+0.3*Math.sin(t*13+p.x);ctx.fillStyle=`rgba(255,120,40,${g*0.8})`;ctx.fillRect(x-3,y-6,1,1);ctx.fillRect(x+1,y-3,1,1)}
+  else if(p.k==='car'){ctx.fillStyle='#1e1a20';ctx.fillRect(x,y-10,40,8);ctx.fillRect(x+8,y-17,22,7);ctx.fillStyle='#2e2420';ctx.fillRect(x+2,y-9,36,1);
+    ctx.fillStyle='#08070c';ctx.fillRect(x+10,y-16,8,5);ctx.fillRect(x+20,y-16,8,5);ctx.fillStyle='#4a2a1a';ctx.fillRect(x+4,y-6,6,1);ctx.fillRect(x+30,y-8,5,2);ctx.fillStyle='#0b0a12';ctx.fillRect(x+5,y-3,7,3);ctx.fillRect(x+28,y-2,7,2)}
+  else if(p.k==='vend'){ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x-7,y-1,14,2);ctx.fillStyle=p.c;ctx.fillRect(x-6,y-22,12,22);ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x+4,y-22,2,22);
+    ctx.fillStyle='#e8f4ff';ctx.fillRect(x-5,y-20,8,9);const cols=['#ff5a5a','#5ab0ff','#ffd25a','#7aff9a'];for(let r=0;r<2;r++)for(let k=0;k<4;k++){ctx.fillStyle=cols[(k+r)%4];ctx.fillRect(x-4.5+k*2,y-19+r*4,1.2,2.5)}
+    ctx.fillStyle='#1a1820';ctx.fillRect(x-5,y-6,8,3);ctx.fillStyle='#3ef2e0';ctx.fillRect(x+4,y-14,1,1)}
+  else if(p.k==='bags'){for(const [dx,w,h,c] of [[-6,7,6,'#1c1c26'],[0,7,7,'#22222e'],[-3,6,5,'#2a2a38']]){ctx.fillStyle=c;ctx.fillRect(x+dx,y-h,w,h);ctx.fillStyle='rgba(160,170,220,.25)';ctx.fillRect(x+dx+1,y-h+1,2,1)}}
+  else if(p.k==='boxes'){ctx.fillStyle='#7a5a38';ctx.fillRect(x-6,y-7,8,7);ctx.fillStyle='#8a6a44';ctx.fillRect(x-1,y-12,7,6);ctx.fillStyle='#a8844e';ctx.fillRect(x-6,y-7,8,1);ctx.fillRect(x-1,y-12,7,1);ctx.fillStyle='#5a4028';ctx.fillRect(x-2.5,y-7,0.7,7);ctx.fillRect(x+2,y-12,0.7,6)}
+  else if(p.k==='cone'){ctx.fillStyle='#ff6a2a';ctx.fillRect(x-1,y-7,2,6);ctx.fillRect(x-2,y-3,4,2);ctx.fillStyle='#fff';ctx.fillRect(x-1,y-5,2,1);ctx.fillStyle='#3a2a20';ctx.fillRect(x-3,y-1,6,1)}
   else if(p.k==='bike'){ctx.strokeStyle='#6a6488';ctx.lineWidth=0.8;for(const dx of [-5,5]){ctx.beginPath();ctx.arc(x+dx,y-3,3,0,7);ctx.stroke()}ctx.beginPath();ctx.moveTo(x-5,y-3);ctx.lineTo(x-1,y-7);ctx.lineTo(x+5,y-3);ctx.moveTo(x-1,y-7);ctx.lineTo(x+3,y-7);ctx.lineTo(x+5,y-3);ctx.stroke();ctx.lineWidth=1;ctx.fillStyle='#ff4a5c';ctx.fillRect(x-2,y-8.5,3,1)}
-  else if(p.k==='stool'){ctx.fillStyle='#2a1c1a';ctx.fillRect(x-1,y-5,2,5);ctx.fillStyle='#8a5a3a';ctx.fillRect(x-3,y-7,6,2)}
-  else if(p.k==='crate'){ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x-7,y-1,14,2);ctx.fillStyle='#4a3a5a';ctx.fillRect(x-7,y-12,14,12);ctx.fillStyle='#6a5a7a';ctx.fillRect(x-7,y-12,14,1);ctx.fillStyle='#3a2a4a';ctx.fillRect(x-7,y-6,14,0.7);ctx.fillRect(x-1,y-12,0.7,12);ctx.fillStyle='#5fb8ff';ctx.fillRect(x-5,y-10,3,1)}
-  else if(p.k==='desk'){if(minaIn()!=='lower')return;ctx.fillStyle='#4a3424';ctx.fillRect(x-7,y-8,14,8);ctx.fillStyle='#6a4a30';ctx.fillRect(x-7,y-8,14,1);ctx.fillStyle='#d8d0b8';ctx.fillRect(x-6,y-10,5,2);ctx.fillStyle='#3ef2e0';ctx.fillRect(x+1,y-10,4,2);ctx.globalAlpha=0.25;ctx.fillRect(x-1,y-15,8,6);ctx.globalAlpha=1}
-  else if(p.k==='console'){ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x-7,y-1,14,2);ctx.fillStyle='#3a3238';ctx.fillRect(x-7,y-12,14,12);ctx.fillStyle='#ffb547';ctx.fillRect(x-5,y-10,8,4);ctx.fillStyle='#1a1416';ctx.fillRect(x-4,y-9,6,2);ctx.fillStyle='#ffb547';ctx.fillRect(x-4+Math.floor((t*4)%6),y-8,1,1);
-    const lv=Math.round(2*Math.sin(t*1.3));ctx.fillStyle='#8a8090';ctx.fillRect(x+5,y-18+lv,1,7);ctx.fillStyle='#ff4a5c';ctx.fillRect(x+4,y-19+lv,3,2)}
-  else if(p.k==='conveyor'){ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x,y-1,p.w,2);ctx.fillStyle='#1a1618';ctx.fillRect(x,y-10,p.w,9);ctx.fillStyle='#3a3438';for(let k=(t*14)%6;k<p.w;k+=6)ctx.fillRect(Math.round(x+k),y-10,2,9);ctx.fillStyle='#4a4048';ctx.fillRect(x,y-10,p.w,1);ctx.fillRect(x,y-2,p.w,1);
-    for(let i=0;i<4;i++){const bx=x+((t*14+i*36)%(p.w-8));ctx.fillStyle='#8a6a40';ctx.fillRect(Math.round(bx),y-13,8,8);ctx.fillStyle='#a8844e';ctx.fillRect(Math.round(bx),y-13,8,1)}
-    /* 溶接の火花（コンベアの端） */
-    const sp=(t*1.7)%1;if(sp<0.45)for(let i=0;i<7;i++){const a=i*1.1+t*7,r=sp*14*(0.5+((i*37)%10)/10);ctx.fillStyle=i%2?'#fff4c0':'#ffb547';ctx.fillRect(Math.round(x+p.w-4+Math.cos(a)*r),Math.round(y-8+Math.sin(a)*r*0.6-sp*4),1,1)}}
-  else if(p.k==='arm'){/* 払い下げの AI アーム（上から見た姿。人の操作で回る） */
-    const a1=-1.6+0.9*Math.sin(t*1.3),a2=1.1+0.7*Math.sin(t*1.3+1.2),jx=x+Math.cos(a1)*14,jy=y-14+Math.sin(a1)*8,hx=jx+Math.cos(a1+a2)*12,hy=jy+Math.sin(a1+a2)*7;
-    ctx.fillStyle='#4a4048';ctx.fillRect(x-5,y-16,10,6);ctx.strokeStyle='#c8c0b0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y-14);ctx.lineTo(jx,jy);ctx.lineTo(hx,hy);ctx.stroke();ctx.lineWidth=1;
-    ctx.fillStyle='#e8a040';ctx.fillRect(Math.round(jx)-1,Math.round(jy)-1,3,3);ctx.fillStyle=Math.floor(t*3)%2?'#3ef2e0':'#1a7a70';ctx.fillRect(Math.round(hx)-1,Math.round(hy)-1,3,3)}}
-/* 頭上の灯り（沈殿街の天井から下がるランプ）と配管 */
-/* 圏外：通りの上を渡る電線（たるませて描く） */
-const CABLES_OUT=[[256,118,384,132],[256,206,384,196],[256,300,384,312],[256,392,384,404],[96,226,256,236],[384,240,560,228],[176,300,272,312],[384,330,520,318]];
-function drawOverhead(t){const m=M();if(area()!=='lower'){ctx.strokeStyle='rgba(20,16,36,.85)';ctx.lineWidth=0.7;
-    for(const [x1,y1,x2,y2] of CABLES_OUT){const ax=x1-camX,ay=y1-camY-26,bx=x2-camX,by=y2-camY-26;if(Math.max(ax,bx)<0||Math.min(ax,bx)>W||Math.max(ay,by)<-20||Math.min(ay,by)>H+20)continue;
-      ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo((ax+bx)/2,(ay+by)/2+10,bx,by);ctx.stroke();ctx.beginPath();ctx.moveTo(ax,ay+3);ctx.quadraticCurveTo((ax+bx)/2,(ay+by)/2+14,bx,by+3);ctx.stroke()}
-    ctx.lineWidth=1;return}
-  ctx.fillStyle='rgba(30,20,34,.55)';for(const py of [7*TS,20*TS]){const y=py-camY;if(y>-8&&y<H+8){ctx.fillRect(0,y,W,3);ctx.fillStyle='rgba(70,50,70,.5)';ctx.fillRect(0,y,W,0.7);ctx.fillStyle='rgba(30,20,34,.55)'}}
-  for(const px of [12*TS,33*TS]){const x=px-camX;if(x>-8&&x<W+8){ctx.fillRect(x,0,3,H)}}
-  for(const p of m.props){if(p.k!=='hang')continue;const x=p.x-camX,y=p.y-camY;if(x<-10||x>W+10||y<-10||y>H+10)continue;ctx.fillStyle='#4a3a48';ctx.fillRect(x-0.5,y-14,1,11);ctx.fillStyle='#3a2a36';ctx.fillRect(x-4,y-4,8,3);ctx.fillStyle='#6a5060';ctx.fillRect(x-4,y-4,8,0.7);ctx.fillStyle='#fff0c8';ctx.fillRect(x-2,y-1,4,1.5)}}
+  else if(p.k==='stool'){ctx.fillStyle='#2a1c1a';ctx.fillRect(x-1,y-6,2,6);ctx.fillStyle='#8a5a3a';ctx.fillRect(x-3,y-8,6,2)}
+  else if(p.k==='desk'){if(minaIn()!=='lower')return;ctx.fillStyle='#4a3424';ctx.fillRect(x-6,y-7,12,7);ctx.fillStyle='#6a4a30';ctx.fillRect(x-6,y-7,12,1);ctx.fillStyle='#d8d0b8';ctx.fillRect(x-5,y-9,5,2);ctx.fillStyle='#3ef2e0';ctx.fillRect(x+1,y-9,4,2);ctx.globalAlpha=0.25;ctx.fillRect(x-1,y-14,8,6);ctx.globalAlpha=1}}
+/* 沈殿街の天井：配管と、下がるランプ */
+function drawCeiling(t){for(const p of ST().props){if(p.k!=='hang')continue;const x=Math.round(p.x-camX);if(x<-20||x>W+20)continue;ctx.fillStyle='#3a2a36';ctx.fillRect(x,-OY,1,p.y+OY);ctx.fillStyle='#4a3644';ctx.fillRect(x-5,p.y,11,4);ctx.fillStyle='#fff0c8';ctx.fillRect(x-3,p.y+4,7,1.5);
+  ctx.fillStyle='rgba(255,200,140,.07)';ctx.beginPath();ctx.moveTo(x-3,p.y+5);ctx.lineTo(x-30,GY);ctx.lineTo(x+31,GY);ctx.lineTo(x+4,p.y+5);ctx.closePath();ctx.fill()}}
 
 /* ===== 炎（粒で描く。芯は白く、外ほど赤く、上で煙になる） ===== */
-function stepFires(dt){for(const f of M().fires){f.acc+=dt*70*f.s;while(f.acc>1){f.acc--;f.parts.push({x:f.x+(Math.random()-0.5)*7*f.s,y:f.y,vx:(Math.random()-0.5)*6,vy:-(16+Math.random()*16)*f.s,l:0,mx:0.45+Math.random()*0.45,s:1.5+Math.random()*1.5*f.s,e:Math.random()<0.05})}
+function stepFires(dt){for(const f of ST().fires){f.acc+=dt*70*f.s;while(f.acc>1){f.acc--;f.parts.push({x:f.x+(Math.random()-0.5)*7*f.s,y:f.y,vx:(Math.random()-0.5)*6,vy:-(16+Math.random()*16)*f.s,l:0,mx:0.45+Math.random()*0.45,s:1.5+Math.random()*1.5*f.s,e:Math.random()<0.05})}
   for(const p of f.parts){p.l+=dt;p.x+=(p.vx+Math.sin(p.l*14+p.y)*6)*dt;p.y+=p.vy*dt;p.vy-=(p.e?2:10)*dt}
   f.parts=f.parts.filter(p=>p.l<(p.e?p.mx*2.6:p.mx*1.6))}}
-function drawFire(f,t){const ox=-camX,oy=-camY;if(f.x+ox<-40||f.x+ox>W+40||f.y+oy<-60||f.y+oy>H+20)return;
-  /* 煙 */
-  for(const p of f.parts){const k=p.l/p.mx;if(p.e||k<1)continue;ctx.fillStyle=`rgba(70,60,72,${0.28*(1.6-k)})`;const s=p.s+1+(k-1)*4;ctx.fillRect(Math.round(p.x+ox-s/2),Math.round(p.y+oy-s/2),s,s)}
+function drawFire(f,t){const ox=-camX;if(f.x+ox<-40||f.x+ox>W+40)return;
+  for(const p of f.parts){const k=p.l/p.mx;if(p.e||k<1)continue;ctx.fillStyle=`rgba(70,60,72,${0.28*(1.6-k)})`;const s=p.s+1+(k-1)*4;ctx.fillRect(Math.round(p.x+ox-s/2),Math.round(p.y-s/2),s,s)}
   ctx.globalCompositeOperation='lighter';
-  for(const p of f.parts){const k=p.l/p.mx;if(p.e){ctx.fillStyle=`rgba(255,${180-k*40},80,${1-k/2.6})`;ctx.fillRect(Math.round(p.x+ox),Math.round(p.y+oy),1,1);continue}if(k>=1)continue;
-    const c=k<0.15?'255,246,200':k<0.35?'255,210,90':k<0.6?'255,140,42':'224,64,26',s=p.s*(1-k*0.6);ctx.fillStyle=`rgba(${c},${0.85-k*0.5})`;ctx.fillRect(Math.round(p.x+ox-s/2),Math.round(p.y+oy-s/2),s,s)}
+  for(const p of f.parts){const k=p.l/p.mx;if(p.e){ctx.fillStyle=`rgba(255,${180-k*40},80,${1-k/2.6})`;ctx.fillRect(Math.round(p.x+ox),Math.round(p.y),1,1);continue}if(k>=1)continue;
+    const c=k<0.15?'255,246,200':k<0.35?'255,210,90':k<0.6?'255,140,42':'224,64,26',s=p.s*(1-k*0.6);ctx.fillStyle=`rgba(${c},${0.85-k*0.5})`;ctx.fillRect(Math.round(p.x+ox-s/2),Math.round(p.y-s/2),s,s)}
   ctx.globalCompositeOperation='source-over'}
 
-/* ===== 描画（圏外・沈殿街） ===== */
-function drawMap(t){const m=M(),lo=area()==='lower';
-  if(lo){ctx.fillStyle='#120c14';ctx.fillRect(0,0,W,H)}
-  else{/* 空と遠くのピラミッド（北の外壁の向こう） */
-    const sy=-camY;ctx.fillStyle='#07060d';ctx.fillRect(0,0,W,H);const sky=ctx.createLinearGradient(0,sy,0,sy+64);sky.addColorStop(0,'#07060d');sky.addColorStop(1,'#2a1a42');ctx.fillStyle=sky;ctx.fillRect(0,sy,W,64);
-    const pc=Math.round(m.w*TS/2-camX-(camX-(m.w*TS-W)/2)*0.25);let py=sy+62;const tops=[];
-    PYR.forEach(tr=>{const w=tr.w*0.55,h=tr.h*0.5;py-=h;tops.push(py);ctx.fillStyle=tr.c;ctx.fillRect(pc-w/2,py,w,h);ctx.fillStyle=tr.e;ctx.fillRect(pc-w/2,py,w,0.5)});
-    for(const w of PYR_WIN){if(w.i>0&&!flick(t*0.3,w.s))continue;const tr=PYR[w.i];ctx.fillStyle=tr.win;ctx.globalAlpha=0.5+0.15*w.i;ctx.fillRect(pc+w.x*0.55,tops[w.i]+w.y*0.5,0.5,0.5)}ctx.globalAlpha=1;
-    ctx.fillStyle='#3a2a60';ctx.fillRect(pc-1,py-8,2,8);if(Math.floor(t*1.2)%2){ctx.fillStyle='#ff9ac8';ctx.fillRect(pc-1,py-9,2,1)}
-    const g=ctx.createRadialGradient(pc,py-4,2,pc,py-4,120);g.addColorStop(0,'rgba(255,200,230,.22)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,sy,W,70)}
-  /* タイル */
-  const i0=Math.max(0,Math.floor(camX/TS)),i1=Math.min(m.w-1,Math.floor((camX+W)/TS)),j0=Math.max(0,Math.floor(camY/TS)),j1=Math.min(m.h-1,Math.floor((camY+H)/TS));
-  for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const c=m.g[j][i];if(c!=='S')drawTile(c,i,j,i*TS-camX,j*TS-camY,t)}
-  for(const n of m.neon)drawNeon(n,t);
-  /* ドクの診療所：屋根の上の大きな十字（遠くからでも見える） */
-  if(!lo){const x=480-camX,y=150-camY,on=flick(t*0.5,99)||true,b=Math.floor(t*0.8)%7===0;ctx.fillStyle='#1a1028';ctx.fillRect(x-9,y-9,18,18);ctx.fillStyle=b?'#8a2a5a':'#ff3d8b';ctx.fillRect(x-2.5,y-7,5,14);ctx.fillRect(x-7,y-2.5,14,5);
-    ctx.fillStyle=b?'#a04070':'#ffc0dc';ctx.fillRect(x-1,y-6,2,12);ctx.fillRect(x-6,y-1,12,2);ctx.fillStyle='#4a3a60';ctx.fillRect(x-8,y+9,1,4);ctx.fillRect(x+7,y+9,1,4)}
-  /* ゲート */
-  {const gx=(lo?20:18)*TS-camX,gy=(lo?0:4)*TS-camY,gh=lo?48:32,col=gateLight==='deny'?'#ff4a5c':gateLight==='ok'?'#3ef2e0':(Math.floor(t*2)%2?'#ffb547':'#7a5520');
-    const lg=ctx.createLinearGradient(0,gy,0,gy+gh);lg.addColorStop(0,'rgba(230,248,255,.8)');lg.addColorStop(1,'rgba(230,248,255,.1)');ctx.fillStyle=lg;ctx.fillRect(gx+2,gy,60,gh);
-    ctx.fillStyle=lo?'#3a3350':'#211d3a';for(let k=0;k<5;k++)ctx.fillRect(gx+4+k*13,gy,3,gh);for(let y=0;y<gh/4;y++){ctx.fillStyle=y%2?'#ffb547':'#1c1932';ctx.fillRect(gx-4,gy+y*4,4,2);ctx.fillRect(gx+64,gy+y*4,4,2)}
-    ctx.fillStyle=lo?(Math.floor(t*2)%2?'#ff4a5c':'#7a2030'):col;ctx.fillRect(gx-3,gy+gh/2-2,2,4);ctx.fillRect(gx+65,gy+gh/2-2,2,4)}
-  /* 人と物を、手前（下）ほど後に描く */
-  const ents=[],mm=docMood();
-  for(const n of npcsHere()){const f=NPC_SPR[n.id];if(!f)continue;ents.push({y:n.y,draw:()=>{
-    if(n.id==='ray'){const jit=mm<2?Math.round(Math.sin(t*9)*1):0;drawAt(RAY,n.x+jit,n.y,true,mm===0?0.5:mm===1?0.7:1)}
-    else drawAt(personSprite(n.id,f()),n.x,n.y,!!FLIP[n.id]);
-    heldLight(n.id,n.x,n.y,t)}})}
-  if(lo)CROWD.forEach(c=>ents.push({y:c.y,draw:()=>{const alpha=c.cy?(mm===0?0.55:mm===1?0.75:1):1,spr=c.spr;drawAt(spr,c.x,c.y,c.d<0,alpha)}}));
-  for(const p of m.props)if(p.k!=='hang')ents.push({y:p.y,draw:()=>drawProp(p,t)});
-  for(const f of m.fires)ents.push({y:f.y+10.5,draw:()=>drawFire(f,t)});
-  ents.push({y:player.y,draw:()=>{const spr=player.moving&&Math.floor(player.step*8)%2?P_B:P_A;drawAt(spr,player.x,player.y,player.dir<0);
-    if(S.light){const hx=player.x+player.fx*5-camX,hy=player.y-7+player.fy*3-camY;ctx.fillStyle='#2a2838';ctx.fillRect(Math.round(hx)-1,Math.round(hy)-1,3,2);ctx.fillStyle='#fff6d8';ctx.fillRect(Math.round(hx+player.fx),Math.round(hy-0.5),1,1)}}});
-  ents.sort((a,b)=>a.y-b.y).forEach(e=>e.draw());
-  drawOverhead(t);
-  lighting(t);
-  if(clarityLv()>=1)motes(t,lo?'rgba(255,200,150,.6)':'rgba(255,220,170,.55)');
-  if(lo){ctx.fillStyle='rgba(170,190,230,.45)';for(let i=0;i<drops.length;i+=4){const d=drops[i];ctx.fillRect(Math.round(d.x*2)/2,Math.round(d.y*2)/2,0.5,1)}}
-  else{ctx.fillStyle='rgba(160,175,255,.38)';for(const d of drops)ctx.fillRect(Math.round(d.x*2)/2,Math.round(d.y*2)/2,0.5,d.l)}}
+/* ===== 人 ===== */
+/* 足もと (x, fy) に合わせて描き、影をつける */
+function drawAt(spr,x,fy,flip,alpha=1){const sx=Math.round(x-camX-spr.lw/2),sy=Math.round(fy-spr.lh);if(sx>W+10||sx<-20)return;
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(sx+1,sy+spr.lh-1,spr.lw-2,2);ctx.globalAlpha=alpha;
+  if(flip){ctx.save();ctx.translate(sx+spr.lw,sy);ctx.scale(-1,1);ctx.drawImage(spr,0,0,spr.lw,spr.lh);ctx.restore()}else ctx.drawImage(spr,sx,sy,spr.lw,spr.lh);ctx.globalAlpha=1}
+/* 人物：知覚で姿は変えない（v0.18） */
+function personSprite(id,base){return base}
 /* 灯りを持っている人（ケンは懐中電灯、ハルはランタン） */
 const NPC_LIGHT={ken:{kind:'torch'},haru:{kind:'lantern'}};
-function heldLight(id,x,y,t){const L=NPC_LIGHT[id];if(!L)return;const sx=Math.round(x-camX),sy=Math.round(y-camY);
-  if(L.kind==='torch'){ctx.fillStyle='#2a2838';ctx.fillRect(sx+3,sy-8,3,2);ctx.fillStyle='#fff6d8';ctx.fillRect(sx+5,sy-8,1,1)}
-  else{ctx.fillStyle='#3a2a1a';ctx.fillRect(sx+4,sy-10,1,2);ctx.fillStyle='#ffcf70';ctx.fillRect(sx+3,sy-8,3,4);ctx.fillStyle='#fff2c0';ctx.fillRect(sx+4,sy-7,1,2)}}
-/* 動く灯り：自分のライト、灯りを持っている人、炎 */
+function heldLight(id,x,fy,flip){const L=NPC_LIGHT[id];if(!L)return;const sx=Math.round(x-camX)+(flip?-5:3),sy=Math.round(fy);
+  if(L.kind==='torch'){ctx.fillStyle='#2a2838';ctx.fillRect(sx,sy-8,3,2);ctx.fillStyle='#fff6d8';ctx.fillRect(sx+(flip?0:2),sy-8,1,1)}
+  else{ctx.fillStyle='#3a2a1a';ctx.fillRect(sx+1,sy-10,1,2);ctx.fillStyle='#ffcf70';ctx.fillRect(sx,sy-8,3,4);ctx.fillStyle='#fff2c0';ctx.fillRect(sx+1,sy-7,1,2)}}
+function drawPeopleAndProps(t){const s=ST(),ents=[],m=docMood();
+  for(const n of npcsHere()){const f=NPC_SPR[n.id];if(!f)continue;const fy=feetY(n),fl=!!FLIP[n.id];ents.push({y:fy,draw:()=>{
+    if(n.id==='ray'){const jit=m<2?Math.round(Math.sin(t*9)*1):0;drawAt(RAY,n.x+jit,fy,true,m===0?0.5:m===1?0.7:1)}else drawAt(personSprite(n.id,f()),n.x,fy,fl);heldLight(n.id,n.x,fy,fl)}})}
+  if(area()==='lower')for(const c of CROWD){const fy=GY+c.z;ents.push({y:fy,draw:()=>drawAt(c.spr,c.x,fy,c.d<0,c.cy?(m===0?0.55:m===1?0.75:1):1)})}
+  for(const p of s.props)if(p.k!=='hang')ents.push({y:GY+(p.z||0),draw:()=>drawProp(p,t)});
+  for(const f of s.fires)ents.push({y:f.y+13.5,draw:()=>drawFire(f,t)});
+  ents.push({y:player.y,draw:()=>{const spr=player.moving&&Math.floor(player.step*8)%2?P_B:P_A;drawAt(spr,player.x,player.y,player.dir<0);
+    if(S.light){const hx=Math.round(player.x-camX+player.dir*5),hy=Math.round(player.y-9);ctx.fillStyle='#2a2838';ctx.fillRect(hx-1,hy,3,2);ctx.fillStyle='#fff6d8';ctx.fillRect(hx+(player.dir>0?1:-1),hy,1,1)}}});
+  ents.sort((a,b)=>a.y-b.y).forEach(e=>e.draw())}
+
+/* ===== 灯りと暗さ ===== */
+/* 動く灯り：自分のライト（向いている左右を照らす）、ケンの懐中電灯、ハルのランタン */
 function liveLights(t){const out=[];
-  for(const n of npcsHere()){const L=NPC_LIGHT[n.id];if(!L)continue;if(L.kind==='torch')out.push({x:n.x+5,y:n.y-8,cone:Math.PI/2+0.7*Math.sin(t*0.6),len:72,sp:0.4,c:'255,246,220'});else out.push({x:n.x+4,y:n.y-6,r:40,c:'255,200,110',a:0.8+0.08*Math.sin(t*7)})}
-  if(S.light)out.push({x:player.x+player.fx*4,y:player.y-7,cone:Math.atan2(player.fy,player.fx),len:118,sp:0.42,c:'255,248,225',me:1});
+  for(const n of npcsHere()){const L=NPC_LIGHT[n.id];if(!L)continue;const fy=feetY(n),fl=!!FLIP[n.id];
+    if(L.kind==='torch')out.push({x:n.x+(fl?-4:5),y:fy-8,cone:(fl?Math.PI-0.35:0.35)+0.25*Math.sin(t*0.7),len:80,sp:0.32,c:'255,246,220'});else out.push({x:n.x+(fl?-4:4),y:fy-6,r:42,c:'255,200,110',a:0.8+0.08*Math.sin(t*7)})}
+  if(S.light)out.push({x:player.x+player.dir*5,y:player.y-9,cone:player.dir>0?0.1:Math.PI-0.1,len:124,sp:0.36,c:'255,248,225'});
   return out}
-/* 夜の暗さ。灯りのまわりだけ明るい */
-function lighting(t){const m=M(),lo=area()==='lower';
-  if(!darkC){darkC=document.createElement('canvas');darkC.width=cv.width;darkC.height=cv.height}const dg=darkC.getContext('2d');dg.setTransform(2,0,0,2,0,0);dg.globalCompositeOperation='source-over';dg.clearRect(0,0,W,H);
-  const north=1-Math.min(1,player.y/(m.h*TS)),dk=lo?m.dark+0.08*(1-north):m.dark-0.12*north;dg.fillStyle=`rgba(${m.tint},${dk})`;dg.fillRect(0,0,W,H);dg.globalCompositeOperation='destination-out';
-  const all=[...m.lights,...liveLights(t)],vis=L=>{const x=L.x-camX,y=L.y-camY,r=L.r||L.len||0;return!(x<-r||x>W+r||y<-r||y>H+r)},onL=L=>!(L.broken&&!flick(t,L.x))&&!(L.neon&&L.neon.broken&&!flick(t,L.neon.s))&&!(L.desk&&minaIn()!=='lower');
-  const amp=L=>L.fire?0.8+0.12*Math.sin(t*9)+0.06*Math.sin(t*23):L.furnace?0.75+0.15*Math.sin(t*3.1):L.cross?(Math.floor(t*0.8)%7===0?0.4:0.85):(L.a||0.8);
-  for(const L of all){if(!vis(L)||!onL(L))continue;const x=L.x-camX,y=L.y-camY;
+function lighting(t){const s=ST(),lo=area()==='lower',prog=camX/Math.max(1,CAMMAX_OF(area()));
+  if(!darkC||darkC.width!==cv.width||darkC.height!==cv.height){darkC=document.createElement('canvas');darkC.width=cv.width;darkC.height=cv.height}
+  const dg=darkC.getContext('2d');dg.setTransform(2,0,0,2,0,0);dg.globalCompositeOperation='source-over';dg.clearRect(0,0,W,H);
+  /* 圏外は右のゲートに近づくほど明るい */
+  const dk=lo?s.dark+0.08*(1-prog):s.dark-0.3*prog;dg.fillStyle=`rgba(${s.tint},${dk})`;dg.fillRect(0,0,W,H);dg.globalCompositeOperation='destination-out';
+  const all=[...s.lights,...liveLights(t)],vis=L=>{const x=L.x-camX,r=L.r||L.len||0;return!(x<-r||x>W+r)},
+    onL=L=>!(L.broken&&!flick(t,L.lampx))&&!(L.neon&&L.neon.broken&&!flick(t,L.neon.s))&&!(L.desk&&minaIn()!=='lower')&&!(L.weld&&(t*1.7)%1>=0.45),
+    amp=L=>L.fire?0.8+0.12*Math.sin(t*9)+0.06*Math.sin(t*23):L.furnace?0.75+0.15*Math.sin(t*3.1):L.cross?(Math.floor(t*0.8)%7===0?0.4:0.85):(L.a||0.8);
+  for(const L of all){if(!vis(L)||!onL(L))continue;const x=L.x-camX,y=L.y+OY;
     if(L.cone!=null){for(const [sp,a] of [[L.sp*1.5,0.45],[L.sp,0.9]]){const g=dg.createRadialGradient(x,y,1,x,y,L.len);g.addColorStop(0,`rgba(0,0,0,${a})`);g.addColorStop(0.6,`rgba(0,0,0,${a*0.7})`);g.addColorStop(1,'rgba(0,0,0,0)');dg.fillStyle=g;dg.beginPath();dg.moveTo(x,y);dg.arc(x,y,L.len,L.cone-sp,L.cone+sp);dg.closePath();dg.fill()}
       const g=dg.createRadialGradient(x,y,0,x,y,14);g.addColorStop(0,'rgba(0,0,0,.6)');g.addColorStop(1,'rgba(0,0,0,0)');dg.fillStyle=g;dg.fillRect(x-14,y-14,28,28);continue}
     const r=L.r*(L.fire?1+0.05*Math.sin(t*11):1),g=dg.createRadialGradient(x,y,1,x,y,r);g.addColorStop(0,`rgba(0,0,0,${amp(L)})`);g.addColorStop(1,'rgba(0,0,0,0)');dg.fillStyle=g;dg.fillRect(x-r,y-r,r*2,r*2)}
   /* 自分のまわりは、ライトがなくても少しだけ見える */
-  {const x=player.x-camX,y=player.y-camY-8,g=dg.createRadialGradient(x,y,1,x,y,30);g.addColorStop(0,'rgba(0,0,0,.5)');g.addColorStop(1,'rgba(0,0,0,0)');dg.fillStyle=g;dg.fillRect(x-30,y-30,60,60)}
+  {const x=player.x-camX,y=player.y-9+OY,g=dg.createRadialGradient(x,y,1,x,y,30);g.addColorStop(0,'rgba(0,0,0,.5)');g.addColorStop(1,'rgba(0,0,0,0)');dg.fillStyle=g;dg.fillRect(x-30,y-30,60,60)}
   ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(darkC,0,0);ctx.restore();
   /* 灯りの色 */
   ctx.globalCompositeOperation='lighter';
-  for(const L of all){if(!vis(L)||!onL(L))continue;const x=L.x-camX,y=L.y-camY;
+  for(const L of all){if(!vis(L)||!onL(L))continue;const x=L.x-camX,y=L.y;
     if(L.cone!=null){const g=ctx.createRadialGradient(x,y,1,x,y,L.len);g.addColorStop(0,`rgba(${L.c},.16)`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(x,y);ctx.arc(x,y,L.len,L.cone-L.sp,L.cone+L.sp);ctx.closePath();ctx.fill();continue}
     const r=L.r*0.85,g=ctx.createRadialGradient(x,y,1,x,y,r);g.addColorStop(0,`rgba(${L.c},${(L.fire?0.26:L.neon?0.16:0.14)*amp(L)})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2)}
-  ctx.globalCompositeOperation='source-over';
-  /* 沈殿街：上の層の床が空を塞いでいる（画面の上ほど暗い） */
-  if(lo){const g=ctx.createLinearGradient(0,0,0,40);g.addColorStop(0,'rgba(10,4,12,.55)');g.addColorStop(1,'rgba(10,4,12,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,40)}}
-/* 見下ろしの人物：足もとを (x,y) に合わせ、影をつける */
-function drawAt(spr,x,y,flip,alpha=1){const sx=Math.round(x-camX-spr.lw/2),sy=Math.round(y-camY-spr.lh);if(sx>W+10||sx<-20||sy>H+10||sy<-30)return;
-  ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(sx+1,sy+spr.lh-1,spr.lw-2,2);ctx.globalAlpha=alpha;
-  if(flip){ctx.save();ctx.translate(sx+spr.lw,sy);ctx.scale(-1,1);ctx.drawImage(spr,0,0,spr.lw,spr.lh);ctx.restore()}else ctx.drawImage(spr,sx,sy,spr.lw,spr.lh);ctx.globalAlpha=1}
-function draw(t){ctx.setTransform(2,0,0,2,0,0);ctx.imageSmoothingEnabled=false;
-  drawMap(t);
+  ctx.globalCompositeOperation='source-over'}
+
+/* ===== 描画 ===== */
+function draw(t){OY=H-180;ctx.setTransform(2,0,0,2,0,2*OY);ctx.imageSmoothingEnabled=false;
+  if(area()==='lower')drawLowerBG(t);else drawOutBG(t);
+  drawPeopleAndProps(t);
+  if(area()==='lower')drawCeiling(t);
+  lighting(t);
+  /* 雨・しずく・光の粒は画面に対して描く */
+  ctx.setTransform(2,0,0,2,0,0);
+  if(area()==='lower'){ctx.fillStyle='rgba(170,190,230,.45)';for(let i=0;i<drops.length;i+=4){const d=drops[i];ctx.fillRect(Math.round(d.x*2)/2,Math.round(d.y*2)/2,0.5,1)}if(clarityLv()>=1)motes(t,'rgba(255,200,150,.6)')}
+  else{ctx.fillStyle='rgba(160,175,255,.38)';for(const d of drops)ctx.fillRect(Math.round(d.x*2)/2,Math.round(d.y*2)/2,0.5,d.l);if(clarityLv()>=1)motes(t,'rgba(255,220,170,.55)')}
   perceive(t);
   /* 話しかけられる印 */
-  const n=near();if(n&&mode==='play'){const sx=Math.round(n.x-camX),bob=Math.round(Math.sin(t*5)*1.5),y=markTop(n)+bob;
+  ctx.setTransform(2,0,0,2,0,2*OY);
+  const n=near();if(n&&mode==='play'){const sx=Math.round(n.x-camX),bob=Math.round(Math.sin(t*5)*1.5),y=markY(n)+bob;
     ctx.fillStyle='#3ef2e0';ctx.fillRect(sx-3,y,7,1);ctx.fillRect(sx-2,y+1,5,1);ctx.fillRect(sx-1,y+2,3,1);ctx.fillRect(sx,y+3,1,1)}
   tagsUp()}
-const markTop=n=>n.id==='gate'?n.y-camY-26:n.id==='lift'?n.y-camY-30:n.y-camY-((NPC_SPR[n.id]?NPC_SPR[n.id]().lh:16)+6);
+const markY=n=>n.id==='gate'?84:n.id==='lift'?GY-52:feetY(n)-((NPC_SPR[n.id]?NPC_SPR[n.id]().lh:16)+6);
 function motes(t,col){ctx.fillStyle=col;for(let i=0;i<14;i++){const x=((i*73+t*6*(1+i%3))%(W+20))-10,y=60+((i*37+Math.sin(t*0.7+i)*12)%70);ctx.fillRect(Math.round(x),Math.round(y),1,1)}}
-/* 人物：知覚に合わせて、本来の姿か汎用の人型かを描き分ける */
-function personSprite(id,base){return base}
 /* 見え方のフィルター：機械化しても画面の見え方は変えない（見づらいため v0.18 でやめた）。生身の澄みだけ、色を少し深める */
 function perceive(t){if(clarityLv()<1)return;const W=cv.width,H=cv.height,img=ctx.getImageData(0,0,W,H),d=img.data;
   for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2],l=r*0.3+g*0.59+b*0.11;d[i]=l+(r-l)*1.14;d[i+1]=l+(g-l)*1.14;d[i+2]=l+(b-l)*1.14}
@@ -722,13 +810,13 @@ function perceive(t){if(clarityLv()<1)return;const W=cv.width,H=cv.height,img=ct
 let tagsHTML='';
 function tagsUp(){const m=docMood(),el=$('#tags');let h='';
   if(m>=2&&(mode==='play'||mode==='dialog')){const list=[];
-    for(const n of npcsHere()){const f=NPC_SPR[n.id];if(f&&PEOPLE[n.id])list.push({id:n.id,sx:n.x-camX,y:n.y-camY-f().lh-3})}
+    for(const n of npcsHere()){const f=NPC_SPR[n.id];if(f&&PEOPLE[n.id])list.push({id:n.id,sx:n.x-camX,y:feetY(n)-f().lh-3+OY})}
     const tags=[],ids={};let n=0;const tgt=k=>ids[k]=ids[k]||('対象'+String.fromCharCode(65+(n++)%26));
     for(const p of list){const sx=p.sx;if(sx<-10||sx>W+10||p.y<-6||p.y>H)continue;const P=PEOPLE[p.id];let tx;
       if(P.model)tx=P.model;else if(m>=4)tx=tgt(p.id);else tx=m>=3?`${P.sex==='f'?'女性':'男性'}・${P.age}`:`${P.nm} ／ ${P.sex==='f'?'女性':'男性'}・${P.age}`;
       tags.push({sx,y:p.y,tx,cls:''})}
     /* 話せない住人にも、識別したふうのタグ（番号・性別・年代は自動で決める） */
-    if(area()==='lower')CROWD.forEach((c,i)=>{const sx=c.x-camX,sy=c.y-camY-c.spr.lh-3;if(sx<-10||sx>W+10||sy<-6||sy>H)return;let tx;
+    if(area()==='lower')CROWD.forEach((c,i)=>{const sx=c.x-camX,sy=GY+c.z-c.spr.lh-3+OY;if(sx<-10||sx>W+10||sy<-6||sy>H)return;let tx;
       if(c.cy)tx=`義体 ／ ${['KX','RV','TN','MK'][i%4]}-${String(100+i*37%900)}`;
       else{const g=`${c.sex==='f'?'女性':'男性'}・${['20代','30代','40代','50代','60代'][(i*3)%5]}`;tx=m>=4?tgt('c'+i):m>=3?g:`#${String(1000+(i*2711)%9000)} ${g}`}
       tags.push({sx,y:sy,tx,cls:'sub'})});
@@ -740,20 +828,23 @@ function tagsUp(){const m=docMood(),el=$('#tags');let h='';
 /* 澄み：生身のまま層を進み、本人の実力が伸びるほど上がる（0〜3） */
 function clarityLv(){const f=flesh();if(f<40)return 0;const o=overall(S.cur),b=overall(S.base),grow=o&&b?o.avg-b.avg:0;
   const v=Math.min(3,(S.reached||['out']).length-1+(grow>=5?1:0));return f>=70?v:Math.min(1,v)}
-function near(){let best=null,bd=24;for(const n of npcsHere()){const d=Math.hypot(n.x-player.x,(n.y-player.y)*1.3);if(d<bd){bd=d;best=n}}return best}
+function near(){let best=null,bd=22;for(const n of npcsHere()){const d=Math.abs(n.x-player.x);if(d<bd){bd=d;best=n}}return best}
 
 let mode='title',last=0,titlePan=0,stepIdx=0,lastBright=-1;
+/* プレイヤーの動き：横の速度 vx を入力に近づけ、縦は重力で落ちて地面（groundAt）に立つ。ジャンプはまだない（vy に上向きの速さを入れれば跳べる） */
+function stepPlayer(dt,st){const dx=(keys.r?1:0)-(keys.l?1:0),rn=running(),target=dx*(rn?PHYS.run:PHYS.walk);
+  if(dx)player.dir=dx;const dv=PHYS.accel*dt;player.vx=player.vx<target?Math.min(target,player.vx+dv):Math.max(target,player.vx-dv);
+  player.x=clamp(player.x+player.vx*dt,12,st.len-12);if(player.x<=12||player.x>=st.len-12)player.vx=0;
+  player.vy=Math.min(PHYS.maxFall,player.vy+PHYS.grav*dt);player.y+=player.vy*dt;const g=groundAt(player.x);
+  if(player.y>=g){player.y=g;player.vy=0;player.onGround=true}else player.onGround=false;
+  player.moving=Math.abs(player.vx)>1;if(player.moving){player.step+=dt*(rn?1.7:1);const si=Math.floor(player.step*2.5);if(si!==stepIdx){stepIdx=si;sfx('step')}}}
 function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
-  if(mode==='play'){const m=M();let dx=(keys.r?1:0)-(keys.l?1:0),dy=(keys.d?1:0)-(keys.u?1:0);player.moving=!!(dx||dy);
-    if(player.moving){if(dx)player.dir=dx;const l=Math.hypot(dx,dy);player.fx=dx/l;player.fy=dy/l;const rn=running(),sp=(rn?140:62)*dt/(dx&&dy?Math.SQRT2:1);
-      if(!blocked(player.x+dx*sp,player.y))player.x+=dx*sp;if(!blocked(player.x,player.y+dy*sp))player.y+=dy*sp;
-      player.step+=dt*(rn?1.7:1);const si=Math.floor(player.step*2.5);if(si!==stepIdx){stepIdx=si;sfx('step')}}
-    camX=clamp(Math.round(player.x-W/2),0,m.w*TS-W);camY=clamp(Math.round(player.y-H/2-8),0,m.h*TS-H);
-    /* ゲート（北）に近いほど BGM が明るい */
-    const nb=1-Math.min(1,player.y/(m.h*TS)),br=Math.round((area()==='lower'?0.4+0.4*nb:0.5*nb)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
-  else if(mode==='title'){titlePan+=dt*14;const tp=Math.sin(titlePan/120)*0.5+0.5,m=M();camX=Math.round(tp*(m.w*TS-W));camY=Math.round(tp*TS*3)}
-  if(mode!=='panel'){stepFires(dt);if(area()==='lower')for(const c of CROWD){if(!c.b)continue;const len=Math.hypot(c.b[0]-c.a[0],c.b[1]-c.a[1]);c.k+=c.kd*c.sp*dt/len;if(c.k>1){c.k=1;c.kd=-1}else if(c.k<0){c.k=0;c.kd=1}
-    c.x=c.a[0]+(c.b[0]-c.a[0])*c.k;c.y=c.a[1]+(c.b[1]-c.a[1])*c.k;c.d=(c.b[0]-c.a[0])*c.kd<0?-1:1}}
+  if(mode==='play'){const st=ST(),cm=CAMMAX_OF(area());stepPlayer(dt,st);
+    camX=clamp(Math.round(player.x-W*0.42),0,cm);
+    /* 右（ゲート）へ進むほど BGM が明るい */
+    const pr=camX/Math.max(1,cm),br=Math.round((area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
+  else if(mode==='title'){titlePan+=dt*14;camX=Math.round((Math.sin(titlePan/120)*0.5+0.5)*CAMMAX_OF(area())*0.6)}
+  if(mode!=='panel'){stepFires(dt);if(area()==='lower')for(const c of CROWD){if(!c.sp)continue;c.x+=c.d*c.sp*dt;if(c.x>c.x1){c.x=c.x1;c.d=-1}else if(c.x<c.x0){c.x=c.x0;c.d=1}}}
   for(const d of drops){d.y+=d.v*dt;d.x-=d.v*dt*0.22;if(d.y>H){d.y=-4;d.x=Math.random()*(W+40)}if(d.x<0)d.x+=W}
   if(gateLight!=='idle'&&ts>gateLightUntil)gateLight='idle';
   if(mode!=='panel')draw(t);
@@ -938,7 +1029,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
-  <p class="muted">試作版 v0.18 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
+  <p class="muted">試作版 v0.19 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -949,9 +1040,9 @@ function minaJoin(){S.st={...S.st,join:1};save();
     L('mina','基準なら、とっくに越えてたよ。圏外で仕事をこなしながら、ずっと鍛えてたから。'),
     L('mina','でも……一人でくぐる勇気が、なかった。あの向こうに、置いてきたものがあるから。'),
     L('mina','あんたが通るのを見て、決めた。……一緒に行かせて。')],()=>travel('lower','gate'))}
-function travel(to,via){if(!AREAS[to])return;mode='fade';$('#fade').classList.add('on');keys.l=keys.r=keys.u=keys.d=false;
+function travel(to,via){if(!AREAS[to])return;mode='fade';$('#fade').classList.add('on');keys.l=keys.r=false;
   setTimeout(()=>{S.area=to;if(!S.reached.includes(to))S.reached=[...S.reached,to];
-    const m=MAPS[to],at=via==='lift'?m.lift:(m.gateIn||m.start);player.x=at.x;player.y=at.y;player.dir=1;player.fx=0;player.fy=via==='lift'?1:-1;keys.u=keys.d=false;savePos();
+    const st=STAGES[to];player.x=via==='lift'?st.lift:(st.gateIn||st.start);player.y=groundAt(player.x);player.vx=player.vy=0;player.dir=1;camX=clamp(Math.round(player.x-W*0.42),0,CAMMAX_OF(to));savePos();
     /* ライト：沈殿街は明るいのでしまい、圏外ではつける */
     const lt=to==='lower'&&S.light?'ライトは持ち物にしまった（「持ち物」か F キーで、いつでもつけられる）':to==='out'&&!S.light?'暗いので、ライトをつけた':'';if(lt)S.light=to==='out';
     save();hud();sndApply();
@@ -1484,16 +1575,15 @@ function runLock(d){const P=jp('lock',d);let tum=0,locks=0,total=0,ans=0,end=per
 const inField=e=>/INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
 addEventListener('keydown',e=>{if(e.key==='Shift')keys.run=true;if(inField(e))return;const k=e.key;
   if(mode==='play'){if(k==='ArrowLeft'||k==='a'||k==='A'){keys.l=true;e.preventDefault()}else if(k==='ArrowRight'||k==='d'||k==='D'){keys.r=true;e.preventDefault()}
-    else if(k==='ArrowUp'||k==='w'||k==='W'){keys.u=true;e.preventDefault()}else if(k==='ArrowDown'||k==='s'||k==='S'){keys.d=true;e.preventDefault()}
     else if((k==='f'||k==='F')&&!e.repeat){setLight(!S.light)}
     else if(k===' '||k==='Enter'||k==='z'||k==='Z'){if(e.target.tagName==='BUTTON'&&e.target.id!=='kA')return;e.preventDefault();if(!e.repeat)interact()}}
   else if(mode==='dialog'){if(k==='ArrowLeft'||k==='ArrowUp'){e.preventDefault();moveSel(-1)}else if(k==='ArrowRight'||k==='ArrowDown'){e.preventDefault();moveSel(1)}
     else if(k===' '||k==='Enter'||k==='z'||k==='Z'){e.preventDefault();if(e.repeat)return;if(D&&!D.typing&&D.lines[D.i].choices)pick(D.sel);else advance()}}
   else if(mode==='title'&&(k==='Enter'||k===' ')&&e.target.tagName!=='BUTTON'){e.preventDefault();startGame()}});
-addEventListener('keyup',e=>{const k=e.key;if(k==='Shift')keys.run=false;if(k==='ArrowLeft'||k==='a'||k==='A')keys.l=false;if(k==='ArrowRight'||k==='d'||k==='D')keys.r=false;if(k==='ArrowUp'||k==='w'||k==='W')keys.u=false;if(k==='ArrowDown'||k==='s'||k==='S')keys.d=false});
-addEventListener('blur',()=>{keys.l=keys.r=keys.u=keys.d=keys.run=false});
+addEventListener('keyup',e=>{const k=e.key;if(k==='Shift')keys.run=false;if(k==='ArrowLeft'||k==='a'||k==='A')keys.l=false;if(k==='ArrowRight'||k==='d'||k==='D')keys.r=false});
+addEventListener('blur',()=>{keys.l=keys.r=keys.run=false});
 function hold(el,key){const on=e=>{e.preventDefault();keys[key]=true},off=()=>keys[key]=false;el.addEventListener('pointerdown',on);['pointerup','pointerleave','pointercancel'].forEach(t=>el.addEventListener(t,off));el.addEventListener('contextmenu',e=>e.preventDefault())}
-hold($('#kL'),'l');hold($('#kR'),'r');hold($('#kU'),'u');hold($('#kD'),'d');
+hold($('#kL'),'l');hold($('#kR'),'r');
 $('#kRun').addEventListener('click',e=>{keys.runT=!keys.runT;e.currentTarget.setAttribute('aria-pressed',keys.runT)});
 $('#kA').addEventListener('click',()=>{if(mode==='play')interact();else if(mode==='dialog'){if(D&&!D.typing&&D.lines[D.i].choices)pick(D.sel);else advance()}});
 cv.addEventListener('pointerdown',()=>{if(mode==='dialog')advance()});
@@ -1503,10 +1593,15 @@ function titleButtons(){const has=S.started;$('#titleBtns').innerHTML=(has?'<but
   const c=$('#cont');if(c)c.onclick=startGame;$('#newg').onclick=()=>{if(has){S={...fresh(),snd:S.snd};save();hud()}startGame()};($('#cont')||$('#newg')).focus({preventScroll:true})}
 function startGame(){sndStart();if(!SND)toast('音のファイル（sound.js）を読み込めなかったため、音なしで動いています',6000);document.activeElement&&document.activeElement.blur();$('#title').hidden=true;mode='play';placePlayer();
   if(!S.started){S.started=true;save();talk([L('me','……東京の光が、今夜もあんなに遠い。'),L('me','あの光の中に入るには、脳のスペックがいる。'),L('me','まずは、誰かに話を聞こう。')])}}
-/* 層ごとの位置（S.pos）。v0.13 の圏外の位置（S.ox・S.oy）も読む */
-function placePlayer(){const a=area(),m=MAPS[a];let p=(S.pos||{})[a];if(!p&&a==='out'&&S.oy!=null)p={x:S.ox,y:S.oy};
-  const ok=p&&!blocked(p.x,p.y);player.x=ok?p.x:m.start.x;player.y=ok?p.y:m.start.y;if(S.light==null)S.light=a==='out'}
-function savePos(){S.pos={...(S.pos||{}),[area()]:{x:Math.round(player.x),y:Math.round(player.y)}}}
+/* 層ごとの位置（S.pos[層].sx＝横の位置）。v0.13〜v0.18 の見下ろしの位置（{x,y}、北がゲート）は、ゲートまでの近さで横の位置に置き換える */
+const TOP_H=480;
+function placePlayer(){const a=area(),st=STAGES[a];let p=(S.pos||{})[a],x=null;
+  if(p&&typeof p.sx==='number')x=p.sx;
+  else if(p&&typeof p.y==='number')x=Math.round((1-clamp(p.y/TOP_H,0,1))*(st.len-60))+20;
+  else if(a==='out'&&typeof S.oy==='number')x=Math.round((1-clamp(S.oy/TOP_H,0,1))*(st.len-60))+20;
+  if(x==null||!isFinite(x))x=st.start;player.x=clamp(x,12,st.len-12);player.y=groundAt(player.x);player.vx=player.vy=0;
+  camX=clamp(Math.round(player.x-W*0.42),0,CAMMAX_OF(a));if(S.light==null)S.light=a==='out'}
+function savePos(){S.pos={...(S.pos||{}),[area()]:{sx:Math.round(player.x)}}}
 setInterval(()=>{if(mode!=='title'){savePos();save()}},3000);
 /* ===== 持ち物（ライト） ===== */
 function setLight(on,quiet){S.light=!!on;save();sfx('ui');if(!quiet)toast(on?'ライトをつけた':'ライトを消した',2400);if($('#lt'))$('#lt').textContent=S.light?'消す':'つける'}
@@ -1517,9 +1612,9 @@ function itemsPanel(){openPanel(`<div class="eyebrow">ITEMS · 持ち物</div><h
   <div class="prow"><button class="nbtn" id="lt" type="button">${S.light?'消す':'つける'}</button><button class="nbtn ghost" id="cl" type="button">閉じる</button></div>`);
   $('#lt').onclick=()=>{setLight(!S.light,true);$('#ltNow').textContent=S.light?'ついている':'しまってある'};$('#cl').onclick=()=>closePanel();$('#lt').focus()}
 
-/* 画面の大きさ：スマホの縦向きでは、カメラを寄せて（見える範囲を狭くして）縦に長くする */
+/* 画面の大きさ：スマホの縦向きでは、カメラを寄せて（見える範囲を横 176 に狭くして）人物を大きく映す。縦は少しだけ広げる（横スクロールなので、上に広げても空と天井しか映らない） */
 function fitView(){const fr=$('#frame');if(fr.classList.contains('is-panel'))return;const phone=innerWidth<=600&&innerHeight>innerWidth;let w=320,h=180;
-  if(phone){w=200;const fw=fr.clientWidth||innerWidth-32,others=$('.wrap').offsetHeight-fr.offsetHeight,avail=innerHeight-others-40;h=clamp(Math.round(w*avail/fw),150,330)}
+  if(phone){w=176;const fw=fr.clientWidth||innerWidth-32,others=$('.wrap').offsetHeight-fr.offsetHeight,avail=innerHeight-others-40;h=clamp(Math.round(w*avail/fw),150,212)}
   if(w===W&&h===H)return;W=w;H=h;cv.width=W*2;cv.height=H*2;fr.style.setProperty('--ar',`${W}/${H}`);darkC=null;ctx.imageSmoothingEnabled=false}
 addEventListener('resize',fitView);
 function start(data){if(data&&data.S)S=Object.assign(fresh(),data.S);placePlayer();hud();titleButtons();fitView();requestAnimationFrame(loop)}
