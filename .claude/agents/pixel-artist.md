@@ -1,4 +1,3 @@
-[pixel-artist.md](https://github.com/user-attachments/files/33679238/pixel-artist.md)
 ---
 name: pixel-artist
 description: ドット絵係。NEON GATE の人物スプライト、背景、建物、小物、敵、エフェクトを描く・直すときに使う。今の絵柄と色合いに合わせ、描いたら画面で確かめる。

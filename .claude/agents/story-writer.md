@@ -1,4 +1,3 @@
-[story-writer.md](https://github.com/user-attachments/files/33679166/story-writer.md)
 ---
 name: story-writer
 description: 物語係。NEON GATE の住人のセリフ、会話、本音、手配書への反応、目的画面のあらすじ、エンディングの文章を書く・直すときに使う。STORY.md の設定を守って、キャラクターごとの口調で書く。
