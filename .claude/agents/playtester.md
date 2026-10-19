@@ -1,4 +1,3 @@
-[playtester.md](https://github.com/user-attachments/files/33679217/playtester.md)
 ---
 name: playtester
 description: テスト係。NEON GATE を実際にブラウザで遊んで確かめる。変更のあと、プルリクエストを作る前、表示崩れや不具合の確認、スマホでの見え方の確認に使う。コードは直さず、見つけたことを報告する。
