@@ -543,7 +543,8 @@ const PEOPLE={haru:{nm:'ハル',sex:'f',age:'60代'},ken:{nm:'ケン',sex:'m',ag
 let camX=0,player={x:30,y:GY,vx:0,vy:0,onGround:true,dir:1,step:0,moving:false},keys={l:false,r:false,run:false,runT:false};
 /* 動きの数値（アクションを足すときはここを使う）：歩く・走る速さ、加速、重力 */
 const PHYS={walk:62,run:140,accel:900,grav:640,maxFall:420,jump:236};
-const running=()=>keys.run||keys.runT;
+/* スマホの天穹区は「走る」ボタンを出さないので、戦いの外では自動で走る */
+const running=()=>keys.run||keys.runT||(area()==='sky'&&!F.zone&&innerWidth<=600);
 let gateLight='idle',gateLightUntil=0;
 
 /* ===== 横スクロールの街（圏外・沈殿街）。左右に歩く。アクションを足すための土台つき ===== */
@@ -1157,7 +1158,7 @@ const actArea=()=>ACT_AREAS.includes(area());
 const armed=()=>area()==='sky'&&!!(S.st&&S.st.weapon);
 /* インプラントが戦いの力になる：CPU＝回避が速い、RAM＝攻撃の予兆が見える、GPU＝弱点が光る、ALU＝照準の補正。生身のままだと、どれも使えない */
 function cbt(){const c=impLv('reflex'),r=impLv('buffer'),g=impLv('optic'),a=impLv('copro'),d=diffNow();
-  return{hp:{easy:8,normal:6,hard:5}[d],dmg:{easy:0.7,normal:1,hard:1.4}[d],foeHp:{easy:0.75,normal:1,hard:1.3}[d],
+  return{hp:{easy:8,normal:6,hard:5}[d],dmg:{easy:0.7,normal:1,hard:1.6}[d],foeHp:{easy:0.8,normal:1.15,hard:1.45}[d],
     dodgeCD:1.5-0.3*c,dodgeInv:0.26+0.1*c,dodgeSp:200+30*c,tell:r,windup:0.42+0.14*r,weak:g,weakR:2+g,assist:a*70}}
 const AMMO_MAX=24;
 let T=0;/* 今の時刻（秒）。loop で更新 */
@@ -1255,7 +1256,7 @@ function stepAllies(dt){if(area()!=='sky')return;const m=ALLY.mina,so=ALLY.sou,c
   const mv=(a,tx,sp)=>{const d=tx-a.x,st=clamp(d,-sp*dt,sp*dt);a.x+=st;a.mv=Math.abs(d)>3;if(a.mv){a.step+=dt;a.flip=d<0}else if(near)a.flip=near.x<a.x;else a.flip=player.x<a.x};
   if(S.st.tenkyu){mv(m,player.x-30*side,Math.abs(player.x-30*side-m.x)>60?160:110);
     if(F.zone&&mode==='play'){F.heal-=dt;F.amCD-=dt;F.minaCD-=dt;
-      if(F.hp<=Math.ceil(c.hp/2)&&F.heal<=0){F.hp=Math.min(c.hp,F.hp+2);F.heal=16;sfx('heal');F.fx.push({k:'txt',x:m.x,y:GY-26,t:T,s:'手当て！',c:'#7dffb0'},{k:'heal',x:player.x,y:player.y,t:T})}
+      if(F.hp<=Math.ceil(c.hp/2)&&F.heal<=0){F.hp=Math.min(c.hp,F.hp+2);F.heal=c.tell||c.weak||c.assist?16:22;sfx('heal');F.fx.push({k:'txt',x:m.x,y:GY-26,t:T,s:'手当て！',c:'#7dffb0'},{k:'heal',x:player.x,y:player.y,t:T})}
       if(F.ammo<=4&&F.amCD<=0){F.ammo=AMMO_MAX;F.amCD=6;sfx('ammo');F.fx.push({k:'txt',x:m.x,y:GY-26,t:T,s:'弾！',c:'#ffd34a'})}
       if(near&&F.minaCD<=0&&Math.abs(near.x-m.x)<200){const a=Math.atan2(near.y-FOE[near.k].h/2-(GY-9),near.x-m.x);F.shots.push({x:m.x,y:GY-9,vx:Math.cos(a)*220,vy:Math.sin(a)*220,life:1.2,by:'mina',dmg:1});F.minaCD=2.4;sfx('shot2')}}}
   if(S.st.sou){if(near&&F.zone){const tx=near.x-18*Math.sign(near.x-so.x||1);mv(so,FOE[near.k].fly?player.x+20*side:tx,120);F.souCD-=dt;
@@ -1293,9 +1294,9 @@ function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
 function drawFightHud(t){if(!armed())return;ctx.setTransform(2,0,0,2,0,0);const c=cbt();
   for(let i=0;i<c.hp;i++){const x=6+i*8,y=6,on=i<F.hp;ctx.fillStyle=on?'#ff3d6b':'rgba(255,255,255,.18)';ctx.fillRect(x,y,2,2);ctx.fillRect(x+3,y,2,2);ctx.fillRect(x-1,y+1,7,2);ctx.fillRect(x,y+3,5,1);ctx.fillRect(x+1,y+4,3,1);ctx.fillRect(x+2,y+5,1,1)}
   ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(5,15,50,4);ctx.fillStyle=F.ammo<=4?'#ffb547':'#3ef2e0';ctx.fillRect(6,16,Math.round(48*F.ammo/AMMO_MAX),2);
-  ctx.font='7px "M PLUS 1 Code",monospace';ctx.fillStyle='#c8d4e8';ctx.fillText(`弾 ${F.ammo}`,58,20);
+  ctx.font='7px "M PLUS 1 Code",monospace';ctx.fillStyle='rgba(10,12,30,.75)';ctx.fillText(`弾 ${F.ammo}`,59,21);ctx.fillStyle='#e8f0ff';ctx.fillText(`弾 ${F.ammo}`,58,20);
   if(T<F.dodgeCD){ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(6,22,Math.round(30*(1-(F.dodgeCD-T)/c.dodgeCD)),1)}
-  const b=F.foes.find(f=>FOE[f.k].boss);if(b){const w=Math.min(140,W-40),x=Math.round((W-w)/2);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(x-1,8,w+2,5);ctx.fillStyle='#ff4a5c';ctx.fillRect(x,9,Math.round(w*b.hp/b.max),3);ctx.fillStyle='#ffd0d6';ctx.textAlign='center';ctx.fillText('番人',W/2,22);ctx.textAlign='start'}
+  const b=F.foes.find(f=>FOE[f.k].boss);if(b){const w=Math.min(120,Math.round(W*0.42)),x=W-w-6;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(x-1,7,w+2,5);ctx.fillStyle='#ff4a5c';ctx.fillRect(x,8,Math.round(w*b.hp/b.max),3);ctx.textAlign='right';ctx.fillStyle='rgba(10,12,30,.7)';ctx.fillText('番人',W-5,22);ctx.fillStyle='#ffd0d6';ctx.fillText('番人',W-6,21);ctx.textAlign='start'}
   if(T<F.flash){ctx.fillStyle='rgba(255,40,70,.25)';ctx.fillRect(0,0,W,H)}}
 /* ===== 終章：中央区（STORY.md の 1〜8）。セリフは END_TEXT ===== */
 /* 出てくる人：ソウ、ミナ、広間のサイボーグ（動かない）、上から降りてくるサイボーグ部隊。足もとの y からの浮き dy と、向かう先 goal を持つ */
@@ -1334,7 +1335,7 @@ async function endingSeq(){const ai=STAGES.top.ai;topReset();mode='cut';endWalk=
   await sayP(END_TEXT.d);mode='cut';await waitP(600);
   $('#fade').classList.add('on');await waitP(1200);endWalk=false;endPanel();$('#fade').classList.remove('on')}
 /* 7：手配書が3枚。BGMを止め、一枚ずつ赤いバツを書く音だけを鳴らす。8：END */
-function endPanel(){S.st={...S.st,top:1,end:1};S.area='sky';S.pos={...(S.pos||{}),sky:{sx:1840}};save();try{SND&&SND.stop()}catch(e){}
+function endPanel(){S.st={...S.st,top:1,end:1};S.area='sky';player.x=1840;S.pos={...(S.pos||{}),sky:{sx:1840}};save();try{SND&&SND.stop()}catch(e){}
   openPanel(`<div class="endwrap"><canvas class="endcv" id="ecv" width="${3*120}" height="${170}" role="img" aria-label="指名手配書が3枚。リク、ミナ、ソウ"></canvas>
   <p class="end-t" id="endT" hidden>END</p><div id="endB" hidden><p class="muted c">${esc(endNote())}</p><div class="prow" style="justify-content:center"><button class="nbtn" id="toT" type="button">タイトルへ</button></div></div></div>`);
   const g=$('#ecv').getContext('2d');g.imageSmoothingEnabled=false;const P=[['riku','リク'],['mina','ミナ'],['sou','ソウ']];
@@ -1343,9 +1344,9 @@ function endPanel(){S.st={...S.st,top:1,end:1};S.area='sky';S.pos={...(S.pos||{}
   P.forEach((_,i)=>[0,1].forEach(k=>X.push({i,k})));
   const t0=performance.now()+1400,SEG=520;let done=0;
   const strokes=()=>{if(!$('#ecv'))return;const now=performance.now();base();g.strokeStyle='#e8102a';g.lineWidth=7;g.lineCap='round';
-    X.forEach((s,j)=>{const st=t0+j*SEG*(j%2?0.75:1.35);const p=clamp((now-st)/SEG*1.4,0,1);if(p<=0)return;if(j>=done){done=j+1;sfx('xmark')}
+    X.forEach((s,j)=>{const st=t0+j*SEG+(j>>1)*SEG*0.8;const p=clamp((now-st)/SEG*1.4,0,1);if(p<=0)return;if(!s.snd){s.snd=1;done++;sfx('xmark')}
       const x0=20+s.i*120,y0=20,x1=x0+80,y1=y0+104,[ax,ay,bx,by]=s.k?[x1-4,y0+6,x0+4,y1-6]:[x0+4,y0+6,x1-4,y1-6];g.beginPath();g.moveTo(ax,ay);g.lineTo(ax+(bx-ax)*p,ay+(by-ay)*p);g.stroke()});
-    if(done>=X.length&&now>t0+X.length*SEG*1.1+600){$('#endT').hidden=false;$('#endB').hidden=false;$('#toT').focus();return}
+    if(done>=X.length&&now>t0+X.length*SEG*1.4+900){$('#endT').hidden=false;$('#endB').hidden=false;$('#toT').focus();return}
     requestAnimationFrame(strokes)};
   requestAnimationFrame(strokes);
   $('#toT').onclick=()=>{closePanel();resetFight(true);$('#title').hidden=false;mode='title';placePlayer();titleButtons();hud()}}
@@ -1397,7 +1398,7 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;T=
   if(area()==='top'&&mode!=='panel')stepTop(dt);
   if(mode==='play'){const st=ST(),cm=CAMMAX_OF(area());stepPlayer(dt,st);
     /* 主人公の位置を先に丸めて、カメラと描く位置をそろえる（ぶれ防止） */
-    camX=clamp(Math.round(player.x)-Math.round(W*0.42),0,cm);
+    camX=clamp(Math.round(player.x)-Math.round(W*(F.zone&&F.zone.boss?0.22:0.42)),0,cm);
     /* 右（ゲート）へ進むほど BGM が明るい */
     const pr=camX/Math.max(1,cm),br=Math.round((area()==='sky'?0.75+0.25*pr:area()==='top'?1:area()==='corp'?0.6+0.3*pr:area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='cut'){const fx=camT?camT.x:player.x,tx=clamp(Math.round(fx)-Math.round(W*(camT?0.5:0.42)),0,CAMMAX_OF(area()));camX=Math.round(camX+(tx-camX)*Math.min(1,dt*3))}
@@ -1448,7 +1449,7 @@ const L=(who,text,choices)=>({who,text,choices});
 const LH=(who,text,se)=>({who,text,honne:1,se});
 /* 裏コマンド：同じ相手に HONNE_N 回（6回）続けて話しかけると、本音を聞ける */
 let streakId=null,streak=0;
-function interact(){const n=near();if(!n)return;
+function interact(){const n=near();if(!n)return;if(F.zone&&area()==='sky')return toast('戦いの最中だ！',1600);
   if(n.id==='poster')return talkPoster();
   if(n.id==='news')return talkNews();
   /* 手配書を見たあと：住人それぞれの、ソウへの思い（一人一回） */
@@ -1965,6 +1966,7 @@ function goalNow(){const o=overall(S.cur),st=S.st||{};
   if(!st.weapon)return{k:'ray2',t:'企業区の奥にいる RAY に会う',h:'配送で上がってきている。正規クリニックの先。'};
   if(!st.tenkyu){const cur=effective(),req=gateReq('corp');return{k:'end',t:`実効スペックを ${req} 以上にして、天穹区ゲートを通る（今 ${cur}）`,h:`企業区の奥のゲート。基準は ${GATES.corp.lb}。インプラントなしでは、ほぼ届かない。`}}
   const ctl=innerWidth<=600?'下のボタンで 撃つ・跳ぶ・避ける':'X・J で撃つ／↑・W・Space で跳ぶ／C・L で回避';
+  if(!S.reached.includes('sky'))return{k:'end',t:'天穹区ゲートを通って、天穹区へ',h:'企業区の奥のゲート。'};
   if(!st.z_z1)return{k:'sky1',t:'天穹区を進み、保安部隊を突破する',h:`${ctl}。ミナが後ろから、回復・弾・援護射撃で支えてくれる。`};
   if(!st.sou)return{k:'sou',t:'奥の整備路で、ソウを探す',h:'白い建物のすき間。照明の壊れた、暗い入り口。'};
   if(!st.z_z2)return{k:'sky2',t:'ソウと一緒に、サイボーグ部隊を突破する',h:`${ctl}。ソウは前で、ミナは後ろで一緒に戦う。`};
@@ -2007,7 +2009,7 @@ function goalPanel(){$('#goalBtn').classList.remove('new');const g=goalNow(),st=
     <div class="cond">${mark(S.passed||(o&&cur>=req),!o)}<span>圏外のゲート → 第1層 沈殿街</span><span class="ex">${o?`実効スペック ${req} 以上（今 ${cur}${o?` ＝ 生身 ${Math.round(o.avg)} ＋ 拡張 ${implantBonus()}`:''}）`:'まずブレインスキャンを受ける'}${S.passed?' · 通過済み':''}</span></div>
     ${st.arrive?`<div class="cond">${mark(st.done,false)}<span>企業区ゲート → 第2層 企業区</span><span class="ex">実効スペック ${gateReq('lower')} 以上（${GATES.lower.lb}。今 ${cur}）／ソウの手がかりを集める（ゲンジ ${st.genji?'✓':'□'}／RAY ${st.ray?'✓':'□'}）→ ミナに知らせる ${st.done?'✓':'□'}${st.corp?' · 通過済み':''}</span></div>`:`<div class="cond">${mark(false,true)}<span>？？？</span><span class="ex">ゲートの向こうに行くと、わかる</span></div>`}
     ${st.corp?`<div class="cond">${mark(st.tenkyu,false)}<span>天穹区ゲート → 第3層 天穹区</span><span class="ex">実効スペック ${gateReq('corp')} 以上（${GATES.corp.lb}。今 ${cur}）／ニュースを見る ${st.news?'✓':'□'} → ミナと話す ${st.resolve?'✓':'□'} → RAY から武器を受け取る ${st.weapon?'✓':'□'}${st.tenkyu?' · 通過済み':''}</span></div>`:st.arrive?`<div class="cond">${mark(false,true)}<span>？？？</span><span class="ex">ゲートの向こうに行くと、わかる</span></div>`:''}
-    ${st.tenkyu?`<div class="cond">${mark(st.z_z3,false)}<span>中央区ゲート → 第4層 中央区</span><span class="ex">基準の数値はない。戦って突破する／保安部隊 ${st.z_z1?'✓':'□'} → ソウと再会 ${st.sou?'✓':'□'} → サイボーグ部隊 ${st.z_z2?'✓':'□'} → 番人 ${st.z_z3?'✓':'□'}</span></div>`:st.corp?`<div class="cond">${mark(false,true)}<span>？？？</span><span class="ex">ゲートの向こうに行くと、わかる</span></div>`:''}
+    ${st.tenkyu&&S.reached.includes('sky')?`<div class="cond">${mark(st.z_z3,false)}<span>中央区ゲート → 第4層 中央区</span><span class="ex">基準の数値はない。戦って突破する／${[['保安部隊',st.z_z1],['ソウと再会',st.sou],['サイボーグ部隊',st.z_z2],['番人',st.z_z3]].map(([n,v],i,a)=>i===0||a[i-1][1]?`${n} ${v?'✓':'□'}`:'？？？').join(' → ')}</span></div>`:st.corp?`<div class="cond">${mark(false,true)}<span>？？？</span><span class="ex">ゲートの向こうに行くと、わかる</span></div>`:''}
   </div>
   <div><p>これまでのあらすじ</p></div><ol class="story">${story.map(t=>`<li>${esc(t)}</li>`).join('')}</ol>
   <p class="note">本音を聞いた人：${hn} / ${Object.keys(HONNE).length}人${hn?'':'（同じ人と、とことん話してみると……）'}</p>
@@ -2126,7 +2128,7 @@ const JOBS=[
     ok:'偽物は全部見抜けた。夜勤が助かったって。',ng:'見逃しが出たか。見抜けた分は払うよ。'},
   {id:'ledger',tier:'corp',stat:'alu',tag:'ALU',nm:'帳簿の改ざん',client:'経理部の裏帳簿係',unit:'件',run:()=>runLedger,
     desc:'裏帳簿の残高を、監査の前に合わせる。最後の残高が目標になるように、空欄の金額を計算して書き込め。行はだんだん増える。',
-    ctl:'数字を入力して Enter',rule:p=>`制限 ${p.T} 秒 · ノルマ ${p.q} 件 · 最初は ${p.rows} 行 · 間違えると3秒減`,
+    ctl:'数字を入力して「書き込む」（Enter）',rule:p=>`制限 ${p.T} 秒 · ノルマ ${p.q} 件 · 最初は ${p.rows} 行 · 間違えると3秒減`,
     ok:'監査の前に帳尻が合った。裏帳簿係がほっとしてた。',ng:'合わない伝票が残ったか。合った分は払うよ。'}
 ];
 const jobOf=id=>JOBS.find(j=>j.id===id);
@@ -2139,7 +2141,7 @@ const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 function timeBar(end,T,onEnd){timers.push(setInterval(()=>{const left=Math.max(0,end()-performance.now());$('#tbar').style.width=(left/(T*10))+'%';$('#tleft').textContent=(left/1000).toFixed(1)+' 秒';if(left<=0)onEnd()},100))}
 const shake=el=>{el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')};
 
-function jobBoard(){const d=diffNow(),tiers=AREA_ORDER.filter(t=>S.reached.includes(t)).reverse();
+function jobBoard(){const d=diffNow(),tiers=AREA_ORDER.filter(t=>S.reached.includes(t)&&JOBS.some(j=>j.tier===t)).reverse();
   openPanel(`<div class="eyebrow">JOB BOARD · 情報屋ミナの仲介</div><h3>仕事リスト</h3>
   <p class="muted">${tiers.length>1?'上の層の仕事ほど難しい。そのぶん、払いもいい。':'脳のパーツごとに向いた仕事がある。稼いだクレジットは、いずれインプラントの代金になる。'}</p>
   <div class="stats"><div class="stat"><span>所持クレジット</span><b>${S.cr.toLocaleString()} CR</b></div><div class="stat"><span>難易度 · 報酬倍率</span><b>${DIFF[d]} ×${MULT[d]}</b></div></div>
@@ -2414,7 +2416,7 @@ function runMeeting(d){const P=jp('meeting',d),ROUNDS=6,id='meeting';let round=0
     said.forEach((s,i)=>timers.push(setTimeout(()=>{mn.innerHTML=line(s);sfx('text')},i*P.ms)));
     timers.push(setTimeout(()=>{mn.innerHTML='<div class="mline muted">（会議は次の議題へ）</div>';ask()},said.length*P.ms))}
   function ask(){phase='ask';st.textContent=q.text;qs.innerHTML=q.opts.map((o,i)=>`<button class="nbtn" type="button" data-a="${esc(o)}">${i+1}. ${esc(o)}</button>`).join('');hudUp()}
-  function answer(a){if(phase!=='ask')return;phase='wait';hudUp();
+  function answer(a){if(phase!=='ask')return;phase='wait';hudUp();qs.innerHTML='';
     if(a===q.ans){raw+=10+said.length*6;round++;sfx('key');st.textContent='議事録に書き取った';if(round>=ROUNDS)return timers.push(setTimeout(()=>finish(true),700));timers.push(setTimeout(newRound,800))}
     else{lives--;sfx('hit');shake(qs);hudUp();st.textContent=`違う。正しくは「${q.ans}」`;mn.innerHTML=said.map(line).join('');
       if(lives<=0)return timers.push(setTimeout(()=>finish(false),1600));round++;if(round>=ROUNDS)return timers.push(setTimeout(()=>finish(true),1600));timers.push(setTimeout(newRound,1900))}}
