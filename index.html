@@ -232,7 +232,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.22 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.23 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -273,7 +273,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.22"></script>
+<script src="sound.js?v=0.23"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -824,7 +824,7 @@ function drawPeopleAndProps(t){const s=ST(),ents=[],m=docMood();
   if(area()==='lower')for(const c of CROWD){const fy=GY+c.z;ents.push({y:fy,draw:()=>drawAt(c.spr,c.x,fy,c.d<0)})}
   for(const p of s.props)if(p.k!=='hang')ents.push({y:GY+(p.z||0),draw:()=>drawProp(p,t)});
   for(const f of s.fires)ents.push({y:f.y+13.5,draw:()=>drawFire(f,t)});
-  ents.push({y:player.y,draw:()=>{const spr=player.moving&&Math.floor(player.step*8)%2?P_B:P_A;drawAt(spr,player.x,player.y,player.dir<0);
+  ents.push({y:player.y,draw:()=>{const spr=player.moving&&Math.floor(player.step*8)%2?P_B:P_A;drawAt(spr,Math.round(player.x),player.y,player.dir<0);
     if(S.light){const hx=Math.round(player.x-camX+player.dir*5),hy=Math.round(player.y-9);ctx.fillStyle='#2a2838';ctx.fillRect(hx-1,hy,3,2);ctx.fillStyle='#fff6d8';ctx.fillRect(hx+(player.dir>0?1:-1),hy,1,1)}}});
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.draw())}
 
@@ -865,6 +865,9 @@ function draw(t){OY=H-180;ctx.setTransform(2,0,0,2,0,2*OY);ctx.imageSmoothingEna
   lighting(t);
   /* 話しかけられる印 */
   ctx.setTransform(2,0,0,2,0,2*OY);
+  /* 目的で話す相手には赤い印（！） */
+  if(mode==='play'||mode==='dialog'){const tg=goalTargets();for(const n of npcsHere()){if(!tg.includes(n.id))continue;const sx=Math.round(n.x-camX);if(sx<-8||sx>W+8)continue;const y=markY(n)-9+Math.round(Math.sin(t*4)*1.5);
+    ctx.fillStyle='rgba(255,74,92,.25)';ctx.fillRect(sx-3,y-1,7,9);ctx.fillStyle='#ff4a5c';ctx.fillRect(sx-1,y,3,5);ctx.fillRect(sx-1,y+6,3,2);ctx.fillStyle='#ffd0d6';ctx.fillRect(sx,y+1,1,3)}}
   const n=near();if(n&&mode==='play'){const sx=Math.round(n.x-camX),bob=Math.round(Math.sin(t*5)*1.5),y=markY(n)+bob;
     ctx.fillStyle='#3ef2e0';ctx.fillRect(sx-3,y,7,1);ctx.fillRect(sx-2,y+1,5,1);ctx.fillRect(sx-1,y+2,3,1);ctx.fillRect(sx,y+3,1,1)}
 }
@@ -887,7 +890,8 @@ function stepPlayer(dt,st){const dx=(keys.r?1:0)-(keys.l?1:0),rn=running(),targe
   player.moving=Math.abs(player.vx)>1;if(player.moving){player.step+=dt*(rn?1.7:1);const si=Math.floor(player.step*2.5);if(si!==stepIdx){stepIdx=si;sfx('step')}}}
 function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
   if(mode==='play'){const st=ST(),cm=CAMMAX_OF(area());stepPlayer(dt,st);
-    camX=clamp(Math.round(player.x-W*0.42),0,cm);
+    /* 主人公の位置を先に丸めて、カメラと描く位置をそろえる（ぶれ防止） */
+    camX=clamp(Math.round(player.x)-Math.round(W*0.42),0,cm);
     /* 右（ゲート）へ進むほど BGM が明るい */
     const pr=camX/Math.max(1,cm),br=Math.round((area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='title'){titlePan+=dt*14;camX=Math.round((Math.sin(titlePan/120)*0.5+0.5)*CAMMAX_OF(area())*0.6)}
@@ -904,7 +908,7 @@ function hud(){const o=overall(S.cur);
   {const f=flesh();$('#bodyF').textContent=`生身 ${f}%`;$('#bodyM').textContent=`機械 ${100-f}%`;$('#bodyBar').style.width=f+'%';$('#bodyChip').setAttribute('aria-label',`生身率 ${f}%、サイボーグ率 ${100-f}%`)}
   if(typeof sndBtnUp==='function')sndBtnUp();
   {const [a,b]=AREAS[area()].nm.split(' · ');$('#areaChip').innerHTML=esc(a)+(b?`<span class="nm2"> · ${esc(b)}</span>`:'')}cv.setAttribute('aria-label',AREAS[area()].label);
-  if(typeof goalNow==='function'&&S.started){const g=goalNow();if(S.goalK!==g.k){const had=S.goalK!=null;S.goalK=g.k;save();if(had){$('#goalBtn').classList.add('new');toast('目的を更新：'+g.t,5200)}}}}
+  if(typeof goalNow==='function'&&S.started){const g=goalNow();if(S.goalK!==g.k){const had=S.goalK!=null;S.goalK=g.k;save();if(had){$('#goalBtn').classList.add('new');sfx('goal');toast('目的を更新：'+g.t,5200)}}}}
 let toastT=0;
 function toast(msg,ms=4200){const el=$('#toast');el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,ms)}
 
@@ -1023,11 +1027,11 @@ function talkMina(){const o=overall(S.cur);
   if(!o){S.mina=Math.max(S.mina,1);save();return talk([L('mina','村の子だね。……東京を見てる顔してる。ここは圏外。あの光は、ここまで届かないよ。'),L('mina','東京に入りたいなら、まず脳を測ってもらいな。この先の闇医者、ドク・カゲロウのとこ。'),L('mina','スペックがわからない奴には、仕事も回せないからさ。')])}
   let ls;
   if(area()==='lower')return talkMinaLower();
-  if(S.passed){ls=[L('mina','ゲート、通ったんだってね。……やるじゃん。'),L('mina','……ねえ。次にゲートをくぐるとき、声かけて。話があるんだ。',[{label:'仕事をもらう',fn:jobBoard},{label:'わかった'}])];return talk(ls)}
+  if(S.passed){ls=[L('mina','ゲート、通ったんだってね。……やるじゃん。'),L('mina','……ねえ。次にゲートをくぐるとき、声かけて。話があるんだ。',[...gateChoice(),{label:'仕事をもらう',fn:jobBoard},{label:'わかった'}])];return talk(ls)}
   if(S.mina<2){S.mina=2;save();ls=[L('mina',`${o.tier.name}、ね。まあ、ここから上がればいいだけだよ。`),L('mina','スペックがわかったなら仕事を回せる。運び、侵入、映像解析、錠前破り。どれも脳を使う仕事さ。'),L('mina','稼いだクレジットは、そのうちドクのインプラント代になる。ゲートの判定も、奥で確かめてきな。')]}
   else if(S.gate===1){S.gate=2;save();ls=[L('mina','ゲート、通れなかったでしょ。顔に書いてある。'),L('mina','稼いで、鍛えて、もう一度。ここではみんなそうしてる。')]}
   else ls=[L('mina',pick3('mina_out',['また来たね。仕事ならあるよ。','圏外じゃ、脳しか売るものがないからね。',flesh()>0?'ドクのとこのインプラント、最初は400だってさ。貯めときな。':'全部入れたんだ。……目の色、変わったね。']))];
-  ls.push(L('mina','で、どうする？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
+  ls.push(L('mina',gateNote()+'で、どうする？',[...gateChoice(),{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
 function talkDoc(){const o=overall(S.cur),rec=siteRecord();
   if(!o){const ch=[{label:'スキャンを受ける',fn:scanIntro}];if(rec)ch.push({label:'診断サイトの記録を渡す',fn:()=>useRecord(rec)});ch.push({label:'やめておく'});
     return talk([L('doc','客か。……ふん、旧式の匂いがするな。'),L('doc','脳を見せろ。スキャンは4つ。反応、記憶、識別、演算だ。3分で終わる。'),L('doc','どうする？',ch)])}
@@ -1103,7 +1107,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
-  <p class="muted">試作版 v0.22 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
+  <p class="muted">試作版 v0.23 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -1161,7 +1165,7 @@ function talkMinaLower(){const m=docMood(),ls=[];
     ['あたしはインプラントは入れたくない。だから、ゲートを通れるように、ここで勉強してる。','仕事がほしくなったら言って。仕事なら、いくらでもあるから。'],
     ['この本、ゲンさんにもらったの。昔の技術者の教本。','読めば読むほど、頭が熱くなる。……生身の脳も、まだ捨てたもんじゃないよ。'],
     [S.st.done?'お兄ちゃんのこと？ ……焦ってもしかたない。まずは、あたしが次のゲートを通れるようにならなきゃ。':'お兄ちゃんのこと、何かわかった？ 屋台のゲンさんか、鋼組の運び屋なら知ってるかも。','仕事、回そうか？']]).map(t=>L('mina',t)));
-  ls.push(L('mina','で、どうする？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
+  ls.push(L('mina',gateNote()+'で、どうする？',[...gateChoice(),{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
 /* 生身派「灯」：ゲンジ */
 const fac=()=>{const f=flesh();return f>=70?'open':f>=40?'mid':'closed'};
 function talkGenji(){const fc=fac(),practice={label:'練習場を使う',fn:practicePanel},bye={label:'やめておく'};
@@ -1317,6 +1321,22 @@ function goalNow(){const o=overall(S.cur),st=S.st||{};
   if(!st.genji||!st.ray)return{k:'clue',t:'沈殿街で、ミナの兄・ソウの手がかりを探す',h:`屋台のゲンジ ${st.genji?'✓':'□'}　／　鋼組の運び屋RAY ${st.ray?'✓':'□'}　（昇降機で沈殿街へ）`};
   if(!st.done)return{k:'tell',t:'昇降機のそばのミナに、ソウのことを知らせる',h:'沈殿街の入り口、昇降機のそばで勉強している。'};
   return{k:'end',t:'沈殿街の奥の、企業区ゲートを調べる',h:`企業区ゲートの基準は 実効スペック ${gateReq('lower')}（${GATES.lower.lb}）。生身で鍛えるだけでは、だんだん厳しくなる。企業区は次の版で。`}}
+/* 目的で話す相手（赤い印を出す）。別の層にいるときは昇降機 */
+function goalTargets(){const g=goalNow(),st=S.st||{},a=area();
+  if(g.k==='scan')return a==='out'?['doc']:['lift'];
+  if(g.k==='gate1'||g.k==='join')return a==='out'?['gate']:['lift'];
+  if(g.k==='clue')return a==='lower'?[!st.genji&&'genji',!st.ray&&'ray'].filter(Boolean):['lift'];
+  if(g.k==='tell')return a==='lower'?['mina']:['lift'];
+  if(g.k==='end')return a==='lower'?['gate']:['lift'];
+  return[]}
+/* ゲートの条件がそろっているか（ミナから、そのままゲートへ行ける） */
+function gateReady(){const o=overall(S.cur);if(!o)return false;if(area()==='out')return !S.st.join&&effective()>=gateReq('out');return !!S.st.done&&effective()>=gateReq('lower')}
+function gateChoice(){if(!gateReady())return[];return[{label:area()==='out'?'ゲートへ行く':'企業区ゲートへ行く',fn:goGate}]}
+function gateNote(){const o=overall(S.cur);if(!o)return'';const g=area()==='out'?'out':'lower';if(g==='lower'&&!S.st.done)return'';if(g==='out'&&S.st.join)return'';const d=gateReq(g)-effective();return d>0?`ゲートの基準まで、あと ${d}。`:'ゲートの基準には、もう届いてるよ。'}
+/* ミナから、ゲートの前まで行って判定を受ける */
+function goGate(){mode='fade';$('#fade').classList.add('on');keys.l=keys.r=false;
+  setTimeout(()=>{const n=npcsHere().find(n=>n.id==='gate');player.x=n.x-14;player.y=groundAt(player.x);player.vx=player.vy=0;player.dir=1;camX=clamp(Math.round(player.x)-Math.round(W*0.42),0,CAMMAX_OF(area()));savePos();save();
+    $('#fade').classList.remove('on');setTimeout(()=>{mode='play';proceed(n)},380)},380)}
 function goalPanel(){$('#goalBtn').classList.remove('new');const g=goalNow(),st=S.st||{},o=overall(S.cur),cur=effective(),req=gateReq(),hn=Object.keys(S.honne||{}).length;
   const mark=(ok,lock)=>lock?'<span class="lock">－</span>':ok?'<span class="ok">✓</span>':'<span class="ng">✗</span>';
   const story=[S.started&&'リク、18歳。圏外の畑の村で生まれ育った。子どものころから、ピラミッド都市・東京の中が見たかった。脳のスペックが基準に届けば、圏外からでも東京に入れる。',st.poster&&'村の掲示板に、指名手配の紙が貼られていた。「指名手配　ソウ」「天穹区ゲート襲撃」。',o&&`ドク・カゲロウのブレインスキャンで、脳は「${o.tier.name}」と測られた。`,S.passed&&'圏外のゲートを通った。ミナが追ってきた。手配書のソウは、ミナの兄だった。基準は越えていたが、一人では入れなかったのだという。',
