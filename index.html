@@ -232,7 +232,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.20 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.21 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -273,7 +273,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.20"></script>
+<script src="sound.js?v=0.21"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -312,9 +312,9 @@ function overall(d){if(!d||TESTS.some(t=>d[t.id]==null))return null;const avg=TE
 const DIFF={easy:'EASY',normal:'NORMAL',hard:'HARD'};
 const autoDiff=avg=>avg<40?'easy':avg<70?'normal':'hard';
 function diffNow(){const o=overall(S.cur);return S.diff!=='auto'?S.diff:(o?autoDiff(o.avg):'normal')}
-/* ゲートの基準：初回スキャンから、上の層ほど多くの伸びを求める（STORY.md の表） */
-const GATES={out:{p:0.1,min:3,lb:'+10%'},lower:{p:0.2,min:6,lb:'+20%'},corp:{p:0.4,min:12,lb:'+40%'}};
-function gateReq(g='out'){const b=overall(S.base),G=GATES[g];if(!b)return null;return Math.min(100,Math.max(Math.ceil(b.avg*(1+G.p)),Math.ceil(b.avg)+G.min))}
+/* ゲートの基準：固定の値（STORY.md の表）。階級表の境目にそろえてある。天穹区 → 中央区は戦って突破 */
+const GATES={out:{req:45,lb:'N500 以上'},lower:{req:62,lb:'N700 以上'},corp:{req:78,lb:'N900 以上'}};
+const gateReq=(g='out')=>GATES[g].req;
 /* インプラント：スキャン値には入らず、実効スペックと仕事にだけ効く。部位ごとに Lv1〜3 */
 const GLOW=0.3;
 const IMPLANTS=[
@@ -439,6 +439,43 @@ const L_SHOPS=[],L_HOLO=[],L_PIPES=[];
 {const R=rng(41);let x=-20;while(x<720){const w=Math.round(40+R()*40);L_SHOPS.push({x,w,h:Math.round(40+R()*30),c:['#ffb547','#ff7ab8','#7ff8ee','#ffd9a0'][Math.floor(R()*4)],on:R()<0.7});x+=w+Math.round(6+R()*14)}
   for(let i=0;i<14;i++)L_HOLO.push({x:Math.round(R()*700),y:Math.round(30+R()*40),w:Math.round(8+R()*20),h:Math.round(4+R()*8),c:['#ff3d8b','#3ef2e0','#b77bff','#ffb547'][Math.floor(R()*4)],s:R()*30});
   for(let i=0;i<6;i++)L_PIPES.push({y:Math.round(4+i*5+R()*3),h:2+Math.round(R()*2),c:i%2?'#2a2036':'#221a2e'})}
+/* 遠くのピラミッド都市：段ごとに高層ビル・窓・ネオン・ホログラム。頂上に中央区の塔 */
+const MEGA=PYR.map((tr,i)=>{const R=rng(100+i),b=[],neon=[],holo=[],hw=tr.w/2;
+  for(let x=-hw+2;x<hw-3;){const w=3+Math.floor(R()*(4+i*2)),nr=1-Math.abs(x)/hw,h=Math.round(3+R()*(5+i*4)*(0.4+nr)),wins=[];
+    for(let yy=2;yy<h-1;yy+=2)for(let xx=1;xx<w-1;xx+=2)if(R()<0.22+i*0.12)wins.push([xx,yy,R()*20]);
+    b.push({x,w,h,wins,ant:R()<0.15,dark:R()<0.5});x+=w+(R()<0.35?1:0)}
+  for(let k=0;k<4+i*3;k++)neon.push({x:-hw+6+R()*(tr.w-14),y:4+R()*(tr.h-9),v:R()<0.5,l:2+Math.floor(R()*4),c:['#ff3d8b','#3ef2e0','#b77bff','#ffb547','#7ff8ee'][Math.floor(R()*5)],s:R()*30});
+  for(let k=0;k<i;k++)holo.push({x:-hw*0.55+R()*hw*1.1,y:-(10+R()*10),w:7+R()*7,h:4+R()*3,c:['#ff3d8b','#3ef2e0','#b77bff'][k%3],s:R()*20});
+  return{b,neon,holo}});
+const SKYCARS=[...Array(8)].map((_,i)=>({y:i%4,sp:(i%2?1:-1)*(9+i*3),o:i*61,c:i%3?'#ff4a5c':'#fff4d6'}));
+function drawMegacity(t,prog){const pc=Math.round(230-camX*0.07),k=0.35+0.5*prog,base=GY-10,tops=[];let py=base;
+  /* 後ろの光 */
+  {const g=ctx.createRadialGradient(pc,base-110,4,pc,base-110,230);g.addColorStop(0,`rgba(255,180,230,${0.38*k})`);g.addColorStop(0.35,`rgba(150,90,255,${0.18*k})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,-OY,W,180+OY)}
+  /* 段の本体：縦の構造線、段の縁の光の帯、窓 */
+  const HS=0.82;PYR.forEach((tr,i)=>{const th=Math.round(tr.h*HS);py-=th;tops.push(py);const x0=pc-tr.w/2;ctx.fillStyle=tr.c;ctx.fillRect(x0,py,tr.w,th);
+    ctx.fillStyle='rgba(0,0,0,.25)';for(let x=x0+3;x<x0+tr.w;x+=7)ctx.fillRect(x,py,1,th);
+    ctx.fillStyle=tr.e;ctx.fillRect(x0,py,tr.w,0.8);ctx.globalAlpha=0.55+0.15*Math.sin(t*1.5+i);ctx.fillRect(x0,py+th-1.5,tr.w,0.6);ctx.globalAlpha=1});
+  for(const w of PYR_WIN){if(w.i>0&&!flick(t*0.3,w.s))continue;const tr=PYR[w.i];ctx.fillStyle=tr.win;ctx.globalAlpha=0.5+0.15*w.i;ctx.fillRect(pc+w.x,tops[w.i]+w.y*HS,1,0.5)}ctx.globalAlpha=1;
+  /* 段の壁のネオン看板 */
+  MEGA.forEach((m,i)=>{for(const n of m.neon){if(!flick(t*0.5,n.s)&&i<2)continue;const ny=tops[i]+n.y*HS;ctx.fillStyle=n.c;ctx.globalAlpha=0.85;n.v?ctx.fillRect(pc+n.x,ny,1,n.l):ctx.fillRect(pc+n.x,ny,n.l+1,1);ctx.globalAlpha=0.2;n.v?ctx.fillRect(pc+n.x-1,ny-1,3,n.l+2):ctx.fillRect(pc+n.x-1,ny-1,n.l+3,3);ctx.globalAlpha=1}});
+  /* 段の上に並ぶ高層ビル（上の段ほど高く、明るい） */
+  MEGA.forEach((m,i)=>{const tr=PYR[i],y0=tops[i];for(const b of m.b){const x=pc+b.x;if(x>W+4||x+b.w<-4)continue;ctx.fillStyle=b.dark?tr.c:tr.e;ctx.globalAlpha=b.dark?1:0.55;ctx.fillRect(x,y0-b.h,b.w,b.h);ctx.globalAlpha=1;
+      ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x+b.w-1,y0-b.h,1,b.h);
+      for(const [xx,yy,sd] of b.wins){if(!flick(t*0.2,sd+b.x))continue;ctx.fillStyle=tr.win;ctx.globalAlpha=0.55+0.12*i;ctx.fillRect(x+xx,y0-b.h+yy,0.6,0.6)}ctx.globalAlpha=1;
+      if(b.ant){ctx.fillStyle=tr.e;ctx.fillRect(x+b.w/2,y0-b.h-4,0.6,4);if(Math.floor(t*1.3+b.x)%3===0){ctx.fillStyle='#ff4a5c';ctx.fillRect(x+b.w/2-0.2,y0-b.h-4.5,1,1)}}}});
+  /* 中央区の塔：細くなりながら伸びる。光の輪と、頂上の灯 */
+  const ty=tops[3];ctx.fillStyle='#2e2254';for(let k2=0;k2<5;k2++){const w=14-k2*2.4;ctx.fillRect(pc-w/2,ty-6-k2*5,w,6)}
+  ctx.fillStyle='#ffd9ee';for(let k2=0;k2<5;k2++)if(flick(t*0.4,k2*3))ctx.fillRect(pc-0.5,ty-4-k2*5,1,0.8);
+  ctx.fillStyle='#4e366c';ctx.fillRect(pc-0.5,ty-38,1,10);ctx.fillStyle=Math.floor(t*1.2)%2?'#ff9ac8':'#fff4d6';ctx.fillRect(pc-1,ty-39,2,1.5);
+  {const r=0.6+0.4*Math.sin(t*2);ctx.fillStyle=`rgba(255,154,200,${0.5*r})`;ctx.fillRect(pc-10,ty-17,20,0.8);ctx.fillStyle=`rgba(127,248,238,${0.4*r})`;ctx.fillRect(pc-8,ty-23,16,0.6);
+    const g=ctx.createRadialGradient(pc,ty-20,1,pc,ty-20,26);g.addColorStop(0,`rgba(255,220,240,${0.35*k+0.1})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(pc-26,ty-46,52,52)}
+  /* ホログラム広告（上の段に浮かぶ） */
+  MEGA.forEach((m,i)=>{for(const h of m.holo){if(!flick(t*0.7,h.s))continue;const x=pc+h.x,y=tops[i]+h.y;ctx.globalAlpha=0.32;ctx.fillStyle=h.c;ctx.fillRect(x,y,h.w,h.h);ctx.globalAlpha=0.8;ctx.fillRect(x,y+((t*12+h.s)%h.h),h.w,0.5);ctx.fillRect(x+1,y+1,h.w*0.5,0.6);ctx.globalAlpha=1}});
+  /* サーチライト */
+  ctx.globalCompositeOperation='lighter';for(const [d,sp] of [[-1,0.5],[1,0.37]]){const a=-Math.PI/2+d*(0.35+0.3*Math.sin(t*sp)),bx=pc+d*6,by=ty-6,L=120;
+    ctx.fillStyle='rgba(200,220,255,.05)';ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+Math.cos(a-0.05)*L,by+Math.sin(a-0.05)*L);ctx.lineTo(bx+Math.cos(a+0.05)*L,by+Math.sin(a+0.05)*L);ctx.closePath();ctx.fill()}ctx.globalCompositeOperation='source-over';
+  /* 空を飛ぶ車 */
+  for(const c of SKYCARS){const span=PYR[0].w+60,x=pc-span/2+(((t*c.sp+c.o)%span)+span)%span,y=tops[c.y]-4-c.y*2;ctx.fillStyle=c.c;ctx.fillRect(Math.round(x),Math.round(y),1,0.6);ctx.globalAlpha=0.3;ctx.fillRect(Math.round(x)-Math.sign(c.sp)*3,Math.round(y),3,0.6);ctx.globalAlpha=1}}
 /* 圏外の中景：畑の村の小屋と木 */
 const VHUTS=[],VTREES=[];{const R=rng(33);let x=-20;while(x<760){if(R()<0.55)VHUTS.push({x,w:Math.round(16+R()*18),h:Math.round(9+R()*7),lit:R()<0.6,s:R()*9});else VTREES.push({x:x+6,r:Math.round(4+R()*4),h:Math.round(6+R()*7)});x+=Math.round(20+R()*26)}}
 /* 層ごとの住人と設備 */
@@ -456,7 +493,6 @@ const minaIn=()=>S.st&&S.st.join?'lower':'out';
 const npcsHere=()=>AREAS[area()].npcs.filter(n=>n.id!=='mina'||minaIn()===area());
 /* 人の見え方（知覚）に使う情報 */
 const PEOPLE={haru:{nm:'ハル',sex:'f',age:'60代'},ken:{nm:'ケン',sex:'m',age:'10代'},shiro:{nm:'シロ',sex:'m',age:'40代'},jiro:{nm:'ジロウ',sex:'m',age:'70代'},take:{nm:'タケ',sex:'m',age:'10代'},yuki:{nm:'ユキ',sex:'f',age:'30代'},mina:{nm:'ミナ',sex:'f',age:'20代'},doc:{nm:'ドク・カゲロウ',sex:'m',age:'50代'},genji:{nm:'ゲンジ',sex:'m',age:'60代'},daimon:{nm:'ダイモン',sex:'m',age:'40代'},tsugi:{nm:'ツギハギ',sex:'f',age:'40代'},ray:{nm:'RAY',model:'RAY-07 ／ 運送用義体 ／ 稼働14年'}};
-const drops=[];{const R=rng(3);for(let i=0;i<90;i++)drops.push({x:R()*W,y:R()*H,v:150+R()*90,l:2+Math.round(R()*3)})}
 let camX=0,player={x:30,y:GY,vx:0,vy:0,onGround:true,dir:1,step:0,moving:false},keys={l:false,r:false,run:false,runT:false};
 /* 動きの数値（アクションを足すときはここを使う）：歩く・走る速さ、加速、重力 */
 const PHYS={walk:62,run:140,accel:900,grav:640,maxFall:420};
@@ -516,12 +552,7 @@ function drawOutBG(t){
   ctx.fillStyle=sky[0];ctx.fillRect(0,-OY,W,OY+1);for(let i=0;i<6;i++){ctx.fillStyle=sky[i];ctx.fillRect(0,i*24,W,24)}
   ctx.fillStyle=sky[5];ctx.fillRect(0,144,W,36);
   /* ピラミッド都市・東京（遠く。頂上ほど明るい） */
-  const pc=Math.round(230-camX*0.07),k=0.35+0.5*prog;let py=GY-22;const tops=[];
-  PYR.forEach(tr=>{py-=tr.h;tops.push(py);ctx.fillStyle=tr.c;ctx.fillRect(pc-tr.w/2,py,tr.w,tr.h);ctx.fillStyle=tr.e;ctx.fillRect(pc-tr.w/2,py,tr.w,0.5)});
-  for(const w of PYR_WIN){if(w.i>0&&!flick(t*0.3,w.s))continue;const tr=PYR[w.i];ctx.fillStyle=tr.win;ctx.globalAlpha=0.5+0.15*w.i;ctx.fillRect(pc+w.x,tops[w.i]+w.y,1,0.5)}ctx.globalAlpha=1;
-  const ax=pc,ay=py;ctx.fillStyle='#3a2a60';ctx.fillRect(ax-2,ay-14,4,14);ctx.fillStyle='#fff4d6';ctx.fillRect(ax-0.5,ay-20,1,6);if(Math.floor(t*1.2)%2){ctx.fillStyle='#ff9ac8';ctx.fillRect(ax-1,ay-21,2,1)}
-  let g=ctx.createRadialGradient(ax,ay-8,2,ax,ay-8,200);g.addColorStop(0,`rgba(255,200,230,${0.5*k})`);g.addColorStop(0.3,`rgba(180,110,255,${0.22*k})`);g.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=g;ctx.fillRect(0,-OY,W,180+OY);
+  drawMegacity(t,prog);
   /* 遠景 */
   const fo=Math.round(camX*0.15);
   for(const b of far){const sx=b.x-fo;if(sx>W||sx+b.w<0)continue;ctx.fillStyle=b.tk?'#1d1739':'#100d1e';ctx.fillRect(sx,GY-18-b.h,b.w,b.h+18);
@@ -832,10 +863,6 @@ function draw(t){OY=H-180;ctx.setTransform(2,0,0,2,0,2*OY);ctx.imageSmoothingEna
   drawPeopleAndProps(t);
   if(area()==='lower')drawCeiling(t);
   lighting(t);
-  /* 雨・しずく・光の粒は画面に対して描く */
-  ctx.setTransform(2,0,0,2,0,0);
-  if(area()==='lower'){ctx.fillStyle='rgba(170,190,230,.45)';for(let i=0;i<drops.length;i+=4){const d=drops[i];ctx.fillRect(Math.round(d.x*2)/2,Math.round(d.y*2)/2,0.5,1)}}
-  else{ctx.fillStyle='rgba(160,175,255,.38)';for(const d of drops)ctx.fillRect(Math.round(d.x*2)/2,Math.round(d.y*2)/2,0.5,d.l)}
   /* 話しかけられる印 */
   ctx.setTransform(2,0,0,2,0,2*OY);
   const n=near();if(n&&mode==='play'){const sx=Math.round(n.x-camX),bob=Math.round(Math.sin(t*5)*1.5),y=markY(n)+bob;
@@ -865,7 +892,6 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
     const pr=camX/Math.max(1,cm),br=Math.round((area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='title'){titlePan+=dt*14;camX=Math.round((Math.sin(titlePan/120)*0.5+0.5)*CAMMAX_OF(area())*0.6)}
   if(mode!=='panel'){stepFires(dt);if(area()==='lower')for(const c of CROWD){if(!c.sp)continue;c.x+=c.d*c.sp*dt;if(c.x>c.x1){c.x=c.x1;c.d=-1}else if(c.x<c.x0){c.x=c.x0;c.d=1}}}
-  for(const d of drops){d.y+=d.v*dt;d.x-=d.v*dt*0.22;if(d.y>H){d.y=-4;d.x=Math.random()*(W+40)}if(d.x<0)d.x+=W}
   if(gateLight!=='idle'&&ts>gateLightUntil)gateLight='idle';
   if(mode!=='panel')draw(t);
   requestAnimationFrame(loop)}
@@ -929,17 +955,17 @@ function talkPoster(){const fk='poster_'+area(),first=!(S.st&&S.st[fk]);if(first
   talk(lines.map(t=>L('me',t)),()=>{if(first&&!(S.st.sawPosterTip)){S.st={...S.st,sawPosterTip:1};save();toast('手配書のことを、住人に聞いてみよう',5200)}})}
 /* 手配書を見た住人の反応（STORY.md の表） */
 const WANTED={
-  doc:[['doc','……体を換えすぎた奴の顔だ。機械は、限界を超えたところで急に壊れる。'],['doc','反乱なんざ起こさなくても、あの体じゃ長くはもたなかったろうよ。']],
+  doc:[['doc','……あの手配書か。体を換えすぎた奴の顔だ。機械は、限界を超えたところで急に壊れる。'],['doc','反乱なんざ起こさなくても、あの体じゃ長くはもたなかったろうよ。']],
   jiro:[['jiro','上に逆らった奴は、こうして顔が貼られる。わしらみたいに黙って落ちてくる奴は、誰にも覚えられん。']],
   take:[['take','ゲートをぶち破ろうとしたんだってよ。……すげえよな。俺なんか、受けに行くことすらできねえのに。']],
   yuki:[['yuki','この人にも、家族がいるんでしょうね。……どこかで、この紙を見て泣いてる人がいるのよ。']],
-  haru:[['haru','機械の顔にされても、目だけは人間のままだね。……うちの子の写真も、こんな目をしてた。']],
+  haru:[['haru','あの手配書の男……機械の顔にされても、目だけは人間のままだね。'],['haru','……うちの子の写真も、こんな目をしてた。']],
   ken:[['ken','この人、上のやつらと戦ったんだぜ。オレも大きくなったら、こういうふうになる。']],
   shiro:[['shiro','天穹区のゲートか。……あそこを力で抜けた奴はいねえ。抜けられないように、できてるんだ。']],
   genji:[['genji','あいつはここで麺をすすりながら言ってた。「てっぺんに上って、全部変える」ってな。'],['genji','……変わったのは、あいつの体のほうだった。']],
-  daimon:[['daimon','機械に使われるのを拒んだ。それだけは、人間として正しかった。……やり方は、間違えたがな。']],
+  daimon:[['daimon','あの手配書の男は、機械に使われるのを拒んだ。それだけは、人間として正しかった。……やり方は、間違えたがな。']],
   ray:[['ray','……俺が教えたんだ。上に行くには換えるしかねえって。あいつは、俺の言葉を信じて上った。']],
-  tsugi:[['tsugi','この首の継ぎ目、雑な仕事ね。急いで換えたのがわかる。……体がついていかなかったのよ。']],
+  tsugi:[['tsugi','あの手配書の男、首の継ぎ目が雑な仕事ね。急いで換えたのがわかる。……体がついていかなかったのよ。']],
   mina_out:[['mina','……お兄ちゃん。'],['me','……ミナ？'],['mina','……なんでもない。']],
   mina_lower:[['mina','この紙、剥がしたいのに、剥がしたらもう顔が見られない気がして。']],
   kago:[['kago','手配者ソウ。天穹区ゲートへの不正侵入、ならびに保安機体の破壊。発見した場合は、ただちに通報してください。']],
@@ -987,8 +1013,8 @@ const HONNE={
 const FIRE={
   jiro:['寒いだろ。火にあたっていけ。','ピラミッドの上は、雨が降らないらしいな。……一度でいいから、乾いた空を見たかった。','この村の連中はな、みんな、どこかの層から落ちてきたか、外で生まれたかだ。畑を耕して、自分の食いもんは自分で作る。'],
   take:['……なんだよ。見てんじゃねえよ。','ゲート？ ……行けるやつは、いいよな。','ミナさん、たまに食いもん分けてくれたんだ。……もう、下に行っちまったけど。'],
-  yuki:['雨、やまないね。','あのピラミッドの灯り、きれいでしょう。……遠いけど。','あなた、ゲートを通るの？ ……そう。気をつけてね。'],
-  haru:['鉄くず、買うかい？ ……冗談だよ。あんたに売れるもんなんて、もうないさ。','この村の家はね、みんな自分たちで建てたんだ。釘一本まで、拾った鉄くずさ。','雨の日は、ピラミッドの灯りがにじんで、きれいに見えるんだよ。'],
+  yuki:['夜は冷えるね。火のそばにおいで。','あのピラミッドの灯り、きれいでしょう。……遠いけど。','あなた、ゲートを通るの？ ……そう。気をつけてね。'],
+  haru:['鉄くず、買うかい？ ……冗談だよ。村の子から、お金は取らないさ。','この村の家はね、みんな自分たちで建てたんだ。釘一本まで、拾った鉄くずさ。','雨の日は、ピラミッドの灯りがにじんで、きれいに見えるんだよ。'],
   ken:['お、リクじゃん。畑の手伝い、終わったのか？','ゲートの前のでっかい機械、SENTRY っていうんだ。目が合うと、ちょっと怖い。','ドクのじいさん、怖い顔してるけど、オレのケガはタダで診てくれた。'],
   shiro:['……頭の中の部品が、壊れてるんだ。たまに、知らない声が聞こえる。','昔は企業区にいた。インプラントの保証が切れて、ここに捨てられた。','ドクに直してもらおうにも、部品が古すぎるってさ。']
 };
@@ -1060,12 +1086,12 @@ function talkGate(){const o=overall(S.cur);
   if(!o){gateLight='deny';gateLightUntil=performance.now()+2500;sfx('deny');return talk([L('gate','未登録の脳を検出。ブレインスキャンの記録がありません。'),L('gate','通行を許可できません。')])}
   const cur=effective(),req=gateReq();
   if(S.st.join)return talk([L('gate','通行許可済みの脳です。第1層・沈殿街へどうぞ。',[{label:'沈殿街へ進む',fn:()=>travel('lower','gate')},{label:'やめておく'}])]);
-  talk([L('gate','スキャン記録を照合中……'),L('gate',`実効スペック ${cur} ／ 通行基準 ${req}（初回スキャンの +10%）`)],()=>{
+  talk([L('gate','スキャン記録を照合中……'),L('gate',`実効スペック ${cur} ／ 通行基準 ${req}（${GATES.out.lb}）`)],()=>{
     if(cur>=req){gateLight='ok';gateLightUntil=performance.now()+4000;sfx('allow');const again=S.passed;S.passed=1;save();
       if(!S.st.join)return talk(again?[L('gate','通行許可済みの脳です。どうぞ。')]:[L('gate','基準を満たしています。通行を許可します。'),L('me','光が、近い。')],minaJoin);
       talk([L('gate','通行許可済みの脳です。第1層・沈殿街へどうぞ。',[{label:'沈殿街へ進む',fn:()=>travel('lower','gate')},{label:'やめておく'}])])}
     else{gateLight='deny';gateLightUntil=performance.now()+4000;sfx('deny');S.gate=1;save();
-      talk([L('gate','基準に届きません。通行を拒否します。'),L('me','……今の自分じゃ、足りないってことか。'),L('me','ミナのところに戻ろう。')],()=>toast('ゲートの条件と、やることは、上の「目的」で確かめられます',6000))}})}
+      talk([L('gate',`基準に届きません。あと ${req-cur} 不足しています。通行を拒否します。`),L('me','……今の自分じゃ、足りないってことか。'),L('me','ミナの仕事で稼いで、ドクのインプラントを入れるか。……それとも、鍛えて再スキャンを受けるか。')],()=>toast('ゲートの条件と、やることは、上の「目的」で確かめられます',6000))}})}
 function clearPanel(){const o=overall(S.cur),b=overall(S.base);
   openPanel(`<div class="eyebrow">TO BE CONTINUED · 沈殿街 → 企業区</div><h3 style="color:var(--cyan)">ソウの行方</h3>
   <p>ソウは天穹区に隠れている。手配書の顔のまま、まだてっぺんを見上げて。ミナは、生身のまま兄を迎えに行くと決めた。</p>
@@ -1077,7 +1103,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
-  <p class="muted">試作版 v0.20 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
+  <p class="muted">試作版 v0.21 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -1184,7 +1210,7 @@ function talkRay(){const fc=fac();
     :['調子はどうだ。換えたところ、馴染んだか？','天穹区の手配書、また増えたらしい。……機械は、忘れない。','名前、まだ覚えてるか？ ……自分のやつだ。']))])}
 function afterClue(){if(S.st.genji&&S.st.ray&&!S.st.done)talk([L('me','ソウは天穹区に隠れてる。……昇降機のそばのミナに、知らせよう。')])}
 function talkGate2(){
-  const o=overall(S.cur),ln=o?[L('gate',`企業区ゲート。通行基準：実効スペック ${gateReq('lower')}（初回スキャンの ${GATES.lower.lb}）。現在 ${effective()}。`)]:[];
+  const o=overall(S.cur),ln=o?[L('gate',`企業区ゲート。通行基準：実効スペック ${gateReq('lower')}（${GATES.lower.lb}）。現在 ${effective()}。`)]:[];
   talk([...ln,L('gate','現在、通行の受付を停止しています。')],()=>{if(S.st.done)clearPanel();else talk([L('me',S.st.genji&&S.st.ray?'先に、昇降機のそばのミナに知らせよう。':'まずはソウの手がかりを探そう。屋台のゲンジか、鋼組の運び屋なら何か知ってるかも。')])})}
 /* ゲンジの練習場：スキャンと同じ4テストを、記録せずに何度でも */
 let practice=false;
@@ -1290,7 +1316,7 @@ function goalNow(){const o=overall(S.cur),st=S.st||{};
   if(!st.join)return{k:'join',t:'圏外のゲートを、もう一度くぐる',h:'ミナが話したがっている。'};
   if(!st.genji||!st.ray)return{k:'clue',t:'沈殿街で、ミナの兄・ソウの手がかりを探す',h:`屋台のゲンジ ${st.genji?'✓':'□'}　／　鋼組の運び屋RAY ${st.ray?'✓':'□'}　（昇降機で沈殿街へ）`};
   if(!st.done)return{k:'tell',t:'昇降機のそばのミナに、ソウのことを知らせる',h:'沈殿街の入り口、昇降機のそばで勉強している。'};
-  return{k:'end',t:'沈殿街の奥の、企業区ゲートを調べる',h:`企業区ゲートの基準は 実効スペック ${gateReq('lower')}（初回スキャンの ${GATES.lower.lb}）。生身で鍛えるだけでは、だんだん厳しくなる。企業区は次の版で。`}}
+  return{k:'end',t:'沈殿街の奥の、企業区ゲートを調べる',h:`企業区ゲートの基準は 実効スペック ${gateReq('lower')}（${GATES.lower.lb}）。生身で鍛えるだけでは、だんだん厳しくなる。企業区は次の版で。`}}
 function goalPanel(){$('#goalBtn').classList.remove('new');const g=goalNow(),st=S.st||{},o=overall(S.cur),cur=effective(),req=gateReq(),hn=Object.keys(S.honne||{}).length;
   const mark=(ok,lock)=>lock?'<span class="lock">－</span>':ok?'<span class="ok">✓</span>':'<span class="ng">✗</span>';
   const story=[S.started&&'リク、18歳。圏外の畑の村で生まれ育った。子どものころから、ピラミッド都市・東京の中が見たかった。脳のスペックが基準に届けば、圏外からでも東京に入れる。',st.poster&&'村の掲示板に、指名手配の紙が貼られていた。「指名手配　ソウ」「天穹区ゲート襲撃」。',o&&`ドク・カゲロウのブレインスキャンで、脳は「${o.tier.name}」と測られた。`,S.passed&&'圏外のゲートを通った。ミナが追ってきた。手配書のソウは、ミナの兄だった。基準は越えていたが、一人では入れなかったのだという。',
@@ -1301,7 +1327,7 @@ function goalPanel(){$('#goalBtn').classList.remove('new');const g=goalNow(),st=
   <div><p>ゲートの条件</p><p class="note">実効スペック＝生身のスキャン点数＋インプラント。インプラントでも通れるが、生身率が下がると、人の態度や会話が変わる。</p></div>
   <div class="conds">
     <div class="cond">${mark(S.passed||(o&&cur>=req),!o)}<span>圏外のゲート → 第1層 沈殿街</span><span class="ex">${o?`実効スペック ${req} 以上（今 ${cur}${o?` ＝ 生身 ${Math.round(o.avg)} ＋ 拡張 ${implantBonus()}`:''}）`:'まずブレインスキャンを受ける'}${S.passed?' · 通過済み':''}</span></div>
-    ${st.arrive?`<div class="cond">${mark(st.done,false)}<span>企業区ゲート → 第2層 企業区</span><span class="ex">実効スペック ${gateReq('lower')} 以上（初回スキャンの ${GATES.lower.lb}。今 ${cur}）／ソウの手がかりを集める（ゲンジ ${st.genji?'✓':'□'}／RAY ${st.ray?'✓':'□'}）→ ミナに知らせる ${st.done?'✓':'□'}${st.done?' · 企業区は次の版で':''}</span></div>`:`<div class="cond">${mark(false,true)}<span>？？？</span><span class="ex">ゲートの向こうに行くと、わかる</span></div>`}
+    ${st.arrive?`<div class="cond">${mark(st.done,false)}<span>企業区ゲート → 第2層 企業区</span><span class="ex">実効スペック ${gateReq('lower')} 以上（${GATES.lower.lb}。今 ${cur}）／ソウの手がかりを集める（ゲンジ ${st.genji?'✓':'□'}／RAY ${st.ray?'✓':'□'}）→ ミナに知らせる ${st.done?'✓':'□'}${st.done?' · 企業区は次の版で':''}</span></div>`:`<div class="cond">${mark(false,true)}<span>？？？</span><span class="ex">ゲートの向こうに行くと、わかる</span></div>`}
   </div>
   <div><p>これまでのあらすじ</p></div><ol class="story">${story.map(t=>`<li>${esc(t)}</li>`).join('')}</ol>
   <p class="note">本音を聞いた人：${hn} / ${Object.keys(HONNE).length}人${hn?'':'（同じ人と、とことん話してみると……）'}</p>
