@@ -232,7 +232,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.23 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.25 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -273,7 +273,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.23"></script>
+<script src="sound.js?v=0.25"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -328,7 +328,7 @@ const impLv=id=>clamp(Math.floor(+(S.imp&&S.imp[id])||0),0,IMP_MAX);
 const totalLv=()=>IMPLANTS.reduce((n,m)=>n+impLv(m.id),0);
 const sumLv=(id,k)=>IMP_LV.slice(0,impLv(id)).reduce((n,x)=>n+x[k],0);
 /* 店ごとの値段と性能。層が上がるほど少し高く、少し良い部品（Lv ごとに実効 +plus）。どこで入れたかは S.impQ に記録 */
-const SHOPS={out:{who:'doc',place:'ドク・カゲロウ診療所',mult:1,plus:0,back:'診療所に戻る',note:'部品は、沈殿街のツギハギが改良し終えた型落ちを譲ってもらったもの。'},lower:{who:'tsugi',place:'鋼組の施術所',mult:1.25,plus:1,back:'施術所を出る',note:'上の層から落ちてきた廃棄品を、ツギハギが拾って改良した部品。'}};
+const SHOPS={corp:{who:'saeki',place:'企業区 正規クリニック',mult:1.5,plus:2,back:'クリニックに戻る',note:'企業の正規品。保証つき。ただし保証は、査定の数字とひもづいている。'},out:{who:'doc',place:'ドク・カゲロウ診療所',mult:1,plus:0,back:'診療所に戻る',note:'部品は、沈殿街のツギハギが改良し終えた型落ちを譲ってもらったもの。'},lower:{who:'tsugi',place:'鋼組の施術所',mult:1.25,plus:1,back:'施術所を出る',note:'上の層から落ちてきた廃棄品を、ツギハギが拾って改良した部品。'}};
 const priceAt=(lv,tier)=>Math.round(IMP_LV[lv].price*SHOPS[tier].mult/10)*10;
 const plusOf=id=>((S.impQ&&S.impQ[id])||[]).slice(0,impLv(id)).reduce((a,b)=>a+b,0);
 const implantBonus=()=>IMPLANTS.reduce((n,m)=>n+sumLv(m.id,'spec')+plusOf(m.id),0);
@@ -409,6 +409,19 @@ const CROWD=[
   {spr:CY_B,x0:644,x1:644,sp:0,z:-6,sex:'m',cy:1,dir:-1},
   {spr:WK_B,x0:780,x1:860,sp:9,z:-5,sex:'m'}
 ].map((c,i)=>({...c,x:c.x0+(c.x1-c.x0)*((i*0.37)%1),d:c.dir||(i%2?1:-1)}));
+/* 企業区の人（スーツの社員、サイボーグの警備員、正規クリニックの医師） */
+const FEM=pal=>sprite(["..hhhh....",".hhhhhh...",".hsssshh..",".hsesesh..",".hssssh...","..ssss....",".oooooo...","sooooooos.","sooooooos.","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb.bbb.."],{s:'#d9a07a',e:'#07060d',b:'#0b0a12',...pal});
+const SUIT_A=wk({y:'#1e1a20',o:'#2a3450',t:'#2a3450',s:'#d9a07a'}),SUIT_B=wk({y:'#5a4a3a',o:'#3a3a48',t:'#3a3a48',s:'#c98f6a'}),SUIT_F=FEM({h:'#1a1418',o:'#34405a'});
+const AOI=FEM({h:'#2a1a14',o:'#3a4a6a',s:'#e0a888'}),YAMASHIRO=wk({y:'#9a9aa0',o:'#3a3a40',t:'#3a3a40',s:'#b9805a'});
+const KURO=sprite(["...cccc...","..cCCCCc..","..cvvvvc..","..cCCCCc..","...cccc...","....cc....",".oooooooo.","coooooooos","cooCCoooos","c.oooooo.s","..oooooo..","..oooooo..","..oo..cc..","..oo..cC..","..oo..cc..",".bbb..ccc."],{c:'#3a4050',C:'#8a94aa',v:'#ff4a5c',o:'#1a2030',s:'#5a6278',b:'#0b0a12'});
+const SAEKI=sprite(["..hhhhhh..",".hhhhhhhh.",".hgggghhh.",".hsssssh..",".hsesesh..",".hssssshh.","..sssss...",".wwwwwwww.","swwwwwwwws","swwwbwwwws","swwwwwwww.","..wwwwww..","..wwwwww..","..pp..pp..","..pp..pp..","..pp..pp..",".kkk..kkk."],{h:'#1a1a2a',g:'#3a8aff',s:'#e0b090',e:'#07060d',w:'#eef2f8',b:'#3a8aff',p:'#2a3048',k:'#0b0a12'});
+/* 企業区の住人：社員とサイボーグ（サイボーグが多い） */
+const CROWD_CORP=[
+  {spr:SUIT_A,x0:298,x1:298,sp:0,z:-6,sex:'m',dir:-1},{spr:SUIT_F,x0:312,x1:312,sp:0,z:-6,sex:'f',dir:-1},{spr:CY_A,x0:326,x1:326,sp:0,z:-6,sex:'m',cy:1,dir:-1},
+  {spr:SUIT_B,x0:120,x1:420,sp:18,z:7,sex:'m'},{spr:CY_B,x0:440,x1:700,sp:20,z:6,sex:'m',cy:1},{spr:SUIT_F,x0:500,x1:760,sp:15,z:-5,sex:'f'},
+  {spr:CY_A,x0:160,x1:380,sp:17,z:-4,sex:'m',cy:1},{spr:SUIT_A,x0:720,x1:840,sp:12,z:7,sex:'m'}
+].map((c,i)=>({...c,x:c.x0+(c.x1-c.x0)*((i*0.41)%1),d:c.dir||(i%2?1:-1)}));
+const crowdHere=()=>area()==='lower'?CROWD:area()==='corp'?CROWD_CORP:[];
 /* 圏外：ドラム缶の火にあたる人たち（人間だけ） */
 const OUT_CROWD=[{spr:wk({y:'#4a3a3a',o:'#3a3430',t:'#5a5048',s:'#a8704c'}),x:116,d:1,sex:'m'},{spr:wk({y:'#5a3a2a',o:'#2a3030',t:'#4a4a48',s:'#c98f6a'}),x:154,d:-1,sex:'m'},{spr:sprite(["..hhhh....",".hhhhhh...",".hsssshh..",".hsesesh..",".hssssh.h.","..ssss..h.",".oooooo...","sooooooos.","sooooooos.","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb.bbb.."],{h:'#3a2a2a',s:'#c98f6a',e:'#07060d',o:'#4a3a40',b:'#0b0a12'}),x:300,d:-1,sex:'f'}];
 const HARU=sprite(["..hhhh....",".hhhhhh...",".hsssshh..",".hsesesh..",".hssssh...","..ssss....",".oooooo...","sooooooos.","sooooooos.","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb.bbb.."],{h:'#6a4a5a',s:'#b88a6a',e:'#07060d',o:'#4a4038',b:'#0b0a12'});
@@ -439,58 +452,76 @@ const L_SHOPS=[],L_HOLO=[],L_PIPES=[];
 {const R=rng(41);let x=-20;while(x<720){const w=Math.round(40+R()*40);L_SHOPS.push({x,w,h:Math.round(40+R()*30),c:['#ffb547','#ff7ab8','#7ff8ee','#ffd9a0'][Math.floor(R()*4)],on:R()<0.7});x+=w+Math.round(6+R()*14)}
   for(let i=0;i<14;i++)L_HOLO.push({x:Math.round(R()*700),y:Math.round(30+R()*40),w:Math.round(8+R()*20),h:Math.round(4+R()*8),c:['#ff3d8b','#3ef2e0','#b77bff','#ffb547'][Math.floor(R()*4)],s:R()*30});
   for(let i=0;i<6;i++)L_PIPES.push({y:Math.round(4+i*5+R()*3),h:2+Math.round(R()*2),c:i%2?'#2a2036':'#221a2e'})}
-/* 遠くのピラミッド都市：段ごとに高層ビル・窓・ネオン・ホログラム。頂上に中央区の塔 */
-const MEGA=PYR.map((tr,i)=>{const R=rng(100+i),b=[],neon=[],holo=[],hw=tr.w/2;
+/* 遠くのピラミッド都市（東京）。段ごとに街の顔が違う：沈殿街（工場と煙）→ 企業区（ネオンの高層ビル）→ 天穹区（白いドームと庭園）→ 中央区（巨大な塔と光の輪）。
+   座標はすべて整数にそろえる（小数だと、カメラが動くたびに線がちらついて、ずれて見える） */
+const MEGA_HS=0.82;
+const MEGA=PYR.map((tr,i)=>{const R=rng(100+i),b=[],neon=[],holo=[],hw=Math.round(tr.w/2);
   for(let x=-hw+2;x<hw-3;){const w=3+Math.floor(R()*(4+i*2)),nr=1-Math.abs(x)/hw,h=Math.round(3+R()*(5+i*4)*(0.4+nr)),wins=[];
     for(let yy=2;yy<h-1;yy+=2)for(let xx=1;xx<w-1;xx+=2)if(R()<0.22+i*0.12)wins.push([xx,yy,R()*20]);
-    b.push({x,w,h,wins,ant:R()<0.15,dark:R()<0.5});x+=w+(R()<0.35?1:0)}
-  for(let k=0;k<4+i*3;k++)neon.push({x:-hw+6+R()*(tr.w-14),y:4+R()*(tr.h-9),v:R()<0.5,l:2+Math.floor(R()*4),c:['#ff3d8b','#3ef2e0','#b77bff','#ffb547','#7ff8ee'][Math.floor(R()*5)],s:R()*30});
-  for(let k=0;k<i;k++)holo.push({x:-hw*0.55+R()*hw*1.1,y:-(10+R()*10),w:7+R()*7,h:4+R()*3,c:['#ff3d8b','#3ef2e0','#b77bff'][k%3],s:R()*20});
+    b.push({x,w,h,wins,ant:R()<0.15,dark:R()<0.5,dome:i===2&&R()<0.35,chim:i===0&&R()<0.3});x+=w+(R()<0.35?1:0)}
+  for(let k=0;k<4+i*4;k++)neon.push({x:Math.round(-hw+6+R()*(tr.w-14)),y:Math.round(4+R()*(Math.round(tr.h*MEGA_HS)-9)),v:R()<0.5,l:2+Math.floor(R()*4),c:['#ff3d8b','#3ef2e0','#b77bff','#ffb547','#7ff8ee'][Math.floor(R()*5)],s:R()*30});
+  for(let k=0;k<(i===1?3:i===3?1:0);k++)holo.push({x:Math.round(-hw*0.55+R()*hw*1.1),y:-Math.round(10+R()*8),w:Math.round(8+R()*7),h:Math.round(4+R()*3),c:['#ff3d8b','#3ef2e0','#b77bff'][k%3],s:R()*20});
   return{b,neon,holo}});
-const SKYCARS=[...Array(8)].map((_,i)=>({y:i%4,sp:(i%2?1:-1)*(9+i*3),o:i*61,c:i%3?'#ff4a5c':'#fff4d6'}));
-function drawMegacity(t,prog){const pc=Math.round(230-camX*0.07),k=0.35+0.5*prog,base=GY-10,tops=[];let py=base;
+const PYR_WIN_Y=PYR_WIN.map(w=>Math.round(w.y*MEGA_HS));
+const SKYCARS=[...Array(10)].map((_,i)=>({y:i%4,sp:(i%2?1:-1)*(9+i*3),o:i*61,c:i%3?'#ff4a5c':'#fff4d6'}));
+const DATA=[...Array(14)].map((_,i)=>({x:-22+((i*7919)%45),sp:14+(i*37)%20,o:(i*53)%40}));
+function drawMegacity(t,prog){const pc=Math.round(230-camX*0.07),k=0.35+0.5*prog,base=GY-10,tops=[],ths=[];let py=base;
   /* 後ろの光 */
-  {const g=ctx.createRadialGradient(pc,base-110,4,pc,base-110,230);g.addColorStop(0,`rgba(255,180,230,${0.38*k})`);g.addColorStop(0.35,`rgba(150,90,255,${0.18*k})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,-OY,W,180+OY)}
-  /* 段の本体：縦の構造線、段の縁の光の帯、窓 */
-  const HS=0.82;PYR.forEach((tr,i)=>{const th=Math.round(tr.h*HS);py-=th;tops.push(py);const x0=pc-tr.w/2;ctx.fillStyle=tr.c;ctx.fillRect(x0,py,tr.w,th);
+  {const g=ctx.createRadialGradient(pc,base-100,4,pc,base-100,240);g.addColorStop(0,`rgba(255,180,230,${0.42*k})`);g.addColorStop(0.35,`rgba(150,90,255,${0.2*k})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,-OY,W,180+OY)}
+  /* 中央区から空へ伸びる光の柱 */
+  ctx.globalCompositeOperation='lighter';{const a=0.10+0.04*Math.sin(t*1.3);const lg=ctx.createLinearGradient(0,-OY,0,base-90);lg.addColorStop(0,'rgba(255,200,240,0)');lg.addColorStop(1,`rgba(255,200,240,${a})`);ctx.fillStyle=lg;ctx.fillRect(pc-3,-OY,6,base-90+OY);ctx.fillStyle=`rgba(255,240,255,${a*1.6})`;ctx.fillRect(pc,-OY,1,base-90+OY)}ctx.globalCompositeOperation='source-over';
+  /* 段の本体 */
+  PYR.forEach((tr,i)=>{const th=Math.round(tr.h*MEGA_HS);ths.push(th);py-=th;tops.push(py);const x0=pc-Math.round(tr.w/2);ctx.fillStyle=tr.c;ctx.fillRect(x0,py,tr.w,th);
     ctx.fillStyle='rgba(0,0,0,.25)';for(let x=x0+3;x<x0+tr.w;x+=7)ctx.fillRect(x,py,1,th);
-    ctx.fillStyle=tr.e;ctx.fillRect(x0,py,tr.w,0.8);ctx.globalAlpha=0.55+0.15*Math.sin(t*1.5+i);ctx.fillRect(x0,py+th-1.5,tr.w,0.6);ctx.globalAlpha=1});
-  for(const w of PYR_WIN){if(w.i>0&&!flick(t*0.3,w.s))continue;const tr=PYR[w.i];ctx.fillStyle=tr.win;ctx.globalAlpha=0.5+0.15*w.i;ctx.fillRect(pc+w.x,tops[w.i]+w.y*HS,1,0.5)}ctx.globalAlpha=1;
+    if(i===0){ctx.fillStyle='#2a1e2a';for(let y=py+4;y<py+th-3;y+=6)ctx.fillRect(x0,y,tr.w,1)}
+    ctx.fillStyle=tr.e;ctx.fillRect(x0,py,tr.w,1);ctx.globalAlpha=0.55+0.15*Math.sin(t*1.5+i);ctx.fillRect(x0,py+th-2,tr.w,1);ctx.globalAlpha=1;
+    if(i===1){/* 企業区：段の壁の大きな広告画面 */for(const d of [-0.32,0.28]){const bx=pc+Math.round(tr.w*d)-7,by=py+5;ctx.fillStyle='#0c0a1a';ctx.fillRect(bx,by,14,8);ctx.fillStyle=Math.floor(t*0.7+d*9)%2?'#ff3d8b':'#3ef2e0';ctx.globalAlpha=0.7;ctx.fillRect(bx+1,by+1,12,6);ctx.globalAlpha=1;ctx.fillStyle='#fff';ctx.fillRect(bx+2+Math.floor((t*6)%9),by+3,2,2)}}
+    if(i===2){/* 天穹区：人工の空の光 */ctx.fillStyle='rgba(200,240,255,.25)';ctx.fillRect(x0+4,py+2,tr.w-8,1)}});
+  for(const [n,w] of PYR_WIN.entries()){if(w.i>0&&!flick(t*0.3,w.s))continue;const tr=PYR[w.i];ctx.fillStyle=tr.win;ctx.globalAlpha=0.5+0.15*w.i;ctx.fillRect(pc+w.x,tops[w.i]+PYR_WIN_Y[n],1,1)}ctx.globalAlpha=1;
   /* 段の壁のネオン看板 */
-  MEGA.forEach((m,i)=>{for(const n of m.neon){if(!flick(t*0.5,n.s)&&i<2)continue;const ny=tops[i]+n.y*HS;ctx.fillStyle=n.c;ctx.globalAlpha=0.85;n.v?ctx.fillRect(pc+n.x,ny,1,n.l):ctx.fillRect(pc+n.x,ny,n.l+1,1);ctx.globalAlpha=0.2;n.v?ctx.fillRect(pc+n.x-1,ny-1,3,n.l+2):ctx.fillRect(pc+n.x-1,ny-1,n.l+3,3);ctx.globalAlpha=1}});
-  /* 段の上に並ぶ高層ビル（上の段ほど高く、明るい） */
-  MEGA.forEach((m,i)=>{const tr=PYR[i],y0=tops[i];for(const b of m.b){const x=pc+b.x;if(x>W+4||x+b.w<-4)continue;ctx.fillStyle=b.dark?tr.c:tr.e;ctx.globalAlpha=b.dark?1:0.55;ctx.fillRect(x,y0-b.h,b.w,b.h);ctx.globalAlpha=1;
-      ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x+b.w-1,y0-b.h,1,b.h);
-      for(const [xx,yy,sd] of b.wins){if(!flick(t*0.2,sd+b.x))continue;ctx.fillStyle=tr.win;ctx.globalAlpha=0.55+0.12*i;ctx.fillRect(x+xx,y0-b.h+yy,0.6,0.6)}ctx.globalAlpha=1;
-      if(b.ant){ctx.fillStyle=tr.e;ctx.fillRect(x+b.w/2,y0-b.h-4,0.6,4);if(Math.floor(t*1.3+b.x)%3===0){ctx.fillStyle='#ff4a5c';ctx.fillRect(x+b.w/2-0.2,y0-b.h-4.5,1,1)}}}});
-  /* 中央区の塔：細くなりながら伸びる。光の輪と、頂上の灯 */
-  const ty=tops[3];ctx.fillStyle='#2e2254';for(let k2=0;k2<5;k2++){const w=14-k2*2.4;ctx.fillRect(pc-w/2,ty-6-k2*5,w,6)}
-  ctx.fillStyle='#ffd9ee';for(let k2=0;k2<5;k2++)if(flick(t*0.4,k2*3))ctx.fillRect(pc-0.5,ty-4-k2*5,1,0.8);
-  ctx.fillStyle='#4e366c';ctx.fillRect(pc-0.5,ty-38,1,10);ctx.fillStyle=Math.floor(t*1.2)%2?'#ff9ac8':'#fff4d6';ctx.fillRect(pc-1,ty-39,2,1.5);
-  {const r=0.6+0.4*Math.sin(t*2);ctx.fillStyle=`rgba(255,154,200,${0.5*r})`;ctx.fillRect(pc-10,ty-17,20,0.8);ctx.fillStyle=`rgba(127,248,238,${0.4*r})`;ctx.fillRect(pc-8,ty-23,16,0.6);
-    const g=ctx.createRadialGradient(pc,ty-20,1,pc,ty-20,26);g.addColorStop(0,`rgba(255,220,240,${0.35*k+0.1})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(pc-26,ty-46,52,52)}
-  /* ホログラム広告（上の段に浮かぶ） */
-  MEGA.forEach((m,i)=>{for(const h of m.holo){if(!flick(t*0.7,h.s))continue;const x=pc+h.x,y=tops[i]+h.y;ctx.globalAlpha=0.32;ctx.fillStyle=h.c;ctx.fillRect(x,y,h.w,h.h);ctx.globalAlpha=0.8;ctx.fillRect(x,y+((t*12+h.s)%h.h),h.w,0.5);ctx.fillRect(x+1,y+1,h.w*0.5,0.6);ctx.globalAlpha=1}});
+  MEGA.forEach((m,i)=>{if(i===0)return;for(const n of m.neon){if(!flick(t*0.5,n.s)&&i<2)continue;const ny=tops[i]+n.y;ctx.fillStyle=n.c;ctx.globalAlpha=0.85;n.v?ctx.fillRect(pc+n.x,ny,1,n.l):ctx.fillRect(pc+n.x,ny,n.l+1,1);ctx.globalAlpha=0.2;n.v?ctx.fillRect(pc+n.x-1,ny-1,3,n.l+2):ctx.fillRect(pc+n.x-1,ny-1,n.l+3,3);ctx.globalAlpha=1}});
+  /* 段の上の街並み */
+  MEGA.forEach((m,i)=>{const tr=PYR[i],y0=tops[i];for(const b of m.b){const x=pc+b.x;if(x>W+4||x+b.w<-4)continue;
+      if(b.dome){/* 天穹区：白いドーム */const r=Math.max(3,Math.round(b.w/2)+1),cx=x+Math.round(b.w/2);ctx.fillStyle='#d8e8ff';ctx.globalAlpha=0.35;for(let yy=0;yy<r;yy++){const hw2=Math.round(Math.sqrt(r*r-yy*yy));ctx.fillRect(cx-hw2,y0-1-yy,hw2*2,1)}ctx.globalAlpha=0.9;ctx.fillStyle='#ffffff';ctx.fillRect(cx-1,y0-r,2,1);ctx.globalAlpha=1;ctx.fillStyle='#5ad08a';ctx.fillRect(cx-2,y0-2,1,1);ctx.fillRect(cx+1,y0-2,1,1);continue}
+      ctx.fillStyle=b.dark?tr.c:tr.e;ctx.globalAlpha=b.dark?1:0.55;ctx.fillRect(x,y0-b.h,b.w,b.h);ctx.globalAlpha=1;ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x+b.w-1,y0-b.h,1,b.h);
+      for(const [xx,yy,sd] of b.wins){if(!flick(t*0.2,sd+b.x))continue;ctx.fillStyle=tr.win;ctx.globalAlpha=0.55+0.12*i;ctx.fillRect(x+xx,y0-b.h+yy,1,1)}ctx.globalAlpha=1;
+      if(b.chim){/* 沈殿街：煙突と煙 */ctx.fillStyle='#1a1420';ctx.fillRect(x+1,y0-b.h-5,2,5);for(let q=0;q<3;q++){const kk=((t*0.25+q/3+b.x*0.01)%1);ctx.fillStyle=`rgba(90,80,100,${0.35*(1-kk)})`;ctx.fillRect(x+1+Math.round(Math.sin(t+q)*1),Math.round(y0-b.h-7-kk*10),2,2)}}
+      if(b.ant){ctx.fillStyle=tr.e;ctx.fillRect(x+Math.floor(b.w/2),y0-b.h-4,1,4);if(Math.floor(t*1.3+b.x)%3===0){ctx.fillStyle='#ff4a5c';ctx.fillRect(x+Math.floor(b.w/2),y0-b.h-5,1,1)}}}});
+  /* 中央区：巨大な塔。何段にも細くなり、光の輪が回り、データの光が流れ落ちる */
+  const ty=tops[3];
+  {const g=ctx.createRadialGradient(pc,ty-24,1,pc,ty-24,44);g.addColorStop(0,`rgba(255,220,245,${0.45*k+0.15})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(pc-44,ty-68,88,88)}
+  ctx.fillStyle='#241a44';ctx.fillRect(pc-22,ty-4,44,4);ctx.fillStyle='#ff9ac8';ctx.fillRect(pc-22,ty-4,44,1);
+  const segs=[[18,6],[14,6],[11,6],[8,7],[5,8]];let sy=ty-4;segs.forEach(([w,h],q)=>{sy-=h;ctx.fillStyle=q%2?'#3a2a66':'#2e2254';ctx.fillRect(pc-w,sy,w*2,h);ctx.fillStyle='#ffd9ee';ctx.globalAlpha=0.8;for(let xx=-w+2;xx<w-1;xx+=3)if(flick(t*0.3,q*7+xx))ctx.fillRect(pc+xx,sy+2,1,1);ctx.globalAlpha=1;ctx.fillStyle='#ff9ac8';ctx.fillRect(pc-w,sy,w*2,1)});
+  ctx.fillStyle='#4e366c';ctx.fillRect(pc,sy-10,1,10);ctx.fillStyle=Math.floor(t*1.2)%2?'#ff9ac8':'#fff4d6';ctx.fillRect(pc-1,sy-11,3,2);
+  /* 光の輪（楕円を点で描いて回す） */
+  for(const [ry,rr,col,sp] of [[ty-14,26,'255,154,200',0.8],[ty-26,18,'127,248,238',-1.1],[ty-36,11,'255,244,214',1.6]]){for(let q=0;q<28;q++){const a=q/28*Math.PI*2+t*sp,xx=Math.round(pc+Math.cos(a)*rr),yy=Math.round(ry+Math.sin(a)*rr*0.22);ctx.fillStyle=`rgba(${col},${Math.sin(a)>0?0.95:0.35})`;ctx.fillRect(xx,yy,1,1)}}
+  /* データの光が、塔から段へ流れ落ちる */
+  ctx.fillStyle='#7ff8ee';for(const d of DATA){const yy=Math.round(ty-30+((t*d.sp+d.o)%40));ctx.globalAlpha=0.6;ctx.fillRect(pc+d.x,yy,1,2);ctx.globalAlpha=0.25;ctx.fillRect(pc+d.x,yy-3,1,3)}ctx.globalAlpha=1;
+  /* ホログラム広告（企業区には多く、中央区には大きな紋章） */
+  MEGA.forEach((m,i)=>{for(const h of m.holo){if(!flick(t*0.7,h.s))continue;const x=pc+h.x,y=tops[i]+h.y;ctx.globalAlpha=0.32;ctx.fillStyle=h.c;ctx.fillRect(x,y,h.w,h.h);ctx.globalAlpha=0.8;ctx.fillRect(x,y+Math.floor((t*12+h.s)%h.h),h.w,1);ctx.fillRect(x+1,y+1,Math.round(h.w*0.5),1);ctx.globalAlpha=1}});
   /* サーチライト */
-  ctx.globalCompositeOperation='lighter';for(const [d,sp] of [[-1,0.5],[1,0.37]]){const a=-Math.PI/2+d*(0.35+0.3*Math.sin(t*sp)),bx=pc+d*6,by=ty-6,L=120;
+  ctx.globalCompositeOperation='lighter';for(const [d,sp] of [[-1,0.5],[1,0.37],[-1,0.23]]){const a=-Math.PI/2+d*(0.25+0.35*Math.sin(t*sp)),bx=pc+d*8,by=ty-8,L=130;
     ctx.fillStyle='rgba(200,220,255,.05)';ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+Math.cos(a-0.05)*L,by+Math.sin(a-0.05)*L);ctx.lineTo(bx+Math.cos(a+0.05)*L,by+Math.sin(a+0.05)*L);ctx.closePath();ctx.fill()}ctx.globalCompositeOperation='source-over';
   /* 空を飛ぶ車 */
-  for(const c of SKYCARS){const span=PYR[0].w+60,x=pc-span/2+(((t*c.sp+c.o)%span)+span)%span,y=tops[c.y]-4-c.y*2;ctx.fillStyle=c.c;ctx.fillRect(Math.round(x),Math.round(y),1,0.6);ctx.globalAlpha=0.3;ctx.fillRect(Math.round(x)-Math.sign(c.sp)*3,Math.round(y),3,0.6);ctx.globalAlpha=1}}
+  for(const c of SKYCARS){const span=PYR[0].w+60,x=Math.round(pc-span/2+(((t*c.sp+c.o)%span)+span)%span),y=tops[c.y]-4-c.y*2;ctx.fillStyle=c.c;ctx.fillRect(x,y,1,1);ctx.globalAlpha=0.3;ctx.fillRect(x-Math.sign(c.sp)*3,y,3,1);ctx.globalAlpha=1}}
 /* 圏外の中景：畑の村の小屋と木 */
 const VHUTS=[],VTREES=[];{const R=rng(33);let x=-20;while(x<760){if(R()<0.55)VHUTS.push({x,w:Math.round(16+R()*18),h:Math.round(9+R()*7),lit:R()<0.6,s:R()*9});else VTREES.push({x:x+6,r:Math.round(4+R()*4),h:Math.round(6+R()*7)});x+=Math.round(20+R()*26)}}
 /* 層ごとの住人と設備 */
 const AREAS={
   out:{nm:'圏外 · ピラミッドの外',floor:'ふもと · 圏外',label:'ピラミッドの外の、畑の村。ランタンの灯りと、遠くにピラミッド都市・東京の光が見える',
     npcs:[{id:'shiro',x:72,z:-6},{id:'jiro',x:114,z:-6},{id:'take',x:164,z:-6},{id:'yuki',x:188,z:4},{id:'mina',x:226,z:0},{id:'poster',x:268,py:GY-45},{id:'ken',x:304,z:5},{id:'lift',x:410},{id:'doc',x:486,z:2},{id:'haru',x:640,z:5},{id:'gate',x:856}]},
+  corp:{nm:'企業区 · 第2層',floor:'第2層 · 企業区',label:'ピラミッドの中腹、企業区。白い光とガラスのオフィス。毎日の査定で、数字が落ちた人から下の層へ送られる',
+    npcs:[{id:'lift',x:64},{id:'mina',x:106,z:-4},{id:'aoi',x:206,z:3},{id:'yamashiro',x:380,z:5},{id:'news',x:470,py:GY-86},{id:'poster',x:560,py:GY-76},{id:'saeki',x:640,z:2},{id:'kuro',x:740,z:4},{id:'ray',x:800,z:2,area:'corp'},{id:'gate',x:856}]},
   lower:{nm:'沈殿街 · 第1層',floor:'第1層 · 沈殿街',label:'ピラミッドの底の街、沈殿街。上の層の床が空を塞いでいる。屋台の灯りと工場',
     npcs:[{id:'lift',x:64},{id:'mina',x:106,z:-4},{id:'poster',x:287,py:GY-36},{id:'genji',x:322,z:-3},{id:'poster',x:400,py:GY-66},{id:'daimon',x:428,z:2},{id:'ray',x:590,z:2},{id:'tsugi',x:700,z:2},{id:'gate',x:856}]}
 };
-const AREA_ORDER=['out','lower'];
+const AREA_ORDER=['out','lower','corp'];
 const area=()=>AREAS[S.area]?S.area:'out';
 /* ミナはゲートを通ったあと、沈殿街の昇降機のそばで勉強している（同行はしない） */
 const following=()=>false;
-const minaIn=()=>S.st&&S.st.join?'lower':'out';
-const npcsHere=()=>AREAS[area()].npcs.filter(n=>n.id!=='mina'||minaIn()===area());
+const minaIn=()=>S.st&&S.st.corp?'corp':S.st&&S.st.join?'lower':'out';
+/* 企業区の RAY は、ミナと覚悟を決めたあとに現れる（配送で上がってくる） */
+const npcsHere=()=>AREAS[area()].npcs.filter(n=>(n.id!=='mina'||minaIn()===area())&&!(n.area==='corp'&&!(S.st&&S.st.resolve)));
 /* 人の見え方（知覚）に使う情報 */
 const PEOPLE={haru:{nm:'ハル',sex:'f',age:'60代'},ken:{nm:'ケン',sex:'m',age:'10代'},shiro:{nm:'シロ',sex:'m',age:'40代'},jiro:{nm:'ジロウ',sex:'m',age:'70代'},take:{nm:'タケ',sex:'m',age:'10代'},yuki:{nm:'ユキ',sex:'f',age:'30代'},mina:{nm:'ミナ',sex:'f',age:'20代'},doc:{nm:'ドク・カゲロウ',sex:'m',age:'50代'},genji:{nm:'ゲンジ',sex:'m',age:'60代'},daimon:{nm:'ダイモン',sex:'m',age:'40代'},tsugi:{nm:'ツギハギ',sex:'f',age:'40代'},ray:{nm:'RAY',model:'RAY-07 ／ 運送用義体 ／ 稼働14年'}};
 let camX=0,player={x:30,y:GY,vx:0,vy:0,onGround:true,dir:1,step:0,moving:false},keys={l:false,r:false,run:false,runT:false};
@@ -516,13 +547,19 @@ const STAGES={
     lights:[{x:480,y:GY-114,r:80,c:'255,61,139',a:0.85,cross:1},{x:460,y:GY-16,r:30,c:'255,122,184',a:0.6},{x:930,y:GY-60,r:150,c:'220,240,255',a:0.95},{x:410,y:GY-42,r:18,c:'255,181,71',a:0.6}]},
   lower:{len:980,gy:GY,start:30,lift:64,gateIn:30,ground:[],plats:[],dark:0.2,tint:'14,6,12',
     walls:[{x:140,w:132,h:62,k:'shop'},{x:740,w:122,h:58,k:'shop'}],
-    props:[{k:'desk',x:122,z:-4},{k:'vend',x:196,z:-9,c:'#3a8a5a'},{k:'bags',x:160,z:-9},{k:'boxes',x:252,z:-8},{k:'stool',x:298,z:4},{k:'stool',x:350,z:4},
-      {k:'barrel',x:618,z:-4},{k:'vend',x:800,z:-9,c:'#c86a2a'},{k:'bike',x:770,z:-8},
+    props:[{k:'desk',x:122,z:-4},{k:'vend',x:150,z:-9,c:'#3a8a5a'},{k:'bags',x:232,z:-9},{k:'boxes',x:256,z:-8},{k:'stool',x:298,z:4},{k:'stool',x:350,z:4},
+      {k:'barrel',x:618,z:-4},{k:'vend',x:852,z:-9,c:'#c86a2a'},{k:'bike',x:830,z:-8},
       ...[96,226,372,600,830].map(x=>({k:'hang',x,y:36}))],
     fires:[{x:618,y:GY-17,s:0.65}],
     lights:[{x:930,y:GY-60,r:140,c:'240,250,255',a:0.9},{x:322,y:GY-30,r:62,c:'255,170,90',a:0.75},{x:297,y:GY-36,r:22,c:'255,70,50',a:0.7},
       {x:510,y:GY-70,r:74,c:'255,120,40',a:0.75,furnace:1},{x:512,y:GY-12,r:22,c:'220,240,255',a:0.7,weld:1},{x:600,y:GY-40,r:60,c:'95,184,255',a:0.7},{x:702,y:GY-50,r:66,c:'95,184,255',a:0.75},
-      {x:64,y:GY-42,r:18,c:'255,181,71',a:0.6},{x:122,y:GY-12,r:22,c:'62,242,224',a:0.5,desk:1},{x:18,y:GY-30,r:30,c:'242,194,48',a:0.4}]}
+      {x:64,y:GY-42,r:18,c:'255,181,71',a:0.6},{x:122,y:GY-12,r:22,c:'62,242,224',a:0.5,desk:1},{x:18,y:GY-30,r:30,c:'242,194,48',a:0.4}]},
+  /* 第2層・企業区：明るい。ガラスのオフィス、査定ゲート、降格シュート、ニュース画面、ホログラムの手配書、正規クリニック、天穹区ゲート */
+  corp:{len:980,gy:GY,start:30,lift:64,gateIn:30,ground:[],plats:[],dark:0.1,tint:'6,10,24',
+    walls:[{x:120,w:110,h:84,k:'glass'},{x:700,w:150,h:88,k:'glass'}],
+    props:[{k:'plant',x:150,z:-9},{k:'bench',x:338,z:-8},{k:'plant',x:530,z:-9},{k:'bench',x:760,z:-8},{k:'plant',x:850,z:-9}],
+    fires:[],
+    lights:[{x:930,y:GY-60,r:150,c:'230,245,255',a:0.9},{x:270,y:GY-48,r:40,c:'62,242,224',a:0.6},{x:470,y:GY-70,r:44,c:'220,235,255',a:0.6},{x:560,y:GY-50,r:40,c:'255,110,130',a:0.6},{x:644,y:GY-40,r:60,c:'200,225,255',a:0.6},{x:64,y:GY-42,r:18,c:'255,181,71',a:0.6}]}
 };
 const ST=()=>STAGES[area()];
 const CAMMAX_OF=a=>STAGES[a].len-W;
@@ -531,7 +568,7 @@ function groundAt(x){const s=ST();for(const g of s.ground)if(x>=g.x0&&x<g.x1)ret
 const hsh=(i,j)=>{let h=i*374761393+j*668265263;h=(h^(h>>>13))*1274126177;return((h^(h>>>16))>>>0)/4294967296};
 /* 壁のネオン看板と灯りを、壁ごとに決めておく（圏外のものは壊れかけで点滅） */
 for(const [id,s] of Object.entries(STAGES)){
-  for(const w of s.walls){if(id==='out'){if(w.k!=='ruin')s.lights.push({x:w.x+Math.round(w.w*0.25)+4,y:GY-9-w.h+16,r:26,c:'255,190,110',a:0.6,candle:1});continue}
+  for(const w of s.walls){if(id==='corp')continue;if(id==='out'){if(w.k!=='ruin')s.lights.push({x:w.x+Math.round(w.w*0.25)+4,y:GY-9-w.h+16,r:26,c:'255,190,110',a:0.6,candle:1});continue}
     const v=hsh(w.x+3,w.w),cols=id==='lower'?['255,181,71','255,122,184','127,248,238','255,90,60']:['255,61,139','62,242,224','183,123,255','255,181,71'];
     w.neon={x:w.x+6+Math.round(v*(w.w-24)),y:GY-9-w.h+10+Math.round(hsh(w.w,w.x)*12),v:v<0.5,c:cols[Math.floor(hsh(w.x,7)*cols.length)],broken:id==='out'&&v>0.35,s:w.x};
     s.lights.push({x:w.neon.x+(w.neon.v?2:9),y:w.neon.y+(w.neon.v?8:2),r:34,c:w.neon.c,a:0.6,neon:w.neon})}
@@ -541,8 +578,8 @@ for(const [id,s] of Object.entries(STAGES)){
     else if(p.k==='vend')s.lights.push({x:p.x,y:GY+p.z-10,r:38,c:'210,235,255',a:0.7})}
   for(const f of s.fires){f.parts=[];f.acc=0;s.lights.push({x:f.x,y:f.y,r:70*f.s+10,c:'255,140,50',a:0.85,fire:f})}}
 /* 話しかけられる人：スプライト、奥行き z、向き（FLIP は左向き） */
-const NPC_SPR={jiro:()=>OUT_CROWD[0].spr,take:()=>OUT_CROWD[1].spr,yuki:()=>OUT_CROWD[2].spr,mina:()=>MINA,doc:()=>DOC,haru:()=>HARU,ken:()=>KEN,shiro:()=>SHIRO,genji:()=>GENJI,daimon:()=>DAIMON,ray:()=>RAY,tsugi:()=>TSUGI};
-const FLIP={doc:1,ray:1,tsugi:1,take:1,yuki:1,haru:1};
+const NPC_SPR={aoi:()=>AOI,yamashiro:()=>YAMASHIRO,kuro:()=>KURO,saeki:()=>SAEKI,jiro:()=>OUT_CROWD[0].spr,take:()=>OUT_CROWD[1].spr,yuki:()=>OUT_CROWD[2].spr,mina:()=>MINA,doc:()=>DOC,haru:()=>HARU,ken:()=>KEN,shiro:()=>SHIRO,genji:()=>GENJI,daimon:()=>DAIMON,ray:()=>RAY,tsugi:()=>TSUGI};
+const FLIP={saeki:1,kuro:1,ray:1,tsugi:1,take:1,yuki:1,haru:1};
 const feetY=n=>groundAt(n.x)+(n.z||0);
 let darkC=null;
 function drawOutBG(t){
@@ -551,19 +588,19 @@ function drawOutBG(t){
   const sky=['#07060d','#0a0815','#0e0b1d','#130e26','#1a1230','#24163a'];
   ctx.fillStyle=sky[0];ctx.fillRect(0,-OY,W,OY+1);for(let i=0;i<6;i++){ctx.fillStyle=sky[i];ctx.fillRect(0,i*24,W,24)}
   ctx.fillStyle=sky[5];ctx.fillRect(0,144,W,36);
-  /* ピラミッド都市・東京（遠く。頂上ほど明るい） */
-  drawMegacity(t,prog);
   /* 遠景 */
   const fo=Math.round(camX*0.15);
-  for(const b of far){const sx=b.x-fo;if(sx>W||sx+b.w<0)continue;ctx.fillStyle=b.tk?'#1d1739':'#100d1e';ctx.fillRect(sx,GY-18-b.h,b.w,b.h+18);
+  for(const b of far){const sx=b.x-fo;if(sx>W||sx+b.w<0)continue;ctx.fillStyle=b.tk?'#17122e':'#100d1e';ctx.fillRect(sx,GY-18-b.h,b.w,b.h+18);
     if(b.tk&&b.h>70){ctx.fillStyle='#ff4a5c';if(Math.floor(t*1.5+b.x)%2===0)ctx.fillRect(sx+Math.floor(b.w/2),GY-19-b.h,1,1)}}
   for(const w of farWin){const sx=w.x-fo;if(sx<0||sx>W)continue;ctx.fillStyle=w.c;ctx.fillRect(sx,w.y,0.5,0.5);ctx.globalAlpha=0.35;ctx.fillRect(sx+0.5,w.y,0.5,0.5);ctx.globalAlpha=1}
+  /* ピラミッド都市・東京（遠く。頂上ほど明るい） */
+  drawMegacity(t,prog);
   /* 中景：丘と、畑の村の小屋と木（灯りはろうそく） */
   const mo=Math.round(camX*0.5);
   ctx.fillStyle='#0d0c13';for(let x=0;x<W;x+=2){const wx=x+mo,h=20+8*Math.sin(wx*0.013)+5*Math.sin(wx*0.031+1);ctx.fillRect(x,GY-h,2,h)}
-  for(const tr of VTREES){const sx=tr.x-mo;if(sx<-12||sx>W+12)continue;ctx.fillStyle='#0a0c0e';ctx.fillRect(sx,GY-14-tr.h,1,tr.h);ctx.fillRect(sx-tr.r,GY-14-tr.h-tr.r,tr.r*2+1,tr.r*1.6);ctx.fillRect(sx-tr.r+2,GY-14-tr.h-tr.r*1.6,tr.r*2-3,tr.r)}
+  for(const tr of VTREES){const sx=tr.x-mo;if(sx<-12||sx>W+12)continue;ctx.fillStyle='#0a0c0e';ctx.fillRect(sx,GY-14-tr.h,1,tr.h);ctx.fillRect(sx-tr.r,GY-14-tr.h-tr.r,tr.r*2+1,Math.round(tr.r*1.6));ctx.fillRect(sx-tr.r+2,GY-14-tr.h-Math.round(tr.r*1.6),tr.r*2-3,tr.r)}
   for(const hu of VHUTS){const sx=hu.x-mo;if(sx<-40||sx>W+10)continue;const b=GY-12;ctx.fillStyle='#110e14';ctx.fillRect(sx,b-hu.h,hu.w,hu.h);
-    for(let r=0;r<7;r++){ctx.fillRect(sx-2+r*hu.w/14,b-hu.h-7+r,hu.w+4-r*hu.w/7,1)}
+    for(let r=0;r<7;r++){const d=Math.round(r*hu.w/14);ctx.fillRect(sx-2+d,b-hu.h-7+r,hu.w+4-d*2,1)}
     if(hu.lit&&flick(t*0.15,hu.s)){ctx.fillStyle='#b8782a';ctx.fillRect(sx+4,b-hu.h+4,2,2)}}
 
   const X=x=>Math.round(x-camX);
@@ -705,6 +742,67 @@ function drawLift(sx,t,lit){if(sx<-40||sx>W+40)return;
   ctx.fillStyle='#262236';ctx.fillRect(sx-11,GY-36,10,36);ctx.fillRect(sx+1,GY-36,10,36);ctx.fillStyle='#0c0a14';ctx.fillRect(sx,GY-36,1,36);
   ctx.fillStyle=lit?(Math.floor(t*1.5)%2?'#ffb547':'#a8742a'):'#4a2a2a';ctx.fillRect(sx-4,GY-41,8,2);
   ctx.fillStyle='#3a3550';ctx.fillRect(sx+15,GY-22,2,4);ctx.fillStyle=lit?'#3ef2e0':'#ff4a5c';ctx.fillRect(sx+15,GY-21,2,1)}
+/* ===== 第2層・企業区：白い光とガラスの街。毎日の査定で、数字が落ちた人から下の層へ送られる ===== */
+const CORP_FAR=[],CORP_MID=[];{const R=rng(57);let x=-20;while(x<720){const w=Math.round(14+R()*20),h=Math.round(50+R()*60);CORP_FAR.push({x,w,h,s:R()*20});x+=w+Math.round(2+R()*6)}
+  x=-20;while(x<900){const w=Math.round(22+R()*26),h=Math.round(60+R()*50);CORP_MID.push({x,w,h,strip:R()<0.5,holo:R()<0.3,c:['#3ef2e0','#b77bff','#7ff8ee','#ff7ab8'][Math.floor(R()*4)],s:R()*20});x+=w+Math.round(6+R()*14)}}
+/* ガラスの壁のオフィス：ガラス板、反射、白い光の帯、会社のロゴ、自動ドア */
+function drawGlass(w,t){const sx=Math.round(w.x-camX);if(sx>W+4||sx+w.w<-4)return;const base=GY-9,top=base-w.h;
+  ctx.fillStyle='#2a3450';ctx.fillRect(sx,top,w.w,w.h);ctx.fillStyle='#3a4870';for(let x=sx;x<sx+w.w;x+=12)ctx.fillRect(x,top,1,w.h);for(let y=top;y<base;y+=14)ctx.fillRect(sx,y,w.w,1);
+  ctx.fillStyle='rgba(200,230,255,.10)';for(let k=0;k<3;k++){const rx=sx+((k*37+Math.round(camX*0.2))%w.w);ctx.fillRect(rx,top,4,w.h);ctx.fillRect(rx+6,top,1,w.h)}
+  for(let row=0,wy=top+4;wy<base-18;row++,wy+=14)for(let col=0,wx=sx+2;wx<sx+w.w-8;col++,wx+=12){if(hsh(w.x+col,row)<0.5){ctx.fillStyle='rgba(220,240,255,.35)';ctx.fillRect(wx,wy,8,9);ctx.fillStyle='#1a2034';ctx.fillRect(wx+1,wy+6,3,3)}}
+  ctx.fillStyle='#e8f0ff';ctx.fillRect(sx,top,w.w,1.5);ctx.globalAlpha=0.6+0.2*Math.sin(t*1.2+w.x);ctx.fillRect(sx,base-20,w.w,1);ctx.globalAlpha=1;
+  /* 会社のロゴ（光る文字のような帯） */
+  const lx=sx+8;ctx.fillStyle='#0c1020';ctx.fillRect(lx,top+6,26,8);ctx.fillStyle='#3ef2e0';ctx.fillRect(lx+2,top+8,5,4);ctx.fillRect(lx+9,top+8,2,4);ctx.fillRect(lx+13,top+9,10,1);ctx.fillRect(lx+13,top+11,7,1);
+  /* 自動ドア */
+  const dx=sx+Math.round(w.w*0.5)-8,open=Math.abs(player.x-(w.x+w.w*0.5))<20?3:0;ctx.fillStyle='#1a2238';ctx.fillRect(dx,base-18,16,18);ctx.fillStyle='rgba(200,230,255,.45)';ctx.fillRect(dx+1-open,base-17,7,17);ctx.fillRect(dx+8+open,base-17,7,17);ctx.fillStyle='#e8f0ff';ctx.fillRect(dx,base-19,16,1)}
+function drawCorpBG(t){const prog=camX/Math.max(1,CAMMAX_OF('corp')),X=x=>Math.round(x-camX);
+  /* 上の層の床（天井）と、人工の照明パネル */
+  ctx.fillStyle='#141828';ctx.fillRect(0,-OY,W,42+OY);const co=Math.round(camX*0.8);
+  for(let x=-(co%40);x<W;x+=40){ctx.fillStyle='#232a40';ctx.fillRect(x,0,1,42);ctx.fillStyle='#eef4ff';ctx.fillRect(x+10,36,20,2);ctx.fillStyle='rgba(220,235,255,.10)';ctx.fillRect(x+4,38,32,6)}
+  /* 奥の壁と遠くの高層ビル（×0.3） */
+  const g0=ctx.createLinearGradient(0,42,0,GY);g0.addColorStop(0,'#1c2236');g0.addColorStop(1,'#2e3858');ctx.fillStyle=g0;ctx.fillRect(0,42,W,GY-42);
+  const fo=Math.round(camX*0.3);for(const b of CORP_FAR){const sx=b.x-fo;if(sx>W||sx+b.w<0)continue;ctx.fillStyle='#232a44';ctx.fillRect(sx,GY-9-b.h,b.w,b.h);
+    ctx.fillStyle='rgba(200,225,255,.5)';for(let y=GY-9-b.h+3;y<GY-12;y+=4)for(let x=sx+2;x<sx+b.w-1;x+=3)if(hsh(x+fo,y)<0.35)ctx.fillRect(x,y,1,1)}
+  /* 中景：ガラスの塔（×0.55）。縦の光の帯と、ホログラム広告 */
+  const mo=Math.round(camX*0.55);for(const b of CORP_MID){const sx=b.x-mo;if(sx>W+10||sx+b.w<-10)continue;ctx.fillStyle='#2a3352';ctx.fillRect(sx,GY-9-b.h,b.w,b.h);ctx.fillStyle='#4a5a88';ctx.fillRect(sx,GY-9-b.h,b.w,1);ctx.fillRect(sx,GY-9-b.h,1,b.h);
+    ctx.fillStyle='rgba(210,235,255,.28)';for(let y=GY-b.h-4;y<GY-14;y+=5)ctx.fillRect(sx+2,y,b.w-4,1);
+    if(b.strip){ctx.fillStyle=b.c;ctx.globalAlpha=0.55+0.25*Math.sin(t*1.4+b.s);ctx.fillRect(sx+Math.round(b.w/2),GY-9-b.h+4,1,b.h-12);ctx.globalAlpha=1}
+    if(b.holo&&flick(t*0.6,b.s)){const hy=GY-9-b.h+10;ctx.globalAlpha=0.3;ctx.fillStyle=b.c;ctx.fillRect(sx-4,hy,b.w+8,12);ctx.globalAlpha=0.85;ctx.fillRect(sx-4,hy+Math.floor((t*10+b.s)%12),b.w+8,1);ctx.fillRect(sx,hy+3,Math.round(b.w*0.6),2);ctx.globalAlpha=1}}
+  /* ガラスのオフィス（正面） */
+  for(const w of STAGES.corp.walls)drawGlass(w,t);
+  /* 床：磨かれた白い床。照明が映り込む */
+  ctx.fillStyle='#3a4258';ctx.fillRect(0,GY-9,W,60);ctx.fillStyle='#9aaad0';ctx.fillRect(0,GY-9,W,1);ctx.fillStyle='#4a536c';for(let x=-(camX%24);x<W;x+=24)ctx.fillRect(Math.round(x),GY-8,1,60);for(let y=GY-3;y<180;y+=8)ctx.fillRect(0,y,W,1);
+  ctx.fillStyle='rgba(230,240,255,.07)';for(let x=-(co%40);x<W;x+=40)ctx.fillRect(x+10,GY+2,20,14);
+  /* 入口（第1層からのゲートの出口） */
+  {const sx=X(0);if(sx>-60){ctx.fillStyle='#232a40';ctx.fillRect(sx,GY-74,40,65);ctx.fillStyle='#e8f0ff';ctx.fillRect(sx,GY-74,40,1);ctx.fillStyle='rgba(200,230,255,.2)';ctx.fillRect(sx+4,GY-68,32,59);ctx.fillStyle='#ffb547';ctx.font='6px monospace';ctx.fillText('第1層',sx+8,GY-78)}}
+  /* 昇降機 */
+  drawLift(X(64),t,true);
+  /* 査定ゲート：毎日のスキャン。数値が落ちた人は赤く光り、下の層へ */
+  {const sx=X(270);if(sx>-40&&sx<W+40){ctx.fillStyle='#1a2034';ctx.fillRect(sx-16,GY-46,4,37);ctx.fillRect(sx+12,GY-46,4,37);ctx.fillRect(sx-16,GY-50,32,5);
+    const fail=Math.floor(t/3)%4===3;ctx.fillStyle=fail?'#ff4a5c':'#3ef2e0';ctx.fillRect(sx-14,GY-49,28,2);ctx.globalAlpha=0.35;ctx.fillRect(sx-12,GY-44+((t*40)%32),24,1);ctx.globalAlpha=0.12;ctx.fillRect(sx-12,GY-44,24,35);ctx.globalAlpha=1;
+    ctx.fillStyle='#0c1020';ctx.fillRect(sx-12,GY-62,24,9);ctx.fillStyle=fail?'#ff4a5c':'#7ff8ee';ctx.font='5px monospace';ctx.fillText(fail?'47 ▼':'63 ✓',sx-9,GY-55);ctx.fillStyle='#e8f0ff';ctx.fillText('査定',sx-5,GY-64)}}
+  /* 降格シュート：床の穴。下の層へ */
+  {const sx=X(408);if(sx>-30&&sx<W+30){ctx.fillStyle='#0a0c14';ctx.fillRect(sx-14,GY-6,28,6);for(let k=0;k<28;k+=4){ctx.fillStyle=(k/4)%2?'#f2c230':'#1a1416';ctx.fillRect(sx-14+k,GY-9,4,3)}
+    ctx.fillStyle='#ff4a5c';ctx.globalAlpha=0.6+0.4*Math.sin(t*4);ctx.fillRect(sx-2,GY-26,5,2);ctx.fillRect(sx-1,GY-24,3,2);ctx.fillRect(sx,GY-22,1,2);ctx.globalAlpha=1;ctx.fillStyle='#e8f0ff';ctx.font='5px monospace';ctx.fillText('配置転換',sx-10,GY-30)}}
+  /* ニュース画面：天穹区ゲート襲撃の続報 */
+  {const sx=X(470);if(sx>-50&&sx<W+50){ctx.fillStyle='#0c1020';ctx.fillRect(sx-24,GY-84,48,30);ctx.fillStyle='#e8f0ff';ctx.fillRect(sx-24,GY-84,48,1);ctx.fillStyle='#b8323c';ctx.fillRect(sx-22,GY-82,44,4);ctx.fillStyle='#fff';ctx.font='4px monospace';ctx.fillText('NEWS · 天穹区ゲート襲撃',sx-21,GY-79);
+    ctx.fillStyle='#2a2028';ctx.fillRect(sx-20,GY-75,10,11);ctx.fillStyle='#b98a68';ctx.fillRect(sx-18,GY-73,6,6);ctx.fillStyle='#3ef2e0';ctx.fillRect(sx-14,GY-71,1,1);ctx.fillStyle='#8f97ad';ctx.fillRect(sx-19,GY-66,8,1);
+    ctx.fillStyle='rgba(220,235,255,.7)';for(let k=0;k<4;k++)ctx.fillRect(sx-6,GY-75+k*3,22-((k*7)%9),1);ctx.fillStyle='#ffb547';ctx.fillRect(sx-24+((t*20)%48),GY-58,8,1);ctx.fillStyle='#1a2034';ctx.fillRect(sx-1,GY-54,2,45)}}
+  /* ホログラムの手配書：ソウの顔が、ゆっくり回る */
+  {const sx=X(560);if(sx>-30&&sx<W+30){const c=Math.cos(t*1.2),hw=Math.max(1,Math.round(Math.abs(c)*9)),y=GY-70;ctx.fillStyle='#1a2034';ctx.fillRect(sx-6,GY-12,12,3);
+    ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,90,110,.18)';ctx.fillRect(sx-12,y-4,24,40);ctx.fillStyle='rgba(255,120,140,.75)';ctx.fillRect(sx-hw,y,hw*2,2);ctx.fillStyle=c>0?'rgba(255,190,200,.75)':'rgba(255,120,140,.45)';ctx.fillRect(sx-hw,y+4,hw*2,14);
+    if(c>0.3){ctx.fillStyle='rgba(60,240,230,.9)';ctx.fillRect(sx+Math.round(hw*0.3),y+9,1,1);ctx.fillStyle='rgba(40,20,30,.9)';ctx.fillRect(sx-Math.round(hw*0.4),y+9,1,1)}
+    ctx.fillStyle='rgba(255,120,140,.6)';ctx.fillRect(sx-hw,y+20,hw*2,1);ctx.fillRect(sx-Math.round(hw*0.7),y+23,Math.round(hw*1.4),1);ctx.fillStyle='rgba(255,160,180,.25)';for(let k=0;k<5;k++)ctx.fillRect(sx-10,y-2+((t*16+k*8)%40),20,1);ctx.globalCompositeOperation='source-over'}}
+  /* 正規クリニック（白い壁に青い十字） */
+  {const sx=X(596);if(sx>-100&&sx<W+10){ctx.fillStyle='#d8e0ee';ctx.fillRect(sx,GY-79,96,70);ctx.fillStyle='#ffffff';ctx.fillRect(sx,GY-79,96,2);ctx.fillStyle='#b8c4d8';for(let x=sx+8;x<sx+96;x+=16)ctx.fillRect(x,GY-77,1,68);
+    ctx.fillStyle='#3a8aff';ctx.fillRect(sx+42,GY-72,12,4);ctx.fillRect(sx+46,GY-76,4,12);ctx.fillStyle='#1a2a48';ctx.font='5px monospace';ctx.fillText('正規クリニック',sx+28,GY-58);
+    ctx.fillStyle='rgba(180,220,255,.6)';ctx.fillRect(sx+38,GY-30,20,21);ctx.fillStyle='#e8f0ff';ctx.fillRect(sx+47,GY-30,1,21);ctx.fillStyle='rgba(120,180,255,.35)';ctx.fillRect(sx+8,GY-48,22,14);ctx.fillRect(sx+66,GY-48,22,14)}}
+  /* 天穹区ゲート：まぶしい白と、上の層の人工の空の色 */
+  {const gx0=X(872);if(gx0<W+10){let lg=ctx.createLinearGradient(gx0,0,gx0+120,0);lg.addColorStop(0,'rgba(240,250,255,0.1)');lg.addColorStop(1,'rgba(220,245,255,0.95)');ctx.fillStyle=lg;ctx.fillRect(gx0+12,30,140,GY-39);
+    ctx.fillStyle='rgba(150,220,255,.25)';ctx.fillRect(gx0+12,30,140,30);ctx.fillStyle='#e8f0ff';ctx.fillRect(gx0,30,12,GY-39);ctx.fillStyle='#9aaad0';for(let y=40;y<GY-9;y+=6)ctx.fillRect(gx0+12,y,140,1);
+    const col=gateLight==='deny'?'#ff4a5c':gateLight==='ok'?'#3ef2e0':(Math.floor(t*2)%2?'#3ef2e0':'#1a7a70');ctx.fillStyle='#0d0b18';ctx.fillRect(gx0+1,96,10,10);ctx.fillStyle=col;ctx.fillRect(gx0+3,98,6,6)}}
+  /* 警備ドローン（ゆっくり行き来する） */
+  for(const k of [0,1]){const dx=X(300+k*380+Math.sin(t*0.4+k*2)*60),dy=70+k*10+Math.round(Math.sin(t*2+k)*2);if(dx<-10||dx>W+10)continue;ctx.fillStyle='#4a5470';ctx.fillRect(dx-5,dy,10,3);ctx.fillRect(dx-7,dy-1,3,1);ctx.fillRect(dx+4,dy-1,3,1);ctx.fillStyle='#ff4a5c';ctx.fillRect(dx-1,dy+3,2,1);ctx.fillStyle='rgba(255,74,92,.07)';ctx.beginPath();ctx.moveTo(dx,dy+4);ctx.lineTo(dx-14,GY-9);ctx.lineTo(dx+14,GY-9);ctx.closePath();ctx.fill()}}
 /* ===== 壁（正面から見た建物）：窓、ドア、シャッター、雨どい、室外機、張り紙、看板 ===== */
 function drawWall(w,t,lo){const sx=Math.round(w.x-camX);if(sx>W+4||sx+w.w<-4)return;const base=GY-9,top=base-w.h;
   ctx.fillStyle=lo?'#2e2028':'#151226';ctx.fillRect(sx,top,w.w,w.h);ctx.fillStyle=lo?'#4a3640':'#262145';ctx.fillRect(sx,top,w.w,1);ctx.fillRect(sx,top,1,w.h);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(sx+w.w-1,top,1,w.h);
@@ -791,6 +889,8 @@ function drawProp(p,t){const x=Math.round(p.x-camX),y=GY+(p.z||0);if(x<-60||x>W+
   else if(p.k==='boxes'){ctx.fillStyle='#7a5a38';ctx.fillRect(x-6,y-7,8,7);ctx.fillStyle='#8a6a44';ctx.fillRect(x-1,y-12,7,6);ctx.fillStyle='#a8844e';ctx.fillRect(x-6,y-7,8,1);ctx.fillRect(x-1,y-12,7,1);ctx.fillStyle='#5a4028';ctx.fillRect(x-2.5,y-7,0.7,7);ctx.fillRect(x+2,y-12,0.7,6)}
   else if(p.k==='cone'){ctx.fillStyle='#ff6a2a';ctx.fillRect(x-1,y-7,2,6);ctx.fillRect(x-2,y-3,4,2);ctx.fillStyle='#fff';ctx.fillRect(x-1,y-5,2,1);ctx.fillStyle='#3a2a20';ctx.fillRect(x-3,y-1,6,1)}
   else if(p.k==='bike'){ctx.strokeStyle='#6a6488';ctx.lineWidth=0.8;for(const dx of [-5,5]){ctx.beginPath();ctx.arc(x+dx,y-3,3,0,7);ctx.stroke()}ctx.beginPath();ctx.moveTo(x-5,y-3);ctx.lineTo(x-1,y-7);ctx.lineTo(x+5,y-3);ctx.moveTo(x-1,y-7);ctx.lineTo(x+3,y-7);ctx.lineTo(x+5,y-3);ctx.stroke();ctx.lineWidth=1;ctx.fillStyle='#ff4a5c';ctx.fillRect(x-2,y-8.5,3,1)}
+  else if(p.k==='plant'){ctx.fillStyle='#d8e0ee';ctx.fillRect(x-4,y-6,8,6);ctx.fillStyle='#2a8a5a';ctx.fillRect(x-5,y-14,10,8);ctx.fillRect(x-3,y-17,6,4);ctx.fillStyle='#3aaa6a';ctx.fillRect(x-3,y-13,2,2);ctx.fillRect(x+1,y-15,2,2)}
+  else if(p.k==='bench'){ctx.fillStyle='#9aaad0';ctx.fillRect(x-12,y-6,24,2);ctx.fillStyle='#5a6480';ctx.fillRect(x-10,y-4,1,4);ctx.fillRect(x+9,y-4,1,4)}
   else if(p.k==='stool'){ctx.fillStyle='#2a1c1a';ctx.fillRect(x-1,y-6,2,6);ctx.fillStyle='#8a5a3a';ctx.fillRect(x-3,y-8,6,2)}
   else if(p.k==='desk'){if(minaIn()!=='lower')return;ctx.fillStyle='#4a3424';ctx.fillRect(x-6,y-7,12,7);ctx.fillStyle='#6a4a30';ctx.fillRect(x-6,y-7,12,1);ctx.fillStyle='#d8d0b8';ctx.fillRect(x-5,y-9,5,2);ctx.fillStyle='#3ef2e0';ctx.fillRect(x+1,y-9,4,2);ctx.globalAlpha=0.25;ctx.fillRect(x-1,y-14,8,6);ctx.globalAlpha=1}}
 /* 沈殿街の天井：配管と、下がるランプ */
@@ -821,7 +921,7 @@ function heldLight(id,x,fy,flip){const L=NPC_LIGHT[id];if(!L)return;const sx=Mat
 function drawPeopleAndProps(t){const s=ST(),ents=[],m=docMood();
   for(const n of npcsHere()){const f=NPC_SPR[n.id];if(!f)continue;const fy=feetY(n),fl=!!FLIP[n.id];ents.push({y:fy,draw:()=>{
     drawAt(f(),n.x,fy,fl);heldLight(n.id,n.x,fy,fl)}})}
-  if(area()==='lower')for(const c of CROWD){const fy=GY+c.z;ents.push({y:fy,draw:()=>drawAt(c.spr,c.x,fy,c.d<0)})}
+  for(const c of crowdHere()){const fy=GY+c.z;ents.push({y:fy,draw:()=>drawAt(c.spr,c.x,fy,c.d<0)})}
   for(const p of s.props)if(p.k!=='hang')ents.push({y:GY+(p.z||0),draw:()=>drawProp(p,t)});
   for(const f of s.fires)ents.push({y:f.y+13.5,draw:()=>drawFire(f,t)});
   ents.push({y:player.y,draw:()=>{const spr=player.moving&&Math.floor(player.step*8)%2?P_B:P_A;drawAt(spr,Math.round(player.x),player.y,player.dir<0);
@@ -839,7 +939,7 @@ function lighting(t){const s=ST(),lo=area()==='lower',prog=camX/Math.max(1,CAMMA
   if(!darkC||darkC.width!==cv.width||darkC.height!==cv.height){darkC=document.createElement('canvas');darkC.width=cv.width;darkC.height=cv.height}
   const dg=darkC.getContext('2d');dg.setTransform(2,0,0,2,0,0);dg.globalCompositeOperation='source-over';dg.clearRect(0,0,W,H);
   /* 圏外は右のゲートに近づくほど明るい */
-  const dk=lo?s.dark+0.08*(1-prog):s.dark-0.3*prog;dg.fillStyle=`rgba(${s.tint},${dk})`;dg.fillRect(0,0,W,H);dg.globalCompositeOperation='destination-out';
+  const dk=lo?s.dark+0.08*(1-prog):area()==='corp'?s.dark:s.dark-0.3*prog;dg.fillStyle=`rgba(${s.tint},${dk})`;dg.fillRect(0,0,W,H);dg.globalCompositeOperation='destination-out';
   const all=[...s.lights,...liveLights(t)],vis=L=>{const x=L.x-camX,r=L.r||L.len||0;return!(x<-r||x>W+r)},
     onL=L=>!(L.broken&&(L.candle||!flick(t,L.lampx)))&&!(L.neon&&L.neon.broken&&!flick(t,L.neon.s))&&!(L.desk&&minaIn()!=='lower')&&!(L.weld&&(t*1.7)%1>=0.45),
     amp=L=>L.candle?(L.a||0.8)*(0.9+0.1*Math.sin(t*7+L.x)):L.fire?0.8+0.12*Math.sin(t*9)+0.06*Math.sin(t*23):L.furnace?0.75+0.15*Math.sin(t*3.1):L.cross?(Math.floor(t*0.8)%7===0?0.4:0.85):(L.a||0.8);
@@ -859,10 +959,13 @@ function lighting(t){const s=ST(),lo=area()==='lower',prog=camX/Math.max(1,CAMMA
 
 /* ===== 描画 ===== */
 function draw(t){OY=H-180;ctx.setTransform(2,0,0,2,0,2*OY);ctx.imageSmoothingEnabled=false;
-  if(area()==='lower')drawLowerBG(t);else drawOutBG(t);
+  if(area()==='lower')drawLowerBG(t);else if(area()==='corp')drawCorpBG(t);else drawOutBG(t);
   drawPeopleAndProps(t);
   if(area()==='lower')drawCeiling(t);
   lighting(t);
+  /* 沈殿街：上の層から、しずくがぽつぽつ落ちる（地下なので）。床に当たると小さくはねる */
+  if(area()==='lower'){ctx.setTransform(2,0,0,2,0,0);for(const d of DRIPS){const y=Math.round(d.y);ctx.fillStyle='rgba(170,195,235,.55)';ctx.fillRect(Math.round(d.x),y,1,2);
+    if(d.sp>0){ctx.fillStyle=`rgba(170,195,235,${0.5*d.sp})`;ctx.fillRect(Math.round(d.x)-2,Math.round(d.gy)-1,1,1);ctx.fillRect(Math.round(d.x)+2,Math.round(d.gy)-1,1,1)}}}
   /* 話しかけられる印 */
   ctx.setTransform(2,0,0,2,0,2*OY);
   /* 目的で話す相手には赤い印（！） */
@@ -881,6 +984,9 @@ function clarityLv(){const f=flesh();if(f<40)return 0;const o=overall(S.cur),b=o
 function near(){let best=null,bd=22;for(const n of npcsHere()){const d=Math.abs(n.x-player.x);if(d<bd){bd=d;best=n}}return best}
 
 let mode='title',last=0,titlePan=0,stepIdx=0,lastBright=-1;
+/* 沈殿街のしずく（画面に対して落ちる） */
+const DRIPS=[...Array(14)].map((_,i)=>({x:(i*97)%320,y:-((i*53)%180),v:90+(i*29)%60,gy:0,sp:0}));
+function stepDrips(dt){for(const d of DRIPS){if(d.sp>0){d.sp-=dt*4;if(d.sp<=0){d.y=-4-Math.random()*60;d.x=Math.random()*W}continue}d.y+=d.v*dt;d.gy=GY+OY+2+(d.x*7%9);if(d.y>=d.gy){d.y=-20;d.sp=1}}}
 /* プレイヤーの動き：横の速度 vx を入力に近づけ、縦は重力で落ちて地面（groundAt）に立つ。ジャンプはまだない（vy に上向きの速さを入れれば跳べる） */
 function stepPlayer(dt,st){const dx=(keys.r?1:0)-(keys.l?1:0),rn=running(),target=dx*(rn?PHYS.run:PHYS.walk);
   if(dx)player.dir=dx;const dv=PHYS.accel*dt;player.vx=player.vx<target?Math.min(target,player.vx+dv):Math.max(target,player.vx-dv);
@@ -893,9 +999,9 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
     /* 主人公の位置を先に丸めて、カメラと描く位置をそろえる（ぶれ防止） */
     camX=clamp(Math.round(player.x)-Math.round(W*0.42),0,cm);
     /* 右（ゲート）へ進むほど BGM が明るい */
-    const pr=camX/Math.max(1,cm),br=Math.round((area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
+    const pr=camX/Math.max(1,cm),br=Math.round((area()==='corp'?0.6+0.3*pr:area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='title'){titlePan+=dt*14;camX=Math.round((Math.sin(titlePan/120)*0.5+0.5)*CAMMAX_OF(area())*0.6)}
-  if(mode!=='panel'){stepFires(dt);if(area()==='lower')for(const c of CROWD){if(!c.sp)continue;c.x+=c.d*c.sp*dt;if(c.x>c.x1){c.x=c.x1;c.d=-1}else if(c.x<c.x0){c.x=c.x0;c.d=1}}}
+  if(mode!=='panel'){stepFires(dt);if(area()==='lower')stepDrips(dt);for(const c of crowdHere()){if(!c.sp)continue;c.x+=c.d*c.sp*dt;if(c.x>c.x1){c.x=c.x1;c.d=-1}else if(c.x<c.x0){c.x=c.x0;c.d=1}}}
   if(gateLight!=='idle'&&ts>gateLightUntil)gateLight='idle';
   if(mode!=='panel')draw(t);
   requestAnimationFrame(loop)}
@@ -914,7 +1020,7 @@ function toast(msg,ms=4200){const el=$('#toast');el.textContent=msg;el.hidden=fa
 
 /* ===== 会話 ===== */
 let D=null,typeT=0;
-const WHO={me:'リク',haru:'ハル',ken:'ケン',shiro:'シロ',jiro:'ジロウ',take:'タケ',yuki:'ユキ',mina:'ミナ',doc:'ドク・カゲロウ',gate:'SENTRY',genji:'ゲンジ',daimon:'ダイモン',tsugi:'ツギハギ',ray:'RAY',kago:'カゴ',poster:'手配書'};
+const WHO={me:'リク',aoi:'アオイ',yamashiro:'ヤマシロ',kuro:'クロガネ',saeki:'サエキ',news:'ニュース',pa:'場内放送',haru:'ハル',ken:'ケン',shiro:'シロ',jiro:'ジロウ',take:'タケ',yuki:'ユキ',mina:'ミナ',doc:'ドク・カゲロウ',gate:'SENTRY',genji:'ゲンジ',daimon:'ダイモン',tsugi:'ツギハギ',ray:'RAY',kago:'カゴ',poster:'手配書'};
 /* 名前欄：生身率では変えない（STORY.md） */
 function whoName(id){return WHO[id]}
 /* 文章の出し分け：{n:ふつう, c:澄み, m:機械} */
@@ -942,6 +1048,7 @@ const LH=(who,text,se)=>({who,text,honne:1,se});
 let streakId=null,streak=0;
 function interact(){const n=near();if(!n)return;
   if(n.id==='poster')return talkPoster();
+  if(n.id==='news')return talkNews();
   /* 手配書を見たあと：住人それぞれの、ソウへの思い（一人一回） */
   const wk=wantedKey(n.id),clueFirst=(wk==='genji'&&!S.st.genji)||(wk==='ray'&&!S.st.ray);/* ゲンジ・RAY は手がかりの会話で同じ話をするので、そのときは出さない */
   if(S.st&&S.st.poster&&WANTED[wk]&&!(S.wanted||{})[wk]&&!clueFirst){S.wanted={...S.wanted,[wk]:1};save();const ls=WANTED[wk].map(([w,t])=>L(w,t));return FIRE[n.id]?talk(ls):talk(ls,()=>proceed(n))}
@@ -950,13 +1057,62 @@ function interact(){const n=near();if(!n)return;
     /* 本音の手前：反応が少しずつ変わる */
     if(streak>=HONNE_N-2){const r=WARM[n.id][streak-(HONNE_N-2)],plain=FIRE[n.id];return plain?talk([L(n.id,r)]):talk([L(n.id,r)],()=>TALKS[n.id](n.id))}}
   proceed(n)}
-function proceed(n){if(n.id==='gate')return(area()==='lower'?talkGate2:talkGate)(n.id);if(n.id==='lift')return liftTalk(n.id);TALKS[n.id](n.id)}
+function proceed(n){if(n.id==='gate')return(area()==='corp'?talkGate3:area()==='lower'?talkGate2:talkGate)(n.id);if(n.id==='lift')return liftTalk(n.id);TALKS[n.id](n.id)}
 const wantedKey=id=>id==='mina'?'mina_'+area():id==='lift'?'kago':id==='gate'?'gate_'+area():id;
 /* 手配書：調べるとリクのひとこと（層ごと） */
 function talkPoster(){const fk='poster_'+area(),first=!(S.st&&S.st[fk]);if(first){S.st={...S.st,poster:1,[fk]:1};save()}
-  const lines=area()==='lower'?(first?['ここにも、同じ手配書。何枚も重ねて貼られて、上から落書きされてる。','『指名手配　ソウ』。……この街の人は、この男を知ってるのか。']:['重ね貼りの手配書。破れた下からも、同じ顔がのぞいてる。'])
+  const lines=area()==='corp'?(first?['ガラスの壁に、ソウの顔のホログラムが回ってる。『指名手配　天穹区ゲート襲撃　主犯』。','下の層の紙よりずっときれいだ。……きれいに、晒されてる。']:['ソウの顔が、ゆっくり回り続けてる。']):area()==='lower'?(first?['ここにも、同じ手配書。何枚も重ねて貼られて、上から落書きされてる。','『指名手配　ソウ』。……この街の人は、この男を知ってるのか。']:['重ね貼りの手配書。破れた下からも、同じ顔がのぞいてる。'])
     :(first?['……指名手配の紙だ。雨で、半分にじんでる。','『指名手配　ソウ』『天穹区ゲート襲撃』『情報提供者には報酬』……','天穹区って、東京のずっと上のほうだ。……あの中で、何が起きてるんだろう。']:['にじんだ手配書。男の目だけが、まっすぐこっちを見てる。']);
   talk(lines.map(t=>L('me',t)),()=>{if(first&&!(S.st.sawPosterTip)){S.st={...S.st,sawPosterTip:1};save();toast('手配書のことを、住人に聞いてみよう',5200)}})}
+/* 企業区の住人 */
+const CORP_TALK={
+  aoi:['毎朝、出社するとあの査定ゲートをくぐるの。数字が0.5でも落ちたら、その日のうちに下の層へ。','昨日まで隣の席だった人が、今朝はいなかった。……机も、もう片づいてた。','インプラント、また一つ入れようかな。……入れないと、明日の数字が怖いの。'],
+  yamashiro:['三十年、この会社で働いた。……今朝の査定で、数字が基準を割った。','あそこの床の穴が、配置転換のシュートだ。今日の夕方、わしはあれで沈殿街へ降りる。','若いの。上に行きたいなら、数字だけは落とすな。……ここは、そういう街だ。'],
+  kuro:['止まれ。……登録外の顔だな。通行証は確認した。行け。','この街では、数字が身分証だ。数字が落ちれば、身分も落ちる。','俺は警備用に換装された。……昔は、何の仕事をしていたかな。']
+};
+function talkCorp(id){talk([L(id,pick3(id,CORP_TALK[id]))])}
+/* ニュース画面：天穹区ゲート襲撃の続報（仲間がやられたことがわかる） */
+function talkNews(){const first=!S.st.news;if(first){S.st={...S.st,news:1};save()}
+  talk([L('news','【続報】天穹区ゲート襲撃事件。実行犯グループ5名のうち、4名を保安機体が無力化しました。'),L('news','主犯の元運送用義体・ソウは逃走中。天穹区の内部に潜伏しているとみられます。'),L('news','市民の皆さまは、不審な義体を見かけた場合、ただちに通報してください。'),
+    ...(first?[L('me','仲間は……4人とも、やられたのか。'),L('me','ソウは、一人で隠れてる。……ミナに、知らせないと。')]:[])])}
+/* 企業区のミナ：ニュースのあと、二人で覚悟を決める */
+function talkMinaCorp(){const ls=[];
+  if(S.st.news&&!S.st.resolve){S.st={...S.st,resolve:1};save();
+    ls.push(L('me','ニュースを見た。ソウの仲間は、ほとんどやられたらしい。ソウは天穹区に隠れてる。'),L('mina','……そっか。'),
+      L('mina','お兄ちゃんに会えば、きっと戦いになる。お兄ちゃんを追ってるやつらと。'),
+      L('mina','あたしは、インプラントは入れない。……でも、後ろからなら撃てる。けがの手当てもできる。'),
+      L('mina','リク。……一緒に、来てくれる？'),L('me','行くよ。ここまで来たんだ。'),L('mina','……ありがと。'),
+      L('mina','武器がいるね。RAY なら、鋼組の裏ルートで何とかしてくれるかも。さっき、配送で上がってきてたよ。奥のほうにいる。'));
+    return talk(ls)}
+  if(S.st.limit&&!S.st.limitTalk){S.st={...S.st,limitTalk:1};save();ls.push(L('mina','天穹区のゲート、78 だって。……生身で鍛えるだけじゃ、もう届かないかもしれない。'),L('mina','あたしはインプラントを入れない。でも、あんたが入れるなら、止めないよ。……決めるのは、あんただから。'))}
+  else ls.push(...pick3('mina_corp',[
+    [S.st.news?'お兄ちゃんのところへ、早く行きたい。……でも、あわてたら負けだ。':'ニュースの画面、見てきて。お兄ちゃんのこと、何かわかるはず。'],
+    ['ここの人たち、毎朝スキャンされてるんだって。数字が落ちたら、下の層へ。','……あたしは、それで外に出された。'],
+    ['企業区の仕事は、払いがいいよ。そのぶん、難しいけど。']]).map(t=>L('mina',t)));
+  ls.push(L('mina',gateNote()+'で、どうする？',[...gateChoice(),{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
+/* 企業区の RAY：武器を渡す */
+function talkRayCorp(){if(!S.st.weapon){S.st={...S.st,weapon:1};save();
+    return talk([L('ray','……来たか。ミナから話は聞いた。'),L('ray','ソウを上に送ったのは、俺だ。換えれば上に行けるって、あいつに教えた。'),
+      L('ray','だから、これを持っていけ。鋼組の裏ルートで回ってきた、保安機体用のパルスガンだ。'),L('ray','今度は、引きずり下ろさねえように使え。'),L('me','……ありがとう、RAY。')],
+      ()=>toast('持ち物に「パルスガン」が入った',5200))}
+  talk([L('ray',pick3('ray_corp',['使い方は、撃つ前に考えることだ。……ソウは、それを忘れた。','天穹区は、空まで作り物だ。足もとを見失うなよ。','俺はまた配送に戻る。……生きて、会いに来い。']))])}
+/* 正規クリニック：サエキ（企業の正規品。値段は高いが、性能もいい） */
+function talkSaeki(){const first=!S.st.saeki;if(first){S.st={...S.st,saeki:1};save()}
+  const ch=[{label:'インプラント',fn:()=>shopPanel('corp')},{label:'やめておく'}];
+  talk([...(first?[L('saeki','いらっしゃい。企業区の正規クリニックへようこそ。'),L('saeki','うちの部品は企業の正規品。保証つきよ。……数字が落ちて、下の層へ行くまでは、ね。')]:[L('saeki',pick3('saeki',['保証書は、査定の数字とひもづいてるの。','生身率？ ここでは誰も気にしないわ。','今日も三人、シュートで降りていった。うちのお客さんだった人もね。']))]),L('saeki','どうする？',ch)])}
+function saekiBuyTalk(id){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IMP_LV[lv],price=nx&&priceAt(lv,'corp');if(!nx||S.cr<price)return shopPanel('corp');
+  const f=flesh(),yes=t=>({label:`入れる（${price} CR）`,fn:()=>doBuy(id,t,'corp')}),no={label:'やめておく',fn:()=>shopPanel('corp')};
+  if(f>=100)return talk([L('saeki','初めての換装ね。……最初の一本は、もう戻れないわよ。',[yes(['施術完了。正規品の保証書は、明日の査定から有効よ。']),no])]);
+  if(f-nx.flesh<=0)return talk([L('saeki','これで生身の部分は、ほとんど残らないわ。……いいのね？',[yes(['施術完了。……おめでとう、と言うべきかしら。']),no])]);
+  talk([L('saeki',`${m.nm}${lv?`の Lv${lv+1}`:''}ね。${price} CR。正規品よ。`,[yes(['施術完了。保証書は、明日から有効よ。']),no])])}
+/* 天穹区ゲート：基準 78。武器を受け取っていれば、通れる */
+function talkGate3(){const o=overall(S.cur),cur=effective(),req=gateReq('corp');
+  talk([L('gate',`天穹区ゲート。通行基準：実効スペック ${req}（${GATES.corp.lb}）。現在 ${cur}。`)],()=>{
+    if(cur<req){gateLight='deny';gateLightUntil=performance.now()+4000;sfx('deny');const first=!S.st.limit;if(first){S.st={...S.st,limit:1};save()}
+      return talk([L('gate',`基準に届きません。あと ${req-cur} 不足しています。通行を拒否します。`),...(first?[L('me',`${req}……。生身で鍛えるだけじゃ、届きそうにない。`),L('me','上に行くには、体を差し出すしかないのか。')]:[])])}
+    if(!S.st.weapon)return talk([L('gate','基準を満たしています。'),L('me','……まだ行けない。ミナと話して、準備をしてからだ。')]);
+    gateLight='ok';gateLightUntil=performance.now()+4000;sfx('allow');S.st={...S.st,tenkyu:1};save();
+    talk([L('gate','基準を満たしています。通行を許可します。'),L('me','白い光の向こうに、作り物の空が見える。'),L('mina','……行こう、リク。お兄ちゃんのところへ。')],clearPanel)})}
 /* 手配書を見た住人の反応（STORY.md の表） */
 const WANTED={
   doc:[['doc','……あの手配書か。体を換えすぎた奴の顔だ。機械は、限界を超えたところで急に壊れる。'],['doc','反乱なんざ起こさなくても、あの体じゃ長くはもたなかったろうよ。']],
@@ -972,11 +1128,17 @@ const WANTED={
   tsugi:[['tsugi','あの手配書の男、首の継ぎ目が雑な仕事ね。急いで換えたのがわかる。……体がついていかなかったのよ。']],
   mina_out:[['mina','……お兄ちゃん。'],['me','……ミナ？'],['mina','……なんでもない。']],
   mina_lower:[['mina','この紙、剥がしたいのに、剥がしたらもう顔が見られない気がして。']],
+  mina_corp:[['mina','ここだと、お兄ちゃんの顔が光ってる。……下の紙より、ずっと遠く見える。']],
+  aoi:[['aoi','あの人、昔ここで配送をしてたの。毎朝あの査定ゲートで、数字が少しずつ落ちていくのを見てた。'],['aoi','……落ちる前に、上に逆らった。あたしには、できない。']],
+  yamashiro:[['yamashiro','反乱か。……わしには、そんな力は残っとらん。今日の査定で、下の層行きだ。']],
+  kuro:[['kuro','主犯の顔認証データは、全機体に配布済みだ。お前の顔は、まだ登録されていない。'],['kuro','……まだ、な。']],
+  saeki:[['saeki','あの手配書の男、首の継ぎ目はうちの正規品じゃないわね。正規品なら、もっときれいに壊れたのに。']],
+  gate_corp:[['gate','手配者の顔認証データを照合中。……一致なし。通行を判定します。']],
   kago:[['kago','手配者ソウ。天穹区ゲートへの不正侵入、ならびに保安機体の破壊。発見した場合は、ただちに通報してください。']],
   gate_out:[['gate','手配者の顔認証データを照合中。……一致なし。通行を判定します。']],
   gate_lower:[['gate','手配者の顔認証データを照合中。……一致なし。通行を判定します。']]
 };
-const TALKS={mina:(...a)=>talkMina(...a),doc:(...a)=>talkDoc(...a),genji:(...a)=>talkGenji(...a),daimon:(...a)=>talkDaimon(...a),tsugi:(...a)=>talkTsugi(...a),ray:(...a)=>talkRay(...a),jiro:id=>talkFire(id),take:id=>talkFire(id),yuki:id=>talkFire(id),haru:id=>talkFire(id),ken:id=>talkFire(id),shiro:id=>talkFire(id)};
+const TALKS={aoi:id=>talkCorp(id),yamashiro:id=>talkCorp(id),kuro:id=>talkCorp(id),saeki:()=>talkSaeki(),mina:(...a)=>talkMina(...a),doc:(...a)=>talkDoc(...a),genji:(...a)=>talkGenji(...a),daimon:(...a)=>talkDaimon(...a),tsugi:(...a)=>talkTsugi(...a),ray:(...a)=>talkRay(...a),jiro:id=>talkFire(id),take:id=>talkFire(id),yuki:id=>talkFire(id),haru:id=>talkFire(id),ken:id=>talkFire(id),shiro:id=>talkFire(id)};
 /* 同じ相手に HONNE_N 回続けて話しかけると本音。手前の2回は、少しずつ心を開く */
 const HONNE_N=6;
 const WARM={
@@ -1027,6 +1189,7 @@ function talkMina(){const o=overall(S.cur);
   if(!o){S.mina=Math.max(S.mina,1);save();return talk([L('mina','村の子だね。……東京を見てる顔してる。ここは圏外。あの光は、ここまで届かないよ。'),L('mina','東京に入りたいなら、まず脳を測ってもらいな。この先の闇医者、ドク・カゲロウのとこ。'),L('mina','スペックがわからない奴には、仕事も回せないからさ。')])}
   let ls;
   if(area()==='lower')return talkMinaLower();
+  if(area()==='corp')return talkMinaCorp();
   if(S.passed){ls=[L('mina','ゲート、通ったんだってね。……やるじゃん。'),L('mina','……ねえ。次にゲートをくぐるとき、声かけて。話があるんだ。',[...gateChoice(),{label:'仕事をもらう',fn:jobBoard},{label:'わかった'}])];return talk(ls)}
   if(S.mina<2){S.mina=2;save();ls=[L('mina',`${o.tier.name}、ね。まあ、ここから上がればいいだけだよ。`),L('mina','スペックがわかったなら仕事を回せる。運び、侵入、映像解析、錠前破り。どれも脳を使う仕事さ。'),L('mina','稼いだクレジットは、そのうちドクのインプラント代になる。ゲートの判定も、奥で確かめてきな。')]}
   else if(S.gate===1){S.gate=2;save();ls=[L('mina','ゲート、通れなかったでしょ。顔に書いてある。'),L('mina','稼いで、鍛えて、もう一度。ここではみんなそうしてる。')]}
@@ -1060,7 +1223,7 @@ function shopPanel(tier){tier=SHOPS[tier]?tier:area();const sh=SHOPS[tier],pr=lv
     return `<div class="job"><span class="tag">${TESTS.find(t=>t.id===m.stat).tag}</span><span class="nm">${m.nm}<span class="pips">${'■'.repeat(lv)}${'□'.repeat(IMP_MAX-lv)}</span></span><span class="act">${act}</span><span class="ex">${m.desc}<br>${lv?`いま Lv${lv}：${m.eff(lv)}`:'未導入'}${nx?`<br>次 Lv${lv+1}：${m.eff(lv+1)} · 実効 +${nx.spec+sh.plus} · 生身率 -${nx.flesh}%`:''}</span></div>`}).join('')}</div>
   <div class="prow"><button class="nbtn ghost" id="back" type="button">${sh.back}</button></div>`);
   const pn=$('#panel');
-  pn.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>closePanel(()=>tier==='out'?buyTalk(b.dataset.b):tsugiBuyTalk(b.dataset.b)));
+  pn.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>closePanel(()=>tier==='out'?buyTalk(b.dataset.b):tier==='corp'?saekiBuyTalk(b.dataset.b):tsugiBuyTalk(b.dataset.b)));
   $('#back').onclick=()=>closePanel();(pn.querySelector('[data-b]:not([disabled])')||$('#back')).focus()}
 /* 購入前のドクのひとこと（生身率が低いほど、ためらいがにじむ） */
 function buyTalk(id){const m=IMPLANTS.find(x=>x.id===id),lv=impLv(id),nx=IMP_LV[lv],price=nx&&priceAt(lv,'out');if(!nx||S.cr<price)return shopPanel('out');
@@ -1097,8 +1260,8 @@ function talkGate(){const o=overall(S.cur);
     else{gateLight='deny';gateLightUntil=performance.now()+4000;sfx('deny');S.gate=1;save();
       talk([L('gate',`基準に届きません。あと ${req-cur} 不足しています。通行を拒否します。`),L('me','……今の自分じゃ、足りないってことか。'),L('me','ミナの仕事で稼いで、ドクのインプラントを入れるか。……それとも、鍛えて再スキャンを受けるか。')],()=>toast('ゲートの条件と、やることは、上の「目的」で確かめられます',6000))}})}
 function clearPanel(){const o=overall(S.cur),b=overall(S.base);
-  openPanel(`<div class="eyebrow">TO BE CONTINUED · 沈殿街 → 企業区</div><h3 style="color:var(--cyan)">ソウの行方</h3>
-  <p>ソウは天穹区に隠れている。手配書の顔のまま、まだてっぺんを見上げて。ミナは、生身のまま兄を迎えに行くと決めた。</p>
+  openPanel(`<div class="eyebrow">TO BE CONTINUED · 企業区 → 天穹区</div><h3 style="color:var(--cyan)">作り物の空の下へ</h3>
+  <p>ソウは天穹区に隠れている。リクは RAY から武器を受け取り、ミナと二人でゲートをくぐった。ここから先は、通してもらうのではなく、突破していく。</p>
   <div class="stats">
     <div class="stat"><span>実効スペック</span><b>${effective()}</b></div>
     <div class="stat"><span>初回スキャン</span><b>${Math.round(b.avg)}</b></div>
@@ -1106,9 +1269,9 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>生身率</span><b>${flesh()}%</b></div>
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
-  <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
-  <p class="muted">試作版 v0.23 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
-  <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
+  <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">天穹区は次の版で</p>
+  <p class="muted">試作版 v0.25 はここまでです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
+  <div class="prow"><button class="nbtn" id="ok" type="button">企業区に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
 function minaJoin(){S.st={...S.st,join:1};save();
@@ -1122,10 +1285,16 @@ function travel(to,via){if(!AREAS[to])return;mode='fade';$('#fade').classList.ad
   setTimeout(()=>{S.area=to;if(!S.reached.includes(to))S.reached=[...S.reached,to];
     const st=STAGES[to];player.x=via==='lift'?st.lift:(st.gateIn||st.start);player.y=groundAt(player.x);player.vx=player.vy=0;player.dir=1;camX=clamp(Math.round(player.x-W*0.42),0,CAMMAX_OF(to));savePos();
     /* ライト：沈殿街は明るいのでしまい、圏外ではつける */
-    const lt=to==='lower'&&S.light?'ライトは持ち物にしまった（「持ち物」か F キーで、いつでもつけられる）':to==='out'&&!S.light?'暗いので、ライトをつけた':'';if(lt)S.light=to==='out';
+    const lt=to!=='out'&&S.light?'ライトは持ち物にしまった（「持ち物」か F キーで、いつでもつけられる）':to==='out'&&!S.light?'暗いので、ライトをつけた':'';if(lt)S.light=to==='out';
     save();hud();sndApply();
     $('#fade').classList.remove('on');setTimeout(()=>{mode='play';arrive(to);if(lt)toast(lt,5200)},380)},380)}
-function arrive(to){if(to==='lower'&&!S.st.arrive){S.st={...S.st,arrive:1};save();
+function arrive(to){if(to==='corp'&&!S.st.corpArrive){S.st={...S.st,corpArrive:1};save();
+    return talk([L('pa','本日の査定を開始します。数値が基準を下回った社員は、第1層への配置転換となります。'),
+      L('me',{n:'白い光。ガラスの壁。……静かすぎる街だ。',c:'白い光。ガラスの壁。人の声がほとんど聞こえない。',m:'第2層に到達。照度、第1層の3.1倍。人間 41%、義体 59%。'}),
+      L('mina','ここが企業区。……毎日スキャンされて、数字が落ちた人から下に送られる。'),
+      L('mina','お兄ちゃんのこと、ここなら何かわかるはず。奥のニュースの画面、見てきて。'),
+      L('mina','あたしは、昇降機のそばにいる。仕事がほしくなったら言って。')])}
+  if(to==='lower'&&!S.st.arrive){S.st={...S.st,arrive:1};save();
   talk([L('me',{n:'ゲートをくぐると、空がなかった。上の層の床が、天井のように街を塞いでいる。',c:'ゲートをくぐると、湯気と出汁の匂いがした。空の代わりに、上の層の床が街を覆っている。',m:'第1層に到達。照度、圏外の2.4倍。気温21℃、湿度88%。人間 82%、義体 18%。'}),
     L('me',{n:'機械の唸りと、男たちの怒鳴り声が響いている。',c:'鉄を打つ音、油の匂い、男たちの笑い声。人が、生きて働いている音がする。',m:'工場の稼働音を検出。作業者の大半は生身。'}),
     L('mina','……変わってない。'),L('mina','あたしが変わったのか。'),
@@ -1145,8 +1314,8 @@ function liftPanel(){const here=area();
   <div class="prow"><button class="nbtn ghost" id="back" type="button">降りる</button></div>`);
   $('#panel').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>liftRide(b.dataset.f));
   $('#back').onclick=()=>closePanel();($('#panel').querySelector('[data-f]:not([disabled])')||$('#back')).focus()}
-function liftRide(to){const from=area(),fl={out:'ふもと',lower:'第1層'};
-  openPanel(`<div class="eyebrow">SHAFT · 縦坑</div><div class="lift-ind" id="ind">${fl[from]}</div><p class="c muted" style="max-width:none;text-align:center">${to==='lower'?'▼ 下降中':'▲ 上昇中'}</p>`);
+function liftRide(to){const from=area(),fl={out:'ふもと',lower:'第1層',corp:'第2層'};
+  openPanel(`<div class="eyebrow">SHAFT · 縦坑</div><div class="lift-ind" id="ind">${fl[from]}</div><p class="c muted" style="max-width:none;text-align:center">${AREA_ORDER.indexOf(to)<AREA_ORDER.indexOf(from)?'▼ 下降中':'▲ 上昇中'}</p>`);
   sfx('lift');timers.push(setTimeout(()=>{const el=$('#ind');if(el)el.textContent='· · ·'},600));
   timers.push(setTimeout(()=>{const el=$('#ind');if(el)el.textContent=fl[to]},1250));
   timers.push(setTimeout(()=>closePanel(()=>travel(to,'lift')),1700))}
@@ -1196,7 +1365,7 @@ function talkDaimon(){const fc=fac();
     :['あんたの目、アームのカメラと同じ色をしてやがる。','機械同士で通じ合うんなら、アームの機嫌でも聞いてきてくれ。','……悪く思うな。ここの連中は、機械に何かを奪われた奴ばかりだ。'];
   talk([L('daimon',pick3('daimon_'+fc,pool))])}
 /* サイボーグ側「鋼組」：RAY */
-function talkRay(){const fc=fac();
+function talkRay(){if(area()==='corp')return talkRayCorp();const fc=fac();
   if(!S.st.ray){S.st={...S.st,ray:1};save();
     const first=fc==='open'?[L('ray','……旧式か。この辺じゃ珍しい。'),L('ray','用がないなら、道を空けろ。')]
       :fc==='mid'?[L('ray','半端な体だな。生身にも、こっちにも、なりきれてない。')]
@@ -1213,9 +1382,13 @@ function talkRay(){const fc=fac();
     :fc==='mid'?['迷ってる顔だな。どっちに転ぶか、見ものだ。','半分の体ってのは、どっちの側にも居場所がない。……俺も、そうだった。','ツギハギのとこの部品はいい。上の層のより、手が温かい。']
     :['調子はどうだ。換えたところ、馴染んだか？','天穹区の手配書、また増えたらしい。……機械は、忘れない。','名前、まだ覚えてるか？ ……自分のやつだ。']))])}
 function afterClue(){if(S.st.genji&&S.st.ray&&!S.st.done)talk([L('me','ソウは天穹区に隠れてる。……昇降機のそばのミナに、知らせよう。')])}
-function talkGate2(){
-  const o=overall(S.cur),ln=o?[L('gate',`企業区ゲート。通行基準：実効スペック ${gateReq('lower')}（${GATES.lower.lb}）。現在 ${effective()}。`)]:[];
-  talk([...ln,L('gate','現在、通行の受付を停止しています。')],()=>{if(S.st.done)clearPanel();else talk([L('me',S.st.genji&&S.st.ray?'先に、昇降機のそばのミナに知らせよう。':'まずはソウの手がかりを探そう。屋台のゲンジか、鋼組の運び屋なら何か知ってるかも。')])})}
+function talkGate2(){const o=overall(S.cur),cur=effective(),req=gateReq('lower');
+  if(!S.st.done)return talk([L('gate',`企業区ゲート。通行基準：実効スペック ${req}（${GATES.lower.lb}）。現在 ${cur}。`),L('me',S.st.genji&&S.st.ray?'先に、昇降機のそばのミナに知らせよう。':'まずはソウの手がかりを探そう。屋台のゲンジか、鋼組の運び屋なら何か知ってるかも。')]);
+  if(S.st.corp)return talk([L('gate','通行許可済みの脳です。第2層・企業区へどうぞ。',[{label:'企業区へ進む',fn:()=>travel('corp','gate')},{label:'やめておく'}])]);
+  talk([L('gate','スキャン記録を照合中……'),L('gate',`実効スペック ${cur} ／ 通行基準 ${req}（${GATES.lower.lb}）`)],()=>{
+    if(cur<req){gateLight='deny';gateLightUntil=performance.now()+4000;sfx('deny');return talk([L('gate',`基準に届きません。あと ${req-cur} 不足しています。通行を拒否します。`),L('me','仕事で稼いでインプラントを入れるか、鍛えて再スキャンを受けるか。……ミナにも相談しよう。')])}
+    gateLight='ok';gateLightUntil=performance.now()+4000;sfx('allow');S.st={...S.st,corp:1};save();
+    talk([L('gate','基準を満たしています。通行を許可します。'),L('mina','……あたしも、通れた。ぎりぎりだけどね。生身のままで。'),L('mina','行こう。お兄ちゃんに、少しでも近いところへ。')],()=>travel('corp','gate'))})}
 /* ゲンジの練習場：スキャンと同じ4テストを、記録せずに何度でも */
 let practice=false;
 function practicePanel(){practice=true;
@@ -1320,19 +1493,27 @@ function goalNow(){const o=overall(S.cur),st=S.st||{};
   if(!st.join)return{k:'join',t:'圏外のゲートを、もう一度くぐる',h:'ミナが話したがっている。'};
   if(!st.genji||!st.ray)return{k:'clue',t:'沈殿街で、ミナの兄・ソウの手がかりを探す',h:`屋台のゲンジ ${st.genji?'✓':'□'}　／　鋼組の運び屋RAY ${st.ray?'✓':'□'}　（昇降機で沈殿街へ）`};
   if(!st.done)return{k:'tell',t:'昇降機のそばのミナに、ソウのことを知らせる',h:'沈殿街の入り口、昇降機のそばで勉強している。'};
-  return{k:'end',t:'沈殿街の奥の、企業区ゲートを調べる',h:`企業区ゲートの基準は 実効スペック ${gateReq('lower')}（${GATES.lower.lb}）。生身で鍛えるだけでは、だんだん厳しくなる。企業区は次の版で。`}}
+  if(!st.corp){const cur=effective(),req=gateReq('lower');return{k:'gate2',t:`実効スペックを ${req} 以上にして、企業区ゲートを通る（今 ${cur}）`,h:`沈殿街の奥のゲート。基準は ${GATES.lower.lb}。仕事とインプラント、再スキャンで上げる。生身で鍛えるだけでは、だんだん厳しくなる。`}}
+  if(!st.news)return{k:'news',t:'企業区のニュース画面で、ソウの続報を確かめる',h:'ガラスのオフィスの先、査定ゲートとシュートのさらに奥。'};
+  if(!st.resolve)return{k:'mina2',t:'昇降機のそばのミナに、ニュースのことを話す',h:'企業区の入り口、昇降機のそば。'};
+  if(!st.weapon)return{k:'ray2',t:'企業区の奥にいる RAY に会う',h:'配送で上がってきている。正規クリニックの先。'};
+  const cur=effective(),req=gateReq('corp');return{k:'end',t:`実効スペックを ${req} 以上にして、天穹区ゲートを通る（今 ${cur}）`,h:`企業区の奥のゲート。基準は ${GATES.corp.lb}。インプラントなしでは、ほぼ届かない。天穹区は次の版で。`}}
 /* 目的で話す相手（赤い印を出す）。別の層にいるときは昇降機 */
 function goalTargets(){const g=goalNow(),st=S.st||{},a=area();
   if(g.k==='scan')return a==='out'?['doc']:['lift'];
   if(g.k==='gate1'||g.k==='join')return a==='out'?['gate']:['lift'];
   if(g.k==='clue')return a==='lower'?[!st.genji&&'genji',!st.ray&&'ray'].filter(Boolean):['lift'];
   if(g.k==='tell')return a==='lower'?['mina']:['lift'];
-  if(g.k==='end')return a==='lower'?['gate']:['lift'];
+  if(g.k==='gate2')return a==='lower'?['gate']:['lift'];
+  if(g.k==='news')return a==='corp'?['news']:['lift'];
+  if(g.k==='mina2')return a==='corp'?['mina']:['lift'];
+  if(g.k==='ray2')return a==='corp'?['ray']:['lift'];
+  if(g.k==='end')return a==='corp'?['gate']:['lift'];
   return[]}
 /* ゲートの条件がそろっているか（ミナから、そのままゲートへ行ける） */
-function gateReady(){const o=overall(S.cur);if(!o)return false;if(area()==='out')return !S.st.join&&effective()>=gateReq('out');return !!S.st.done&&effective()>=gateReq('lower')}
-function gateChoice(){if(!gateReady())return[];return[{label:area()==='out'?'ゲートへ行く':'企業区ゲートへ行く',fn:goGate}]}
-function gateNote(){const o=overall(S.cur);if(!o)return'';const g=area()==='out'?'out':'lower';if(g==='lower'&&!S.st.done)return'';if(g==='out'&&S.st.join)return'';const d=gateReq(g)-effective();return d>0?`ゲートの基準まで、あと ${d}。`:'ゲートの基準には、もう届いてるよ。'}
+function gateReady(){const o=overall(S.cur);if(!o)return false;if(area()==='out')return !S.st.join&&effective()>=gateReq('out');if(area()==='corp')return !!S.st.weapon&&!S.st.tenkyu&&effective()>=gateReq('corp');return !!S.st.done&&!S.st.corp&&effective()>=gateReq('lower')}
+function gateChoice(){if(!gateReady())return[];return[{label:area()==='out'?'ゲートへ行く':area()==='corp'?'天穹区ゲートへ行く':'企業区ゲートへ行く',fn:goGate}]}
+function gateNote(){const o=overall(S.cur);if(!o)return'';const g=area();if(g==='lower'&&(!S.st.done||S.st.corp))return'';if(g==='out'&&S.st.join)return'';if(g==='corp'&&(!S.st.weapon||S.st.tenkyu))return'';const d=gateReq(g)-effective();return d>0?`ゲートの基準まで、あと ${d}。`:'ゲートの基準には、もう届いてるよ。'}
 /* ミナから、ゲートの前まで行って判定を受ける */
 function goGate(){mode='fade';$('#fade').classList.add('on');keys.l=keys.r=false;
   setTimeout(()=>{const n=npcsHere().find(n=>n.id==='gate');player.x=n.x-14;player.y=groundAt(player.x);player.vx=player.vy=0;player.dir=1;camX=clamp(Math.round(player.x)-Math.round(W*0.42),0,CAMMAX_OF(area()));savePos();save();
@@ -1341,13 +1522,14 @@ function goalPanel(){$('#goalBtn').classList.remove('new');const g=goalNow(),st=
   const mark=(ok,lock)=>lock?'<span class="lock">－</span>':ok?'<span class="ok">✓</span>':'<span class="ng">✗</span>';
   const story=[S.started&&'リク、18歳。圏外の畑の村で生まれ育った。子どものころから、ピラミッド都市・東京の中が見たかった。脳のスペックが基準に届けば、圏外からでも東京に入れる。',st.poster&&'村の掲示板に、指名手配の紙が貼られていた。「指名手配　ソウ」「天穹区ゲート襲撃」。',o&&`ドク・カゲロウのブレインスキャンで、脳は「${o.tier.name}」と測られた。`,S.passed&&'圏外のゲートを通った。ミナが追ってきた。手配書のソウは、ミナの兄だった。基準は越えていたが、一人では入れなかったのだという。',
     st.arrive&&'ピラミッドの底、第1層・沈殿街に着いた。ミナはここで生まれ、十年前に検査に落ちて圏外へ出された。兄のソウは東京に残った。ミナは昇降機のそばに残り、インプラントに頼らず次のゲートを通るため勉強を始めた。',
-    st.genji&&'屋台のゲンジいわく、ソウは昔の常連で、「てっぺんに上って、全部変える」と言って鋼組に入り、体を換え始めた。',st.ray&&'鋼組のRAYいわく、ソウに体を換える道を勧めたのは自分だった。ソウは天穹区まで上ったが、スペックが上がらなくなり、仲間と天穹区のゲートを襲って失敗した。今は手配者として隠れている。',st.done&&'ミナに知らせた。ミナは、生身のまま兄を迎えに行くと決めた。'].filter(Boolean);
+    st.genji&&'屋台のゲンジいわく、ソウは昔の常連で、「てっぺんに上って、全部変える」と言って鋼組に入り、体を換え始めた。',st.ray&&'鋼組のRAYいわく、ソウに体を換える道を勧めたのは自分だった。ソウは天穹区まで上ったが、スペックが上がらなくなり、仲間と天穹区のゲートを襲って失敗した。今は手配者として隠れている。',st.done&&'ミナに知らせた。ミナは、生身のまま兄を迎えに行くと決めた。',st.corp&&'企業区ゲートを通った。ミナも、生身のままぎりぎりで基準に届いた。企業区では毎日の査定で、数字が落ちた人から下の層へ送られている。',st.news&&'ニュースによると、ソウの仲間5人のうち4人は保安機体にやられた。ソウは一人で天穹区に潜んでいる。',st.resolve&&'ミナと話した。ソウに会えば、戦いは避けられない。ミナは生身のまま後ろから支えると言い、二人で覚悟を決めた。',st.weapon&&'RAY から、鋼組の裏ルートのパルスガンを受け取った。「今度は、引きずり下ろさねえように使え」。',st.tenkyu&&'天穹区ゲートを通った。'].filter(Boolean);
   openPanel(`<div class="eyebrow">OBJECTIVE · 目的</div><h3>目的</h3>
   <div class="goal"><b>いまやること</b><p style="margin:4px 0 0">${esc(g.t)}</p><p class="note" style="margin-top:4px">${esc(g.h)}</p></div>
   <div><p>ゲートの条件</p><p class="note">実効スペック＝生身のスキャン点数＋インプラント。インプラントでも通れるが、生身率が下がると、人の態度や会話が変わる。</p></div>
   <div class="conds">
     <div class="cond">${mark(S.passed||(o&&cur>=req),!o)}<span>圏外のゲート → 第1層 沈殿街</span><span class="ex">${o?`実効スペック ${req} 以上（今 ${cur}${o?` ＝ 生身 ${Math.round(o.avg)} ＋ 拡張 ${implantBonus()}`:''}）`:'まずブレインスキャンを受ける'}${S.passed?' · 通過済み':''}</span></div>
-    ${st.arrive?`<div class="cond">${mark(st.done,false)}<span>企業区ゲート → 第2層 企業区</span><span class="ex">実効スペック ${gateReq('lower')} 以上（${GATES.lower.lb}。今 ${cur}）／ソウの手がかりを集める（ゲンジ ${st.genji?'✓':'□'}／RAY ${st.ray?'✓':'□'}）→ ミナに知らせる ${st.done?'✓':'□'}${st.done?' · 企業区は次の版で':''}</span></div>`:`<div class="cond">${mark(false,true)}<span>？？？</span><span class="ex">ゲートの向こうに行くと、わかる</span></div>`}
+    ${st.arrive?`<div class="cond">${mark(st.done,false)}<span>企業区ゲート → 第2層 企業区</span><span class="ex">実効スペック ${gateReq('lower')} 以上（${GATES.lower.lb}。今 ${cur}）／ソウの手がかりを集める（ゲンジ ${st.genji?'✓':'□'}／RAY ${st.ray?'✓':'□'}）→ ミナに知らせる ${st.done?'✓':'□'}${st.corp?' · 通過済み':''}</span></div>`:`<div class="cond">${mark(false,true)}<span>？？？</span><span class="ex">ゲートの向こうに行くと、わかる</span></div>`}
+    ${st.corp?`<div class="cond">${mark(st.tenkyu,false)}<span>天穹区ゲート → 第3層 天穹区</span><span class="ex">実効スペック ${gateReq('corp')} 以上（${GATES.corp.lb}。今 ${cur}）／ニュースを見る ${st.news?'✓':'□'} → ミナと話す ${st.resolve?'✓':'□'} → RAY から武器を受け取る ${st.weapon?'✓':'□'}${st.tenkyu?' · 通過済み · 天穹区は次の版で':''}</span></div>`:st.arrive?`<div class="cond">${mark(false,true)}<span>？？？</span><span class="ex">ゲートの向こうに行くと、わかる</span></div>`:''}
   </div>
   <div><p>これまでのあらすじ</p></div><ol class="story">${story.map(t=>`<li>${esc(t)}</li>`).join('')}</ol>
   <p class="note">本音を聞いた人：${hn} / ${Object.keys(HONNE).length}人${hn?'':'（同じ人と、とことん話してみると……）'}</p>
@@ -1409,10 +1591,15 @@ const JP={
   arm:{easy:{spd:0.55,zone:0.2,miss:3,n:10},normal:{spd:0.75,zone:0.15,miss:2,n:12},hard:{spd:1,zone:0.11,miss:2,n:14}},
   proc:{easy:{len:3,ms:650,lives:3,rev:9},normal:{len:4,ms:500,lives:2,rev:3},hard:{len:5,ms:420,lives:2,rev:2}},
   inspect:{easy:{n:5,dur:5,d:20,lives:3,q:8},normal:{n:6,dur:4.2,d:14,lives:3,q:10},hard:{n:7,dur:3.5,d:9,lives:2,q:12}},
-  mix:{easy:{T:50,k:2,max:20,q:5},normal:{T:45,k:2,max:40,q:6},hard:{T:45,k:3,max:40,q:6}}
+  mix:{easy:{T:50,k:2,max:20,q:5},normal:{T:45,k:2,max:40,q:6},hard:{T:45,k:3,max:40,q:6}},
+  /* 第2層・企業区の仕事（しくみは下の層と同じで、難しい） */
+  guard:{easy:{sh:3,w0:0.9,w1:0.55},normal:{sh:2,w0:0.7,w1:0.42},hard:{sh:2,w0:0.55,w1:0.32}},
+  meeting:{easy:{len:4,ms:550,lives:3,rev:3},normal:{len:5,ms:450,lives:2,rev:2},hard:{len:6,ms:380,lives:2,rev:2}},
+  idcheck:{easy:{T:40,d0:26,dm:5,q:9},normal:{T:35,d0:20,dm:3.8,q:11},hard:{T:30,d0:15,dm:2.6,q:13}},
+  ledger:{easy:{T:50,k:2,max:40,q:5},normal:{T:45,k:3,max:40,q:6},hard:{T:45,k:3,max:60,q:7}}
 };
 /* 層ごとの報酬の倍率（上の層ほど多い） */
-const TIER_PAY={out:1,lower:1.5};
+const TIER_PAY={out:1,lower:1.5,corp:2.2};
 const JOBS=[
   {id:'drone',tier:'out',stat:'cpu',tag:'CPU',nm:'ドローン回避',client:'運び屋組合',unit:'回避',run:()=>runDrone,
     desc:'企業の警備ドローンの下を、荷物を抱えて30秒走り抜ける。赤い照準線が出たら、その列から逃げろ。',
@@ -1445,12 +1632,29 @@ const JOBS=[
   {id:'mix',tier:'lower',stat:'alu',tag:'ALU',nm:'配合計算',client:'炉の番人',unit:'回',run:()=>runMix,
     desc:'炉に入れる材料の配合。数字の書かれた部品から、合計が目標の数になる組み合わせを選べ。',
     ctl:'部品をタップ（キーボードの 1〜6 でも選べる）',rule:p=>`制限 ${p.T} 秒 · ${p.k} 個を選ぶ · ノルマ ${p.q} 回 · 間違えると3秒減`,
-    ok:'炉の火がいい色になった。番人が喜んでたよ。',ng:'配合が足りなかったか。できた分は払うよ。'}
+    ok:'炉の火がいい色になった。番人が喜んでたよ。',ng:'配合が足りなかったか。できた分は払うよ。'},
+  /* 第2層・企業区（報酬 ×2.2） */
+  {id:'guard',base:'drone',tier:'corp',stat:'cpu',tag:'CPU',nm:'警備網の突破',client:'配送部の係長',unit:'回避',run:()=>runDrone,
+    desc:'社内の警備ドローンの監視網を、極秘の荷物を抱えて抜ける。照準が出たら、その列から逃げろ。下の層より、狙いが速い。',
+    ctl:'← → / A D で列を移動。スマホは画面の左右をタップ',rule:p=>`30秒生き延びれば成功 · シールド ${p.sh} · 照準から発射まで ${p.w0}〜${p.w1} 秒`,
+    ok:'係長が「査定の数字が上がる」って喜んでた。',ng:'荷物は没収か。抜けた分は払うって。'},
+  {id:'meeting',base:'proc',tier:'corp',stat:'ram',tag:'RAM',nm:'会議の盗聴',client:'総務の内通者',unit:'議題',run:()=>runProc,
+    desc:'役員会議の発言の順番を、一瞬だけ流れる記号で覚えて書き起こせ。途中から「逆順」の議事録も求められる。全5議題。',
+    ctl:'記号をタップ、またはキーボードの 1〜6',rule:p=>`最初は ${p.len} 個で1議題ごとに+1 · ${p.rev<9?`${p.rev}議題目から逆順あり · `:''}ミス ${p.lives} 回まで${p.review?` · 見直し ${p.review} 回`:''}`,
+    ok:'次の配置転換リストが手に入った。内通者が青い顔してたよ。',ng:'途中で聞き逃したか。書けた分は払うよ。'},
+  {id:'idcheck',base:'cam',tier:'corp',stat:'gpu',tag:'GPU',nm:'偽造身分証の照合',client:'入館ゲートの夜勤',unit:'人',run:()=>runCam,
+    desc:'入館する群衆の中から、指定された色の身分証を下げた人物を探す。色の差は、下の層よりずっと小さい。',
+    ctl:'映像をタップ',rule:p=>`制限 ${p.T} 秒 · ノルマ ${p.q} 人 · 見間違えると2秒減${p.glow?` · 標的が ${p.glow} 秒光る`:''}`,
+    ok:'偽物は全部見抜けた。夜勤が助かったって。',ng:'見逃しが出たか。見抜けた分は払うよ。'},
+  {id:'ledger',base:'mix',tier:'corp',stat:'alu',tag:'ALU',nm:'帳簿の改ざん',client:'経理部の裏帳簿係',unit:'件',run:()=>runMix,
+    desc:'裏帳簿の数字を合わせる。数字の書かれた伝票から、合計が目標の額になる組み合わせを選べ。',
+    ctl:'伝票をタップ（キーボードの 1〜6 でも選べる）',rule:p=>`制限 ${p.T} 秒 · ${p.k} 枚を選ぶ · ノルマ ${p.q} 件 · 間違えると3秒減`,
+    ok:'監査の前に帳尻が合った。裏帳簿係がほっとしてた。',ng:'合わない伝票が残ったか。合った分は払うよ。'}
 ];
 const jobOf=id=>JOBS.find(j=>j.id===id);
 const impFor=job=>IMPLANTS.find(m=>m.stat===job.stat);
 const r2=v=>Math.round(v*100)/100;
-function jp(id,d){const p={...JP[id][d],review:0,glow:0},m=impFor(jobOf(id)),lv=m?impLv(m.id):0;
+function jp(jid,d){const p={...JP[jid][d],review:0,glow:0},m=impFor(jobOf(jid)),lv=m?impLv(m.id):0,id=jobOf(jid).base||jid;
   if(id==='drone')p.sh+=lv;else if(id==='arm')p.miss+=lv;else if(id==='pass'||id==='proc')p.review=lv;else if(id==='cam'||id==='inspect')p.glow=r2(lv*GLOW);else if(id==='lock'||id==='mix')p.T+=5*lv;
   return p}
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
@@ -1469,7 +1673,7 @@ function jobIntro(id){const j=jobOf(id),d=diffNow();
   openPanel(`<div class="eyebrow">${j.tag} · 依頼主：${j.client}</div><h3>${j.nm}</h3><p>${j.desc}</p>
   <ul class="plist"><li><span class="tag">操作</span><span>${j.ctl}</span></li><li><span class="tag">${DIFF[d]}</span><span>${j.rule(jp(id,d))}</span></li>${(m=>m&&impLv(m.id)?`<li><span class="tag">拡張</span><span>${m.nm} Lv${impLv(m.id)}が効いている（${m.eff(impLv(m.id)).split('：')[1]}）</span></li>`:'')(impFor(j))}</ul>
   <div class="prow"><button class="nbtn" id="go" type="button">開始</button><button class="nbtn ghost" id="back" type="button">仕事リストへ</button></div>`);
-  $('#go').onclick=()=>j.run()(d);$('#back').onclick=jobBoard;$('#go').focus()}
+  $('#go').onclick=()=>j.run()(d,j.id);$('#back').onclick=jobBoard;$('#go').focus()}
 function jobDone(id,d,r){clearTimers();const j=jobOf(id),pay=r2(MULT[d]*(TIER_PAY[j.tier]||1)),cr=Math.round(r.raw*pay);
   const prev=S.jobs[id]||{best:0,n:0},rec=prev.n>0&&r.score>prev.best;
   S.jobs[id]={best:Math.max(prev.best,r.score),n:prev.n+1};S.cr+=cr;S.earned=(S.earned||0)+cr;save();hud();
@@ -1504,8 +1708,8 @@ function runArm(d){const P=jp('arm',d);let pos=0,dir=1,spd=P.spd,zw=P.zone,z0=0.
   setZone();lf();requestAnimationFrame(ts=>{last=ts;step(ts)})}
 /* RAM：工程手順（並びを一度に見せる。途中から逆順） */
 const SYM=[['⚙','#ffb547'],['▲','#3ef2e0'],['■','#ff7ab8'],['●','#c9a0ff'],['◆','#7ff8ee'],['✚','#ff4a5c']];
-function runProc(d){const P=jp('proc',d),STAGES=5;let stage=0,lives=P.lives,reviews=P.review,raw=0,seq=[],inp=[],phase='wait',rev=false;
-  openPanel(`<div class="hud"><span>RAM · 工程手順 · 第 <b id="sg">1</b> / ${STAGES} 工程</span><span id="lv"></span></div>
+function runProc(d,id='proc'){const P=jp(id,d),STAGES=5;let stage=0,lives=P.lives,reviews=P.review,raw=0,seq=[],inp=[],phase='wait',rev=false;
+  openPanel(`<div class="hud"><span>RAM · ${jobOf(id).nm} · 第 <b id="sg">1</b> / ${STAGES} 工程</span><span id="lv"></span></div>
   <p class="status c" id="st"></p><div class="seq" id="sq"></div>
   <div class="syms" id="sy">${SYM.map(([c,col],i)=>`<button type="button" data-s="${i}" style="color:${col}" aria-label="記号${i+1}">${c}</button>`).join('')}</div>
   ${P.review?`<div class="prow" style="justify-content:center"><button class="nbtn ghost" id="rv" type="button" disabled>もう一度見る（残り <b id="rvn">${P.review}</b>）</button></div>`:''}
@@ -1520,7 +1724,7 @@ function runProc(d){const P=jp('proc',d),STAGES=5;let stage=0,lives=P.lives,revi
       if(inp.length===seq.length){phase='wait';raw+=8*seq.length;stage++;hudUp();if(stage>=STAGES){st.textContent='全工程、完了';timers.push(setTimeout(()=>finish(true),800))}else{st.textContent=`第 ${stage} 工程 完了`;timers.push(setTimeout(newStage,800))}}}
     else{phase='wait';sfx('hit');lives--;hudUp();sq.innerHTML=(rev?[...seq].reverse():seq).map(j=>cell(j)).join('');
       if(lives<=0){st.textContent='工程ミス。ラインが止まった';timers.push(setTimeout(()=>finish(false),1400))}else{st.textContent='違う。正しい並び（入力する順）はこう';timers.push(setTimeout(newStage,1600))}}}
-  function finish(ok){jobDone('proc',d,{ok,score:stage,raw:raw+(ok?60:0),detail:`完了 ${stage} / ${STAGES} 工程`})}
+  function finish(ok){jobDone(id,d,{ok,score:stage,raw:raw+(ok?60:0),detail:`完了 ${stage} / ${STAGES} 工程`})}
   $('#sy').onclick=e=>{const b=e.target.closest('button');if(b)press(+b.dataset.s)};
   const review=()=>{if(phase!=='input'||reviews<=0)return;reviews--;show()};if($('#rv'))$('#rv').onclick=review;
   on(window,'keydown',e=>{if(/^[1-6]$/.test(e.key)){e.preventDefault();if(!e.repeat)press(+e.key-1)}else if((e.key==='r'||e.key==='R')&&!e.repeat)review()});
@@ -1544,8 +1748,8 @@ function runInspect(d){const P=jp('inspect',d),BATCH=16;let found=0,lives=P.live
   function finish(){if(over)return;over=true;const ok=found>=P.q;jobDone('inspect',d,{ok,score:found,raw:found*12+(ok?50:0),detail:`発見 ${found} 個 / ノルマ ${P.q} 個 · 検査 ${batch} ロット`})}
   next()}
 /* ALU：配合計算（合計が目標になる部品を選ぶ） */
-function runMix(d){const P=jp('mix',d);let solved=0,target=0,sel=[],end=performance.now()+P.T*1000,over=false;
-  openPanel(`<div class="hud"><span>ALU · 配合計算 · 成功 <b id="sc">0</b> / ${P.q}</span><span id="tleft">${P.T.toFixed(1)} 秒</span></div><div class="timer"><i id="tbar"></i></div>
+function runMix(d,id='mix'){const P=jp(id,d);let solved=0,target=0,sel=[],end=performance.now()+P.T*1000,over=false;
+  openPanel(`<div class="hud"><span>ALU · ${jobOf(id).nm} · 成功 <b id="sc">0</b> / ${P.q}</span><span id="tleft">${P.T.toFixed(1)} 秒</span></div><div class="timer"><i id="tbar"></i></div>
   <p class="status c">合計が目標になる部品を ${P.k} 個選べ</p><div class="q" id="tg"></div><div class="tiles" id="tl"></div>
   <p class="note c">部品をタップ、またはキーボードの 1〜6。間違えると3秒減ります</p>`);
   let vals=[];
@@ -1557,12 +1761,12 @@ function runMix(d){const P=jp('mix',d);let solved=0,target=0,sel=[],end=performa
     if(sel.length===P.k){const sum=sel.reduce((a,j)=>a+vals[j],0);if(sum===target){solved++;$('#sc').textContent=solved;next()}else{end-=3000;sfx('hit');shake($('#tl'));sel=[];timers.push(setTimeout(()=>$('#tl').querySelectorAll('button').forEach(b=>b.classList.remove('on')),200))}}}
   $('#tl').onclick=e=>{const b=e.target.closest('button');if(b)tap(+b.dataset.i)};
   on(window,'keydown',e=>{if(/^[1-6]$/.test(e.key)){e.preventDefault();if(!e.repeat)tap(+e.key-1)}});
-  timeBar(()=>end,P.T,()=>{if(over)return;over=true;const ok=solved>=P.q;jobDone('mix',d,{ok,score:solved,raw:solved*14+(ok?50:0),detail:`成功 ${solved} 回 / ノルマ ${P.q} 回`})});next()}
+  timeBar(()=>end,P.T,()=>{if(over)return;over=true;const ok=solved>=P.q;jobDone(id,d,{ok,score:solved,raw:solved*14+(ok?50:0),detail:`成功 ${solved} 回 / ノルマ ${P.q} 回`})});next()}
 
 /* CPU：ドローン回避（5列。照準線が出た列にレーザーが落ちる） */
 const DRONE=sprite(["r.......r","rrr...rrr",".ggggggg.","..gGeGg..","...g.g..."],{r:'#5c6378',g:'#2c2750',G:'#8e8aa6',e:'#ff4a5c'});
-function runDrone(d){const P=jp('drone',d),DUR=30,NL=5,CW=200,CH=112,LW=CW/NL,BEAM=0.22;
-  openPanel(`<div class="hud"><span>CPU · ドローン回避 · 回避 <b id="sc">0</b></span><span id="sh"></span></div><div class="timer"><i id="tbar"></i></div>
+function runDrone(d,id='drone'){const P=jp(id,d),DUR=30,NL=5,CW=200,CH=112,LW=CW/NL,BEAM=0.22;
+  openPanel(`<div class="hud"><span>CPU · ${jobOf(id).nm} · 回避 <b id="sc">0</b></span><span id="sh"></span></div><div class="timer"><i id="tbar"></i></div>
   <canvas class="mcv" id="dcv" width="${CW*2}" height="${CH*2}" role="img" aria-label="5列の道。上から警備ドローンが照準を合わせてくる"></canvas>
   <div class="prow" style="justify-content:space-between"><button class="kbtn" id="dl" type="button" aria-label="左の列へ">◀</button><span class="note">赤い線の列から逃げろ</span><button class="kbtn" id="dr" type="button" aria-label="右の列へ">▶</button></div>`);
   const c=$('#dcv').getContext('2d');c.setTransform(2,0,0,2,0,0);c.imageSmoothingEnabled=false;
@@ -1581,7 +1785,7 @@ function runDrone(d){const P=jp('drone',d),DUR=30,NL=5,CW=200,CH=112,LW=CW/NL,BE
       busy.add(l);hz.push({lane:l,t0:t,fire:t+warn,hit:false})}
     nextSpawn=t+Math.max(0.45,1.05-0.5*p)*(0.85+Math.random()*0.3)}
   function finish(ok){if(!alive)return;alive=false;draw();
-    timers.push(setTimeout(()=>jobDone('drone',d,{ok,score:dodged,raw:dodged*4+(ok?60:0),detail:`${ok?'走破':'撃墜'} · 回避 ${dodged} 回 · 残りシールド ${Math.max(0,shields)}`}),700))}
+    timers.push(setTimeout(()=>jobDone(id,d,{ok,score:dodged,raw:dodged*4+(ok?60:0),detail:`${ok?'走破':'撃墜'} · 回避 ${dodged} 回 · 残りシールド ${Math.max(0,shields)}`}),700))}
   function step(ts){if(!alive)return;const dt=Math.min(0.05,(ts-last)/1000||0);last=ts;t+=dt;
     if(t>=nextSpawn)spawn();
     for(const h of hz){
@@ -1637,8 +1841,8 @@ function runPass(d){const P=jp('pass',d),LAYERS=5;let layer=0,lives=P.lives,raw=
 const FIG=["..hhhh..",".hhhhhh.",".hssssh.","..ssss..","..jjjj..",".jjjjjj.","jjjjjjjj","sjjjjjjs","sjjjjjjs",".jjjjjj.","..pppp..","..p..p..","..p..p..",".bb..bb."];
 const HAIR=['#2b2438','#5a3a2a','#c9c6d8','#1a1630','#7a2a4a','#2a5a58'],SKIN=['#d9a07a','#b97f5a','#f0c5a0','#8a5a3c'];
 const figURL=(j,h,s)=>sprite(FIG,{h,s,j,p:'#191828',b:'#0b0a12'}).toDataURL();
-function runCam(d){const P=jp('cam',d);let found=0,end=performance.now()+P.T*1000,over=false;
-  openPanel(`<div class="hud"><span>GPU · 監視カメラ解析 · 特定 <b id="sc">0</b> / ${P.q}</span><span id="tleft">${P.T.toFixed(1)} 秒</span></div><div class="timer"><i id="tbar"></i></div>
+function runCam(d,id='cam'){const P=jp(id,d);let found=0,end=performance.now()+P.T*1000,over=false;
+  openPanel(`<div class="hud"><span>GPU · ${jobOf(id).nm} · 特定 <b id="sc">0</b> / ${P.q}</span><span id="tleft">${P.T.toFixed(1)} 秒</span></div><div class="timer"><i id="tbar"></i></div>
   <div class="target">対象の上着<i id="tg"></i></div><div class="feeds" id="fd"></div>
   <p class="note c">同じ色の上着の人物をタップ。間違えると2秒減ります</p>`);
   const fd=$('#fd'),col=(h,s,l)=>`hsl(${Math.round((h+360)%360)},${Math.round(s)}%,${Math.round(l)}%)`;
@@ -1650,7 +1854,7 @@ function runCam(d){const P=jp('cam',d);let found=0,end=performance.now()+P.T*100
       return `<button type="button" aria-label="カメラ${i+1}" data-o="${i===odd?1:0}"><img alt="" src="${figURL(c,HAIR[rnd(0,HAIR.length-1)],SKIN[rnd(0,SKIN.length-1)])}"></button>`}).join('');
     if(P.glow){const tb=fd.querySelector('[data-o="1"]');tb.classList.add('glow');timers.push(setTimeout(()=>tb.classList.remove('glow'),P.glow*1000))}}
   fd.onclick=e=>{const b=e.target.closest('button');if(!b||over)return;if(b.dataset.o==='1'){found++;$('#sc').textContent=found;board()}else{end-=2000;sfx('hit');shake(fd)}};
-  timeBar(()=>end,P.T,()=>{if(over)return;over=true;const ok=found>=P.q;jobDone('cam',d,{ok,score:found,raw:found*10+(ok?40:0),detail:`特定 ${found} 人 / ノルマ ${P.q} 人`})});board()}
+  timeBar(()=>end,P.T,()=>{if(over)return;over=true;const ok=found>=P.q;jobDone(id,d,{ok,score:found,raw:found*10+(ok?40:0),detail:`特定 ${found} 人 / ノルマ ${P.q} 人`})});board()}
 
 /* ALU：暗号ロック解除（□ に入る数を答える。3問で1錠） */
 function runLock(d){const P=jp('lock',d);let tum=0,locks=0,total=0,ans=0,end=performance.now()+P.T*1000,over=false;
@@ -1709,7 +1913,8 @@ function setLight(on,quiet){S.light=!!on;save();sfx('ui');if(!quiet)toast(on?'�
 function itemsPanel(){openPanel(`<div class="eyebrow">ITEMS · 持ち物</div><h3>持ち物</h3>
   <div class="goal"><b>ライト（懐中電灯）</b><p class="note" style="margin-top:4px">向いている方を照らす。暗い圏外では手放せない。沈殿街は明るいので、ふだんはしまっておく。</p>
     <p style="margin:6px 0 0">いま：<span id="ltNow">${S.light?'ついている':'しまってある'}</span></p></div>
-  <p class="note">キーボードの F キーでも、つけたり消したりできる。</p>
+  ${S.st&&S.st.weapon?`<div class="goal"><b>パルスガン（鋼組の裏ルート品）</b><p class="note" style="margin-top:4px">保安機体用の銃。RAY から受け取った。「今度は、引きずり下ろさねえように使え」。使うのは、天穹区から。</p></div>`:''}
+  <p class="note">キーボードの F キーでも、ライトをつけたり消したりできる。</p>
   <div class="prow"><button class="nbtn" id="lt" type="button">${S.light?'消す':'つける'}</button><button class="nbtn ghost" id="cl" type="button">閉じる</button></div>`);
   $('#lt').onclick=()=>{setLight(!S.light,true);$('#ltNow').textContent=S.light?'ついている':'しまってある'};$('#cl').onclick=()=>closePanel();$('#lt').focus()}
 

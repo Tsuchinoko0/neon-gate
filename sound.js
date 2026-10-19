@@ -11,7 +11,7 @@
  *   NGSound.setMuted(true / false)
  *   NGSound.setCyber(c)       … 0（生身）〜1（完全サイボーグ）。効果音が機械的な音に変わっていく
  *   NGSound.setLayer('pad', true / false)  … シンセの持続音のオン・オフ
- *   NGSound.setMood('out' | 'lower')  … BGMの雰囲気。'lower'＝沈殿街（工場の機械音とハンマーのリズム）
+ *   NGSound.setMood('out' | 'lower' | 'corp')  … BGMの雰囲気。'lower'＝沈殿街（工場の機械音とハンマーのリズム）、'corp'＝企業区（静かで澄んだ電子音）
  *   NGSound.analyser()        … 波形表示用の AnalyserNode（init 前は null）
  */
 (function (global) {
@@ -31,6 +31,13 @@
     { root: 36, tones: [36, 40, 43, 47] },
     { root: 38, tones: [38, 42, 45, 48] },
     { root: 35, tones: [35, 39, 42, 45] }
+  ];
+  /* 企業区：Cmaj7 → Am7 → Fmaj7 → G6（明るいが、温度のない進行） */
+  const PROG_CORP = [
+    { root: 48, tones: [60, 64, 67, 71] },
+    { root: 45, tones: [57, 60, 64, 67] },
+    { root: 41, tones: [57, 60, 64, 65] },
+    { root: 43, tones: [59, 62, 64, 67] }
   ];
   const ARP = [0, 2, 1, 3, 2, 1, 3, 0];
   const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
@@ -206,8 +213,19 @@
     if (arpLvl > 0.002 && ss % 2 === 0) arp(chord.tones[ARP[(s / 2) % 8 | 0]], t, arpLvl, b * 0.6);
     if (s % 64 === 44) hiss(t);
   }
+  /* 企業区：静かなパッド、細かい時計のような刻み、澄んだアルペジオ。キックは弱く */
+  function playCorp(s, t) {
+    const b = st.bright, ss = s % 16, chord = PROG_CORP[Math.floor(s / 32) % 4];
+    if (s % 32 === 0 && st.pad) pad({ root: chord.root, tones: chord.tones.map(m => m - 12) }, t, 32 * S16);
+    if (ss === 0 || ss === 8) bass(chord.root - 12, t, 0.25 + 0.2 * b);
+    if (ss === 0) kick(t, 0.12);
+    if (ss % 2 === 1) hat(t, 0.012, false);
+    if (ss % 2 === 0) arp(chord.tones[ARP[(s / 2) % 8 | 0]] + 12, t, 0.02 + 0.015 * b, 0.4 + 0.4 * b);
+    if (s % 64 === 36) ping(t);
+  }
   function playStep(s, t) {
     if (st.mood === 'lower') return playLower(s, t);
+    if (st.mood === 'corp') return playCorp(s, t);
     const b = st.bright, ss = s % 16, chord = PROG[Math.floor(s / 32) % 4];
     if (s % 32 === 0 && st.pad) pad(chord, t, 32 * S16);
     const bassHits = b > 0.5 ? [0, 3, 6, 8, 11, 14] : [0, 6, 8, 14];
@@ -270,7 +288,7 @@
     seWet.gain.setTargetAtTime(0.9 * c, t, 0.05);
   }
   function setCyber(c) { st.cyber = clamp01(+c || 0); applyCyber(); }
-  function setMood(m) { st.mood = m === 'lower' ? 'lower' : 'out'; }
+  function setMood(m) { st.mood = m === 'lower' || m === 'corp' ? m : 'out'; }
   function setBrightness(b) { st.bright = clamp01(+b || 0); applyBright(st.bright); }
 
   function setVolume(kind, v) {
