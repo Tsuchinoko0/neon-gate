@@ -232,7 +232,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.21 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.22 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -273,7 +273,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.21"></script>
+<script src="sound.js?v=0.22"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -993,7 +993,7 @@ const WARM={
 function nth(id){const n=(S.talkN&&S.talkN[id])||0;S.talkN={...S.talkN,[id]:n+1};save();return n}
 const pick3=(id,arr)=>arr[nth(id)%arr.length];
 function honne(id){const first=!(S.honne&&S.honne[id]);S.honne={...S.honne,[id]:1};save();
-  talk([LH('me',{n:'……何度も話しかけるうちに、相手の顔から、いつもの表情が消えた。',c:'……何度も話しかけるうちに、相手の目が、ふっと遠くを見た。',m:'対象の応答パターンが変化。防御反応の解除を検出。'},'honne'),...HONNE[id].map((t,i)=>LH(id,t,i===0?'honne':null))],
+  talk([LH('me',{n:'……何度も話しかけるうちに、相手の顔から、いつもの表情が消えた。',c:'……何度も話しかけるうちに、相手の目が、ふっと遠くを見た。',m:'対象の応答パターンが変化。防御反応の解除を検出。'},'honne'),...HONNE[id].map(t=>LH(id,t))],
     ()=>{if(first)toast(`本音を聞いた（${Object.keys(S.honne).length} / ${Object.keys(HONNE).length}人）`)})}
 const HONNE={
   mina:['ほんとはね、怖いんだ。','検査に落ちた日、母さんはあたしの手を離した。お兄ちゃんの手だけ握って、ゲートの向こうに戻ってった。','インプラントを入れたくないのは……生身のあたしを捨てた街に、機械の体で認められても、意味がないから。','……今のは忘れて。勉強、戻るね。'],
@@ -1103,7 +1103,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
-  <p class="muted">試作版 v0.21 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
+  <p class="muted">試作版 v0.22 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
