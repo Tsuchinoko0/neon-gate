@@ -234,7 +234,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.17 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.18 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -277,7 +277,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.17"></script>
+<script src="sound.js?v=0.18"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -416,9 +416,6 @@ const OUT_CROWD=[{spr:wk({y:'#4a3a3a',o:'#3a3430',t:'#5a5048',s:'#a8704c'}),x:11
 const HARU=sprite(["..hhhh....",".hhhhhh...",".hsssshh..",".hsesesh..",".hssssh...","..ssss....",".oooooo...","sooooooos.","sooooooos.","..oooooo..","..oooooo..","..oo..oo..","..oo..oo..","..oo..oo..",".bbb.bbb.."],{h:'#6a4a5a',s:'#b88a6a',e:'#07060d',o:'#4a4038',b:'#0b0a12'});
 const KEN=wk({y:'#3e6aa8',o:'#3a3a30',t:'#5a5a48',s:'#d9a07a'});
 const SHIRO=sprite(["...cccc...","..cCCCCc..","..cCrsCc..","..cCsssc..","...csss...","....ss....",".oooooooo.","coooooooos","coooooooos","c.oooooo.s","..oooooo..","..oooooo..","..oo..cc..","..oo..cC..","..oo..cc..",".bbb..ccc."],{c:'#6a7088',C:'#a8aec0',r:'#ff4a5c',s:'#c08a68',o:'#3a3430',b:'#0b0a12'});
-/* 機械化した目に映る「汎用の人型」（男性・女性） */
-const SIL_M=sprite(["...kkkk...","..kkkkkk..","..kkkkkk..","..kkkkkk..","...kkkk...",".kkkkkkkk.","kkkkkkkkkk","kkkkkkkkkk","kk.kkkk.kk","...kkkk...","...kkkk...","...kk.kk..","...kk.kk..","...kk.kk..","...kk.kk..","..kkk.kkk."],{k:'#5b6680'});
-const SIL_F=sprite(["...kkkk...","..kkkkkk..","..kkkkkk..","..kkkkkk..","..kk..kk..","..kkkkkk..",".kkkkkkkk.",".kkkkkkkk.","...kkkk...","..kkkkkk..",".kkkkkkkk.","kkkkkkkkkk","...k..k...","...k..k...","...k..k...","..kk..kk.."],{k:'#5b6680'});
 
 const flick=(t,s)=>(Math.sin(t*11.3+s*7.1)+Math.sin(t*3.7+s*2.3)*0.8+Math.sin(t*23+s))>-0.4;
 /* ピラミッド都市・東京（4層。上ほど明るい）。窓の灯りは層ごとに決めておく */
@@ -660,7 +657,7 @@ function drawMap(t){const m=M(),lo=area()==='lower';
     if(n.id==='ray'){const jit=mm<2?Math.round(Math.sin(t*9)*1):0;drawAt(RAY,n.x+jit,n.y,true,mm===0?0.5:mm===1?0.7:1)}
     else drawAt(personSprite(n.id,f()),n.x,n.y,!!FLIP[n.id]);
     heldLight(n.id,n.x,n.y,t)}})}
-  if(lo)CROWD.forEach(c=>ents.push({y:c.y,draw:()=>{const alpha=c.cy?(mm===0?0.55:mm===1?0.75:1):1,spr=!c.cy&&mm>=3?(c.sex==='f'?SIL_F:SIL_M):c.spr;drawAt(spr,c.x,c.y,c.d<0,alpha)}}));
+  if(lo)CROWD.forEach(c=>ents.push({y:c.y,draw:()=>{const alpha=c.cy?(mm===0?0.55:mm===1?0.75:1):1,spr=c.spr;drawAt(spr,c.x,c.y,c.d<0,alpha)}}));
   for(const p of m.props)if(p.k!=='hang')ents.push({y:p.y,draw:()=>drawProp(p,t)});
   for(const f of m.fires)ents.push({y:f.y+10.5,draw:()=>drawFire(f,t)});
   ents.push({y:player.y,draw:()=>{const spr=player.moving&&Math.floor(player.step*8)%2?P_B:P_A;drawAt(spr,player.x,player.y,player.dir<0);
@@ -716,23 +713,11 @@ function draw(t){ctx.setTransform(2,0,0,2,0,0);ctx.imageSmoothingEnabled=false;
 const markTop=n=>n.id==='gate'?n.y-camY-26:n.id==='lift'?n.y-camY-30:n.y-camY-((NPC_SPR[n.id]?NPC_SPR[n.id]().lh:16)+6);
 function motes(t,col){ctx.fillStyle=col;for(let i=0;i<14;i++){const x=((i*73+t*6*(1+i%3))%(W+20))-10,y=60+((i*37+Math.sin(t*0.7+i)*12)%70);ctx.fillRect(Math.round(x),Math.round(y),1,1)}}
 /* 人物：知覚に合わせて、本来の姿か汎用の人型かを描き分ける */
-function personSprite(id,base){const m=docMood();if(m>=3&&PEOPLE[id]&&PEOPLE[id].sex)return PEOPLE[id].sex==='f'?SIL_F:SIL_M;return base}
-/* 知覚のフィルター：機械化で色が抜け、走査線、線画になる。澄みで色が深まる */
-function perceive(t){const m=docMood(),c=clarityLv();
-  if(m>=2||c>=1){const W=cv.width,H=cv.height,img=ctx.getImageData(0,0,W,H),d=img.data;
-    if(m>=4){const lum=new Float32Array(W*H);for(let i=0,j=0;j<lum.length;i+=4,j++)lum[j]=d[i]*0.3+d[i+1]*0.59+d[i+2]*0.11;
-      for(let y=0;y<H;y++)for(let x=0;x<W;x++){const j=y*W+x,i=j*4,e=Math.abs(lum[j]-(x<W-1?lum[j+1]:lum[j]))+Math.abs(lum[j]-(y<H-1?lum[j+W]:lum[j]));
-        const v=e>14?Math.min(1,e/60):0;d[i]=8+54*v;d[i+1]=12+230*v;d[i+2]=16+208*v}}
-    else{const sat=m>=3?0.08:m>=2?0.55:1.14,tint=m>=3?0.85:m>=2?0.3:0;
-      for(let y=0;y<H;y++){const sl=m>=2&&y%2?0.8:1;for(let x=0;x<W;x++){const i=(y*W+x)*4,r=d[i],g=d[i+1],b=d[i+2],l=r*0.3+g*0.59+b*0.11;
-        let R=l+(r-l)*sat,G=l+(g-l)*sat,B=l+(b-l)*sat;if(tint){R=R*(1-tint)+l*0.3*tint;G=G*(1-tint)+l*1.1*tint;B=B*(1-tint)+l*1.05*tint}
-        d[i]=R*sl;d[i+1]=G*sl;d[i+2]=B*sl}}}
-    ctx.putImageData(img,0,0)}
-  /* 機械化：画面の端の HUD */
-  if(m>=1){ctx.fillStyle='rgba(62,242,224,.55)';const k=4;
-    ctx.fillRect(4,4,k*3,1);ctx.fillRect(4,4,1,k*3);ctx.fillRect(W-4-k*3,4,k*3,1);ctx.fillRect(W-5,4,1,k*3);ctx.fillRect(4,H-5,k*3,1);ctx.fillRect(4,H-4-k*3,1,k*3);ctx.fillRect(W-4-k*3,H-5,k*3,1);ctx.fillRect(W-5,H-4-k*3,1,k*3);
-    for(let x=-(camX%10);x<80;x+=10)ctx.fillRect(Math.round(120+x),8,1,x%20===0?3:2);ctx.fillRect(160,7,1,5);
-    if(Math.floor(t*2)%2){ctx.fillStyle='rgba(255,74,92,.8)';ctx.fillRect(W-14,8,2,2)}}}
+function personSprite(id,base){return base}
+/* 見え方のフィルター：機械化しても画面の見え方は変えない（見づらいため v0.18 でやめた）。生身の澄みだけ、色を少し深める */
+function perceive(t){if(clarityLv()<1)return;const W=cv.width,H=cv.height,img=ctx.getImageData(0,0,W,H),d=img.data;
+  for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2],l=r*0.3+g*0.59+b*0.11;d[i]=l+(r-l)*1.14;d[i+1]=l+(g-l)*1.14;d[i+2]=l+(b-l)*1.14}
+  ctx.putImageData(img,0,0)}
 /* 機械化 2 以上：人の上にタグを出す */
 let tagsHTML='';
 function tagsUp(){const m=docMood(),el=$('#tags');let h='';
@@ -953,7 +938,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">企業区は次の版で</p>
-  <p class="muted">試作版 v0.17 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
+  <p class="muted">試作版 v0.18 はここまでです。昇降機で圏外に戻って、仕事や再スキャン、ゲンジの練習場を続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">沈殿街に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -1167,7 +1152,7 @@ function goalPanel(){$('#goalBtn').classList.remove('new');const g=goalNow(),st=
     st.genji&&'屋台のゲンジいわく、ソウは三年前「上へ行く」と言って鋼組の運び屋になった。',st.ray&&'鋼組のレイいわく、ソウは企業区の配送をしていて、今は型番で呼ばれている。',st.done&&'ミナに知らせた。ソウは企業区にいる。ミナは、それでも会いに行くと決めた。'].filter(Boolean);
   openPanel(`<div class="eyebrow">OBJECTIVE · 目的</div><h3>目的</h3>
   <div class="goal"><b>いまやること</b><p style="margin:4px 0 0">${esc(g.t)}</p><p class="note" style="margin-top:4px">${esc(g.h)}</p></div>
-  <div><p>ゲートの条件</p><p class="note">実効スペック＝生身のスキャン点数＋インプラント。インプラントでも通れるが、生身率が下がると、人の態度や世界の見え方が変わる。</p></div>
+  <div><p>ゲートの条件</p><p class="note">実効スペック＝生身のスキャン点数＋インプラント。インプラントでも通れるが、生身率が下がると、人の態度や会話が変わる。</p></div>
   <div class="conds">
     <div class="cond">${mark(S.passed||(o&&cur>=req),!o)}<span>圏外のゲート → 第1層 沈殿街</span><span class="ex">${o?`実効スペック ${req} 以上（今 ${cur}${o?` ＝ 生身 ${Math.round(o.avg)} ＋ 拡張 ${implantBonus()}`:''}）`:'まずブレインスキャンを受ける'}${S.passed?' · 通過済み':''}</span></div>
     ${st.arrive?`<div class="cond">${mark(st.done,false)}<span>企業区ゲート → 第2層 企業区</span><span class="ex">ソウの手がかりを集める（ゲンジ ${st.genji?'✓':'□'}／レイ ${st.ray?'✓':'□'}）→ ミナに知らせる ${st.done?'✓':'□'}${st.done?' · 企業区は次の版で':''}</span></div>`:`<div class="cond">${mark(false,true)}<span>？？？</span><span class="ex">ゲートの向こうに行くと、わかる</span></div>`}
