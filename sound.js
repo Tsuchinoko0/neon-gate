@@ -11,7 +11,7 @@
  *   NGSound.setMuted(true / false)
  *   NGSound.setCyber(c)       … 0（生身）〜1（完全サイボーグ）。効果音が機械的な音に変わっていく
  *   NGSound.setLayer('pad', true / false)  … シンセの持続音のオン・オフ
- *   NGSound.setMood('out' | 'lower' | 'corp')  … BGMの雰囲気。'lower'＝沈殿街（工場の機械音とハンマーのリズム）、'corp'＝企業区（静かで澄んだ電子音）
+ *   NGSound.setMood('out' | 'lower' | 'corp' | 'sky' | 'top')  … BGMの雰囲気。'lower'＝沈殿街（工場の機械音とハンマーのリズム）、'corp'＝企業区（静かで澄んだ電子音）、'sky'＝天穹区（張りつめた戦いの曲）、'top'＝中央区（白く冷たい和音）
  *   NGSound.analyser()        … 波形表示用の AnalyserNode（init 前は null）
  */
 (function (global) {
@@ -38,6 +38,17 @@
     { root: 45, tones: [57, 60, 64, 67] },
     { root: 41, tones: [57, 60, 64, 65] },
     { root: 43, tones: [59, 62, 64, 67] }
+  ];
+  /* 天穹区：張りつめた短調。中央区：明るすぎて冷たい長調 */
+  const PROG_SKY = [
+    { root: 45, tones: [57, 60, 64, 69] },
+    { root: 41, tones: [57, 60, 65, 69] },
+    { root: 43, tones: [55, 59, 62, 67] },
+    { root: 40, tones: [56, 59, 64, 68] }
+  ];
+  const PROG_TOP = [
+    { root: 48, tones: [60, 64, 67, 72] },
+    { root: 53, tones: [60, 65, 69, 72] }
   ];
   const ARP = [0, 2, 1, 3, 2, 1, 3, 0];
   const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
@@ -223,9 +234,29 @@
     if (ss % 2 === 0) arp(chord.tones[ARP[(s / 2) % 8 | 0]] + 12, t, 0.02 + 0.015 * b, 0.4 + 0.4 * b);
     if (s % 64 === 36) ping(t);
   }
+  /* 天穹区：速い16分のベースと、追い立てるようなハイハット（戦いの層） */
+  function playSky(s, t) {
+    const b = st.bright, ss = s % 16, chord = PROG_SKY[Math.floor(s / 32) % 4];
+    if (s % 32 === 0 && st.pad) pad({ root: chord.root, tones: chord.tones.map(m => m - 12) }, t, 32 * S16);
+    bass(chord.root - 12 + (ss % 4 === 3 ? 12 : 0), t, 0.3 + 0.25 * b);
+    if (ss === 0 || ss === 6 || ss === 8 || ss === 14) kick(t, 0.3);
+    if (ss === 4 || ss === 12) clank(t, 0.035);
+    hat(t, ss % 2 ? 0.012 : 0.022, ss === 14);
+    if (ss % 2 === 0) arp(chord.tones[ARP[(s / 2) % 8 | 0]] + 12, t, 0.022 + 0.012 * b, 0.6 + 0.3 * b);
+  }
+  /* 中央区：ゆっくり鳴り続ける白い和音と、遠い鐘だけ */
+  function playTop(s, t) {
+    const chord = PROG_TOP[Math.floor(s / 64) % 2];
+    if (s % 64 === 0 && st.pad) pad(chord, t, 64 * S16);
+    if (s % 32 === 0) bass(chord.root - 24, t, 0.2);
+    if (s % 16 === 8) arp(chord.tones[(s / 16 | 0) % 4] + 24, t, 0.018, 0.9);
+    if (s % 64 === 40) ping(t);
+  }
   function playStep(s, t) {
     if (st.mood === 'lower') return playLower(s, t);
     if (st.mood === 'corp') return playCorp(s, t);
+    if (st.mood === 'sky') return playSky(s, t);
+    if (st.mood === 'top') return playTop(s, t);
     const b = st.bright, ss = s % 16, chord = PROG[Math.floor(s / 32) % 4];
     if (s % 32 === 0 && st.pad) pad(chord, t, 32 * S16);
     const bassHits = b > 0.5 ? [0, 3, 6, 8, 11, 14] : [0, 6, 8, 14];
@@ -288,7 +319,7 @@
     seWet.gain.setTargetAtTime(0.9 * c, t, 0.05);
   }
   function setCyber(c) { st.cyber = clamp01(+c || 0); applyCyber(); }
-  function setMood(m) { st.mood = m === 'lower' || m === 'corp' ? m : 'out'; }
+  function setMood(m) { st.mood = ['lower', 'corp', 'sky', 'top'].includes(m) ? m : 'out'; }
   function setBrightness(b) { st.bright = clamp01(+b || 0); applyBright(st.bright); }
 
   function setVolume(kind, v) {
@@ -415,6 +446,38 @@
       tone('sine', mtof(64), t, 2.0, 0.02, { attack: 0.6 });
       [72, 76, 79, 84].forEach((m, i) => tone('sine', mtof(m), t + 0.15 + i * 0.24, 1.2, 0.035, { attack: 0.02, echo: 0.35 }));
     },
+    /* ===== 戦い（天穹区から） ===== */
+    /* パルスガン */
+    shot(t) { tone('square', 1400, t, 0.09, 0.05, { to: 420, slide: 0.08, lp: 5000 }); noise(t, 0.04, 0.05, 'highpass', 3000, 0.7); },
+    /* ミナ・ソウの射撃（少し低い） */
+    shot2(t) { tone('square', 900, t, 0.08, 0.03, { to: 300, slide: 0.07, lp: 3000 }); },
+    /* 弾切れ */
+    empty(t) { tone('square', 220, t, 0.04, 0.04, { lp: 1200 }); },
+    /* 敵の弾 */
+    eshot(t) { tone('sawtooth', 700, t, 0.12, 0.035, { to: 200, slide: 0.1, lp: 2400 }); },
+    /* 敵に当たった・弱点に当たった */
+    ehit(t) { noise(t, 0.05, 0.08, 'bandpass', 2600, 3); tone('square', 520, t, 0.05, 0.03, { lp: 3000 }); },
+    weak(t) { noise(t, 0.06, 0.08, 'bandpass', 3400, 3); [88, 93].forEach((m, i) => tone('square', mtof(m), t + i * 0.04, 0.08, 0.035, { lp: 6000 })); },
+    /* 敵が壊れた */
+    boom(t) { noise(t, 0.5, 0.2, 'lowpass', 900, 0.8); tone('sine', 120, t, 0.45, 0.14, { to: 35, slide: 0.4 }); },
+    /* 跳ぶ・着地・回避 */
+    jump(t) { tone('square', 300, t, 0.1, 0.035, { to: 720, slide: 0.09, lp: 2500 }); },
+    land(t) { noise(t, 0.12, 0.14, 'lowpass', 400, 1); },
+    dodge(t) { noise(t, 0.18, 0.08, 'bandpass', 1800, 1.5, 1.6); tone('sine', 900, t, 0.16, 0.03, { to: 400, slide: 0.15 }); },
+    /* 警報（区画が封鎖された） */
+    alarm(t) { for (let i = 0; i < 3; i++) { tone('square', 880, t + i * 0.24, 0.12, 0.05, { lp: 2400 }); tone('square', 660, t + i * 0.24 + 0.12, 0.12, 0.05, { lp: 2400 }); } },
+    /* 攻撃の予兆（記憶バッファがあるときだけ） */
+    warn(t) { tone('sine', 1760, t, 0.06, 0.03); },
+    /* サイボーグの突進、番人のレーザー */
+    dash(t) { noise(t, 0.3, 0.1, 'bandpass', 900, 1.2, 0.7); tone('sawtooth', 160, t, 0.3, 0.05, { to: 480, slide: 0.25, lp: 1600 }); },
+    laser(t) { tone('sawtooth', 1200, t, 0.5, 0.05, { to: 300, slide: 0.45, lp: 4000 }); noise(t, 0.45, 0.05, 'highpass', 4000, 0.7); },
+    /* ソウの一撃 */
+    slash(t) { noise(t, 0.12, 0.12, 'highpass', 2000, 0.8, 1.4); },
+    /* ミナの手当て・弾の受け渡し */
+    heal(t) { [72, 76, 79].forEach((m, i) => tone('sine', mtof(m), t + i * 0.07, 0.4, 0.04, { echo: 0.25 })); },
+    ammo(t) { tone('square', 660, t, 0.05, 0.04, { lp: 3000 }); noise(t + 0.06, 0.06, 0.08, 'bandpass', 2000, 2); tone('square', 990, t + 0.08, 0.06, 0.04, { lp: 3000 }); },
+    /* 手配書に赤いバツを書く音（ペンでこする） */
+    xmark(t) { noise(t, 0.34, 0.16, 'bandpass', 1700, 1.4, 0.9); noise(t + 0.02, 0.3, 0.06, 'highpass', 5000, 0.6); },
     /* インプラント装着 */
     implant(t) {
       tone('sawtooth', 70, t, 1.0, 0.1, { to: 140, slide: 0.9, lp: 700, attack: 0.1 });
@@ -427,7 +490,7 @@
   /* 効果音ごとの「BGMをどこまで下げるか」と「下げておく時間（秒）」 */
   const DUCK = {
     text: [0.85, 0.05], step: [0.8, 0.05], key: [0.75, 0.06], ui: [0.6, 0.12],
-    scan: [0.35, 1.1], implant: [0.35, 1.0], lift: [0.4, 1.6], honne: [0.55, 1.8], goal: [0.6, 0.5], allow: [0.4, 0.8], deny: [0.4, 0.6]
+    scan: [0.35, 1.1], implant: [0.35, 1.0], lift: [0.4, 1.6], honne: [0.55, 1.8], goal: [0.6, 0.5], shot: [0.85, 0.05], shot2: [0.9, 0.05], eshot: [0.9, 0.05], ehit: [0.9, 0.05], weak: [0.85, 0.08], jump: [0.9, 0.05], warn: [0.9, 0.05], xmark: [1, 0.1], allow: [0.4, 0.8], deny: [0.4, 0.6]
   };
   function se(name) {
     if (!ctx || !SE[name]) return;
