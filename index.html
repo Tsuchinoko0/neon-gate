@@ -90,6 +90,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .lift-ind{font-family:var(--f-data);font-size:clamp(36px,9vw,60px);color:var(--amber);text-align:center;letter-spacing:.1em;text-shadow:0 0 14px rgba(255,181,71,.5);padding-block:30px}
 .dlg.npc-me{border-left-color:var(--muted)} .dlg.npc-me .who{color:var(--muted)}
 /* 本音：金色の縁と文字。ふだんの会話と見分けがつくように */
+.dlg.top{top:4%;bottom:auto}
 .dlg.out{position:relative;left:auto;right:auto;bottom:auto;min-height:104px}
 .dlg.honne{border:1px solid rgba(201,160,255,.7);border-left:4px solid #ffd27a;background:rgba(28,16,38,.96);box-shadow:0 0 22px rgba(201,160,255,.35),inset 0 0 30px rgba(255,210,122,.06)}
 .dlg.honne .who{color:#ffd27a}
@@ -110,6 +111,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .dlg .ch .nbtn{font-size:clamp(11px,1.9vw,15px);padding:3px 12px}
 @keyframes blink{50%{opacity:0}}
 
+.toast.low{top:auto;bottom:6%}
 .toast{position:absolute;left:50%;top:5%;transform:translateX(-50%);background:rgba(9,7,20,.94);border:1px solid var(--amber);color:var(--amber);padding:6px 14px;font-size:clamp(11px,1.9vw,15px);max-width:90%;text-align:center}
 
 /* パネル（スキャン・結果・設定） */
@@ -364,6 +366,7 @@ const SND=window.NGSound||null;
 const sfx=n=>{try{SND&&SND.se(n)}catch(e){}};
 function sndApply(){if(!SND)return;const o=S.snd||{};try{SND.setVolume('bgm',o.bgm??0.6);SND.setVolume('se',o.se??0.8);SND.setMuted(!!o.muted);SND.setCyber(1-flesh()/100);SND.setMood&&SND.setMood(F.zone?(F.zone.boss?'boss':'fight'):area())}catch(e){}}
 const mood=m=>{try{SND&&SND.setMood&&SND.setMood(m)}catch(e){}};
+let endQuiet=false;/* END の画面（バツを書く間）は BGM を止めたままにする */
 function sndStart(){if(!SND)return;try{
   /* iPhone のマナーモード（消音スイッチ）でも鳴るように、再生用の音声セッションにする（Safari 17 以降） */
   if(navigator.audioSession)navigator.audioSession.type='playback';
@@ -375,7 +378,7 @@ function sndStatus(){if(!SND)return 'sound.js を読み込めていません（i
   const c=SND.context();if(!c)return 'まだ鳴らしていません（タイトルの「はじめる」「つづきから」で鳴り始めます）';
   if(S.snd&&S.snd.muted)return 'ミュート中';if(c.state!=='running')return `一時停止中（${c.state}）。画面をタップすると再開します`;
   return SND.isPlaying()?'再生中':'BGM 停止中'}
-['pointerdown','keydown'].forEach(ev=>addEventListener(ev,()=>{if(mode!=='title')sndStart()},true));
+['pointerdown','keydown'].forEach(ev=>addEventListener(ev,()=>{if(mode!=='title'&&!endQuiet)sndStart()},true));
 if(!SND)console.warn('NEON GATE: sound.js が読み込めなかったため、音なしで動きます');
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;
   if(b.dataset.se!==undefined){if(b.dataset.se)sfx(b.dataset.se);return}
@@ -587,7 +590,7 @@ STAGES.sky={len:1920,gy:GY,start:30,lift:64,gateIn:30,ground:[],dark:0,tint:'20,
   lights:[{x:64,y:GY-42,r:18,c:'255,181,71',a:0.6},{x:790,y:GY-40,r:40,c:'255,214,150',a:0.5}],
   zones:[{id:'z1',x0:300,x1:680,need:'tenkyu',waves:[[{k:'trooper',x:650},{k:'drone',x:600}],[{k:'trooper',x:330},{k:'trooper',x:660},{k:'drone',x:480}]]},
     {id:'z2',x0:900,x1:1280,need:'sou',waves:[[{k:'cyborg',x:1250},{k:'drone',x:1180}],[{k:'trooper',x:930},{k:'cyborg',x:1260},{k:'drone',x:1090}],[{k:'cyborg',x:1260},{k:'cyborg',x:920},{k:'trooper',x:1240},{k:'drone',x:1000}]]},
-    {id:'z3',x0:1420,x1:1820,need:'z_z2',boss:1,waves:[[{k:'warden',x:1770}]]}]};
+    {id:'z3',x0:1420,x1:1820,need:'z_z2',boss:1,waves:[[{k:'warden',x:1600}]]}]};
 /* 第4層・中央区：終章。ai＝大規模AIの位置、endX＝そこから先へは歩けない */
 STAGES.top={len:760,gy:GY,start:40,gateIn:40,ai:600,endX:450,ground:[],plats:[],walls:[],props:[],fires:[],lights:[],dark:0,tint:'40,30,10'};
 const ST=()=>STAGES[area()];
@@ -1212,7 +1215,7 @@ function bounds(st){let lo=12,hi=st.len-12;if(F.zone){lo=Math.max(lo,F.zone.x0+8
   for(const z of st.zones||[])if(!zoneDone(z)&&!zoneNeed(z)&&player.x<z.x0)hi=Math.min(hi,z.x0-6);
   if(st.endX)hi=Math.min(hi,st.endX);return[lo,hi]}
 function startZone(z){F.zone=z;F.wave=0;F.waveT=0;F.foes=[];F.eshots=[];const first=!(S.st['zs_'+z.id]);if(first){S.st={...S.st,['zs_'+z.id]:1};save()}
-  sfx('lock');sfx('alarm');mood('fight');if(z.boss)timers.push(setTimeout(()=>{if(F.zone===z){sfx('warden');mood('boss')}},1200));const intro=ZONE_TALK[z.id];if(first&&intro)talk(intro.map(([w,t])=>L(w,t)));else toast(z.boss?'番人が動き出した！':'敵が来る！',2400)}
+  sfx('lock');sfx('alarm');mood('fight');if(z.boss)setTimeout(()=>{if(F.zone===z){sfx('warden');mood('boss')}},1200);const intro=ZONE_TALK[z.id];if(first&&intro)talk(intro.map(([w,t])=>L(w,t)));else toast(z.boss?'番人が動き出した！':'敵が来る！',2400)}
 function clearZone(z){F.zone=null;F.eshots=[];S.st={...S.st,['z_'+z.id]:1};save();sfx('unlock');mood('sky');F.wardenLeft=null;F.hp=Math.min(cbt().hp,F.hp+1);
   const after=ZONE_CLEAR[z.id];after?talk(after.map(([w,t])=>L(w,t)),()=>hud()):toast('区画を突破した',3000);hud()}
 function landAt(x,y0,y1,vy){const g=groundAt(x);if(y1>=g)return g;if(vy>=0)for(const p of ST().plats||[])if(x>=p.x0&&x<=p.x1&&y0<=p.y+0.5&&y1>=p.y)return p.y;return null}
@@ -1341,7 +1344,7 @@ async function endingSeq(){const ai=STAGES.top.ai;inEnding=true;topReset();mode=
   await Promise.all([moveP(TOP.mina,mx,140),waitP(300).then(()=>Promise.all([moveP(g1,mx+10,170),moveP(g2,mx+22,170)]))]);
   await sayP(END_TEXT.c);camT=null;
   /* 5：リクは見回す（ゆっくり歩ける） */
-  endWalk=true;mode='play';toast('……あたりを見回す（← → でゆっくり歩ける）',5200);
+  endWalk=true;mode='play';toast(innerWidth<=600?'……あたりを見回す（◀ ▶ でゆっくり歩ける）':'……あたりを見回す（← → でゆっくり歩ける）',5200);
   await new Promise(r=>{endWatch={x0:player.x,t0:T,done:r}});
   keys.l=keys.r=false;mode='cut';player.vx=0;
   /* 6：モノローグ（本音と同じく、ゆっくり文字送り）のあと、リクも捕まる */
@@ -1350,7 +1353,7 @@ async function endingSeq(){const ai=STAGES.top.ai;inEnding=true;topReset();mode=
   await sayP(END_TEXT.d);mode='cut';await waitP(600);
   $('#fade').classList.add('on');await waitP(1200);endWalk=false;endPanel();$('#fade').classList.remove('on')}
 /* 7：手配書が3枚。BGMを止め、一枚ずつ赤いバツを書く音だけを鳴らす。8：END */
-function endPanel(){inEnding=false;S.st={...S.st,top:1,end:1};S.area='sky';player.x=1840;S.pos={...(S.pos||{}),sky:{sx:1840}};save();try{SND&&SND.stop()}catch(e){}
+function endPanel(){inEnding=false;endQuiet=true;S.st={...S.st,top:1,end:1};S.area='sky';player.x=1840;S.pos={...(S.pos||{}),sky:{sx:1840}};save();try{SND&&SND.stop()}catch(e){}
   openPanel(`<div class="endwrap"><canvas class="endcv" id="ecv" width="${3*120}" height="${170}" role="img" aria-label="指名手配書が3枚。リク、ミナ、ソウ"></canvas>
   <p class="end-t" id="endT" hidden>END</p><div id="endB" hidden><p class="muted c">${esc(endNote())}</p><div class="prow" style="justify-content:center"><button class="nbtn" id="toT" type="button">タイトルへ</button></div></div></div>`);
   const g=$('#ecv').getContext('2d');g.imageSmoothingEnabled=false;const P=[['riku','リク'],['mina','ミナ'],['sou','ソウ']];
@@ -1364,7 +1367,7 @@ function endPanel(){inEnding=false;S.st={...S.st,top:1,end:1};S.area='sky';playe
     if(done>=X.length&&now>t0+X.length*SEG*1.4+900){$('#endT').hidden=false;$('#endB').hidden=false;$('#toT').focus();return}
     requestAnimationFrame(strokes)};
   requestAnimationFrame(strokes);
-  $('#toT').onclick=()=>{closePanel();resetFight(true);$('#title').hidden=false;mode='title';placePlayer();titleButtons();hud()}}
+  $('#toT').onclick=()=>{endQuiet=false;closePanel();resetFight(true);$('#title').hidden=false;mode='title';placePlayer();titleButtons();hud()}}
 function endNote(){const o=overall(S.cur),hn=Object.keys(S.honne||{}).length;return `生身率 ${flesh()}% · 実効スペック ${effective()}（生身 ${o?Math.round(o.avg):'—'} ＋ 拡張 ${implantBonus()}）· 稼いだクレジット ${(S.earned||0).toLocaleString()} CR · 本音を聞いた人 ${hn} / ${Object.keys(HONNE).length}人`}
 /* ===== 描画 ===== */
 function draw(t){OY=H-180;ctx.setTransform(2,0,0,2,0,2*OY);ctx.imageSmoothingEnabled=false;
@@ -1413,7 +1416,7 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;T=
   if(area()==='top'&&mode!=='panel')stepTop(dt);
   if(mode==='play'){const st=ST(),cm=CAMMAX_OF(area());stepPlayer(dt,st);
     /* 主人公の位置を先に丸めて、カメラと描く位置をそろえる（ぶれ防止） */
-    camX=clamp(Math.round(player.x)-Math.round(W*(F.zone&&F.zone.boss?0.22:0.42)),0,cm);
+    {const bs=F.zone&&F.zone.boss,w=bs&&F.foes.find(f=>f.k==='warden');let cx=Math.round(player.x)-Math.round(W*(bs?0.22:0.42));if(w)cx=Math.min(Math.round(player.x)-14,Math.max(cx,Math.round(w.x)+28-W));camX=clamp(cx,0,cm)}
     /* 右（ゲート）へ進むほど BGM が明るい */
     const pr=camX/Math.max(1,cm),br=Math.round((area()==='sky'?0.75+0.25*pr:area()==='top'?1:area()==='corp'?0.6+0.3*pr:area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='cut'){const fx=camT?camT.x:player.x,tx=clamp(Math.round(fx)-Math.round(W*(camT?0.5:0.42)),0,CAMMAX_OF(area()));camX=Math.round(camX+(tx-camX)*Math.min(1,dt*3))}
@@ -1432,9 +1435,9 @@ function hud(){const o=overall(S.cur);
   if(typeof sndBtnUp==='function')sndBtnUp();
   {const ar=armed();$('#acts').hidden=!ar;document.querySelector('.ctrl').classList.toggle('fight',ar);$('#hint').textContent=ar?'← → 移動 ／ ↑・W・Space 跳ぶ ／ X・J 撃つ ／ C・L 回避 ／ Z・Enter 話す':'キーボード：← → / A D で移動（Shift で走る）／ Space・Enter で話す／ F でライト'}
   {const [a,b]=AREAS[area()].nm.split(' · ');$('#areaChip').innerHTML=esc(a)+(b?`<span class="nm2"> · ${esc(b)}</span>`:'')}cv.setAttribute('aria-label',AREAS[area()].label);
-  if(typeof goalNow==='function'&&S.started){const g=goalNow();if(S.goalK!==g.k){const had=S.goalK!=null;S.goalK=g.k;save();if(had&&!inEnding){$('#goalBtn').classList.add('new');sfx('goal');toast('目的を更新：'+g.t,5200)}}}}
+  if(typeof goalNow==='function'&&S.started){const g=goalNow();if(S.goalK!==g.k){const had=S.goalK!=null;S.goalK=g.k;save();if(had&&!inEnding&&area()!=='top'){$('#goalBtn').classList.add('new');sfx('goal');toast('目的を更新：'+g.t,5200)}}}}
 let toastT=0;
-function toast(msg,ms=4200){const el=$('#toast');el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,ms)}
+function toast(msg,ms=4200){const el=$('#toast');el.classList.toggle('low',armed());el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,ms)}
 
 /* ===== 会話 ===== */
 let D=null,typeT=0;
@@ -1444,7 +1447,7 @@ function whoName(id){return WHO[id]}
 /* 文章の出し分け：{n:ふつう, c:澄み, m:機械} */
 const pickText=x=>typeof x==='string'?x:(docMood()>=2&&x.m)?x.m:(clarityLv()>=1&&x.c)?x.c:x.n;
 function talk(lines,onEnd){mode='dialog';D={lines,i:0,onEnd,typing:false,full:''};show()}
-function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who+(L.honne?' honne':'')+(box.parentNode===$('#frame')?'':' out');D.at=performance.now();if(L.se)sfx(L.se);
+function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who+(L.honne?' honne':'')+(box.parentNode===$('#frame')?(area()==='top'?' top':''):' out');D.at=performance.now();if(L.se)sfx(L.se);
   $('#dlgWho').textContent=whoName(L.who);$('#dlgCh').innerHTML='';$('#dlgMore').hidden=true;
   D.full=pickText(L.text);D.n=0;D.typing=true;clearInterval(typeT);const el=$('#dlgTxt');el.textContent='';
   typeT=setInterval(()=>{D.n+=1;el.textContent=D.full.slice(0,D.n);if(D.n%2===0&&/[^\s…・。、]/.test(D.full[D.n-1]||''))sfx('text');if(D.n>=D.full.length)doneTyping()},L.honne?48:26)}
@@ -1565,7 +1568,7 @@ function talkSou(){if(!S.st.sou){S.st={...S.st,sou:1};save();placeAllies();
       L('me','ソウの首に、荒い継ぎ目が走っている。急いで継いだような跡だ。'),L('sou','沈殿街のツギハギに継いでもらった。……急がせたのは、おれだ。'),
       L('sou','仲間は、みんなやられた。おれが誘った。……おれのせいだ。'),
       L('mina','RAY も、自分のせいだって言ってた。'),L('sou','RAY は……悪くない。選んだのはおれだ。'),
-      L('me','リク。圏外の村から来た。ミナと一緒に、ここまで上ってきた。'),
+      L('me','おれはリク。圏外の村から来た。ミナと一緒に、ここまで上ってきた。'),
       L('sou',{n:'圏外から……。目が、まだ生身だな。',c:'圏外から……。土の匂いがする。',m:'圏外から……。お前も、換えてきたのか。'}),
       L('sou',{n:'……ここまで、よく来た。',c:'……ここまで、よく来た。',m:'……おれみたいには、なるなよ。'}),
       L('sou','……ゲンさんの麺、まだあるか。'),L('me','あるよ。ゲンジさん、あんたのことを覚えてた。'),
