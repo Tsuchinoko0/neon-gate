@@ -48,7 +48,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .sndpop .vol label{display:grid;grid-template-columns:4.5em minmax(0,1fr) 3.2em}
 .sndpop .vol input{width:100%}
 .vol output{min-width:3.2em;text-align:right;color:var(--cyan);font-variant-numeric:tabular-nums}
-.tbtn{background:var(--panel);border:1px solid var(--line);padding:4px 12px;border-radius:2px;font-family:var(--f-data);font-size:12px}
+.tbtn{white-space:nowrap;background:var(--panel);border:1px solid var(--line);padding:4px 12px;border-radius:2px;font-family:var(--f-data);font-size:12px}
 .tbtn:hover{border-color:var(--cyan)}
 
 .frame{position:relative;width:100%;aspect-ratio:var(--ar,16/9);background:#000;border:1px solid var(--line);overflow:hidden;max-width:100%}
@@ -90,6 +90,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .lift-ind{font-family:var(--f-data);font-size:clamp(36px,9vw,60px);color:var(--amber);text-align:center;letter-spacing:.1em;text-shadow:0 0 14px rgba(255,181,71,.5);padding-block:30px}
 .dlg.npc-me{border-left-color:var(--muted)} .dlg.npc-me .who{color:var(--muted)}
 /* 本音：金色の縁と文字。ふだんの会話と見分けがつくように */
+.dlg.top{top:4%;bottom:auto}
+.dlg.out{position:relative;left:auto;right:auto;bottom:auto;min-height:104px}
 .dlg.honne{border:1px solid rgba(201,160,255,.7);border-left:4px solid #ffd27a;background:rgba(28,16,38,.96);box-shadow:0 0 22px rgba(201,160,255,.35),inset 0 0 30px rgba(255,210,122,.06)}
 .dlg.honne .who{color:#ffd27a}
 .dlg.honne .who::after{content:'　本音';color:#c9a0ff;letter-spacing:.2em}
@@ -109,6 +111,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .dlg .ch .nbtn{font-size:clamp(11px,1.9vw,15px);padding:3px 12px}
 @keyframes blink{50%{opacity:0}}
 
+.toast.low{top:auto;bottom:6%}
 .toast{position:absolute;left:50%;top:5%;transform:translateX(-50%);background:rgba(9,7,20,.94);border:1px solid var(--amber);color:var(--amber);padding:6px 14px;font-size:clamp(11px,1.9vw,15px);max-width:90%;text-align:center}
 
 /* パネル（スキャン・結果・設定） */
@@ -248,7 +251,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.26 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.27 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -265,7 +268,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 
   <div class="frame" id="frame">
-    <canvas id="cv" width="640" height="360" role="img" aria-label="東京の外のスラム街。遠くに東京の光が見える"></canvas>
+    <canvas id="cv" width="640" height="360" role="img" aria-label="東京の外の、畑の村。遠くに東京の光が見える"></canvas>
     <div class="title" id="title">
       <h2>NEON GATE</h2>
       <p>脳のスペックで、住める場所が決まる街。</p>
@@ -290,7 +293,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.26"></script>
+<script src="sound.js?v=0.27"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -361,7 +364,9 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* ===== 音（sound.js） ===== */
 const SND=window.NGSound||null;
 const sfx=n=>{try{SND&&SND.se(n)}catch(e){}};
-function sndApply(){if(!SND)return;const o=S.snd||{};try{SND.setVolume('bgm',o.bgm??0.6);SND.setVolume('se',o.se??0.8);SND.setMuted(!!o.muted);SND.setCyber(1-flesh()/100);SND.setMood&&SND.setMood(area())}catch(e){}}
+function sndApply(){if(!SND)return;const o=S.snd||{};try{SND.setVolume('bgm',o.bgm??0.6);SND.setVolume('se',o.se??0.8);SND.setMuted(!!o.muted);SND.setCyber(1-flesh()/100);SND.setMood&&SND.setMood(F.zone?(F.zone.boss?'boss':'fight'):area())}catch(e){}}
+const mood=m=>{try{SND&&SND.setMood&&SND.setMood(m)}catch(e){}};
+let endQuiet=false;/* END の画面（バツを書く間）は BGM を止めたままにする */
 function sndStart(){if(!SND)return;try{
   /* iPhone のマナーモード（消音スイッチ）でも鳴るように、再生用の音声セッションにする（Safari 17 以降） */
   if(navigator.audioSession)navigator.audioSession.type='playback';
@@ -373,7 +378,7 @@ function sndStatus(){if(!SND)return 'sound.js を読み込めていません（i
   const c=SND.context();if(!c)return 'まだ鳴らしていません（タイトルの「はじめる」「つづきから」で鳴り始めます）';
   if(S.snd&&S.snd.muted)return 'ミュート中';if(c.state!=='running')return `一時停止中（${c.state}）。画面をタップすると再開します`;
   return SND.isPlaying()?'再生中':'BGM 停止中'}
-['pointerdown','keydown'].forEach(ev=>addEventListener(ev,()=>{if(mode!=='title')sndStart()},true));
+['pointerdown','keydown'].forEach(ev=>addEventListener(ev,()=>{if(mode!=='title'&&!endQuiet)sndStart()},true));
 if(!SND)console.warn('NEON GATE: sound.js が読み込めなかったため、音なしで動きます');
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;
   if(b.dataset.se!==undefined){if(b.dataset.se)sfx(b.dataset.se);return}
@@ -585,7 +590,7 @@ STAGES.sky={len:1920,gy:GY,start:30,lift:64,gateIn:30,ground:[],dark:0,tint:'20,
   lights:[{x:64,y:GY-42,r:18,c:'255,181,71',a:0.6},{x:790,y:GY-40,r:40,c:'255,214,150',a:0.5}],
   zones:[{id:'z1',x0:300,x1:680,need:'tenkyu',waves:[[{k:'trooper',x:650},{k:'drone',x:600}],[{k:'trooper',x:330},{k:'trooper',x:660},{k:'drone',x:480}]]},
     {id:'z2',x0:900,x1:1280,need:'sou',waves:[[{k:'cyborg',x:1250},{k:'drone',x:1180}],[{k:'trooper',x:930},{k:'cyborg',x:1260},{k:'drone',x:1090}],[{k:'cyborg',x:1260},{k:'cyborg',x:920},{k:'trooper',x:1240},{k:'drone',x:1000}]]},
-    {id:'z3',x0:1420,x1:1820,need:'z_z2',boss:1,waves:[[{k:'warden',x:1770}]]}]};
+    {id:'z3',x0:1420,x1:1820,need:'z_z2',boss:1,waves:[[{k:'warden',x:1600}]]}]};
 /* 第4層・中央区：終章。ai＝大規模AIの位置、endX＝そこから先へは歩けない */
 STAGES.top={len:760,gy:GY,start:40,gateIn:40,ai:600,endX:450,ground:[],plats:[],walls:[],props:[],fires:[],lights:[],dark:0,tint:'40,30,10'};
 const ST=()=>STAGES[area()];
@@ -609,6 +614,16 @@ const NPC_SPR={sou:()=>SOU,hisui:()=>HISUI,kaname:()=>KANAME,aoi:()=>AOI,yamashi
 const FLIP={saeki:1,kuro:1,ray:1,tsugi:1,take:1,yuki:1,haru:1};
 const feetY=n=>groundAt(n.x)+(n.z||0);
 let darkC=null;
+/* ゲートの光：奥（右）ほど強く、上は数段で薄れて空に溶ける（四角い縁を見せない）。格子のすき間から縦の光の筋がもれる */
+const gateFade=y=>{const k=Math.max(0,Math.min(1,(y-12)/70));return k*k*(3-2*k)};
+function gateGlow(gx0,c,a0,a1,t,bot=GY){const x0=gx0+12,w=140,lg=ctx.createLinearGradient(gx0,0,gx0+120,0);lg.addColorStop(0,`rgba(${c},${a0})`);lg.addColorStop(1,`rgba(${c},${a1})`);ctx.fillStyle=lg;
+  for(let y=12;y<bot;y+=3){ctx.globalAlpha=gateFade(y);ctx.fillRect(x0,y,w,Math.min(3,bot-y))}
+  ctx.globalCompositeOperation='lighter';
+  for(const [dx,bw,ph] of [[22,2,0],[41,3,1.7],[66,2,3.1],[88,4,0.6],[117,3,2.4]]){const a=0.07+0.04*Math.sin(t*1.1+ph);ctx.fillStyle=`rgba(${c},${a})`;
+    for(let y=4;y<bot;y+=3){const h=Math.min(3,bot-y);ctx.globalAlpha=gateFade(y+10);ctx.fillRect(x0+dx-1,y,bw+2,h);ctx.fillRect(x0+dx,y,bw,h)}}
+  /* 足もとにこぼれる光：ゲートの手前へ、だんだん薄く */
+  {const fl=ctx.createLinearGradient(x0-56,0,x0,0);fl.addColorStop(0,`rgba(${c},0)`);fl.addColorStop(1,`rgba(${c},.16)`);ctx.fillStyle=fl;for(let y=bot,i=0;y<H-OY;y+=2,i++){ctx.globalAlpha=Math.max(0,1-i/12);ctx.fillRect(x0-56,y,56,2)}}
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
 function drawOutBG(t){
   const prog=camX/Math.max(1,CAMMAX_OF('out'));
   /* 空 */
@@ -657,8 +672,8 @@ function drawOutBG(t){
 
   /* ゲート（奥から光が漏れる） */
   {const gx0=X(872);if(gx0<W+10){
-    let lg=ctx.createLinearGradient(gx0,0,gx0+120,0);lg.addColorStop(0,'rgba(220,245,255,0.05)');lg.addColorStop(1,'rgba(220,245,255,0.75)');ctx.fillStyle=lg;ctx.fillRect(gx0+12,30,140,GY-30);
-    ctx.fillStyle='rgba(255,180,230,.18)';ctx.fillRect(gx0+12,GY,140,H-GY);
+    gateGlow(gx0,'220,245,255',0.05,0.75,t);
+    {const fg=ctx.createLinearGradient(gx0,0,gx0+60,0);fg.addColorStop(0,'rgba(255,180,230,0)');fg.addColorStop(1,'rgba(255,180,230,.18)');ctx.fillStyle=fg;ctx.fillRect(gx0+12,GY,140,H-OY-GY)}
     ctx.fillStyle='#1c1932';ctx.fillRect(gx0,36,12,GY-36);ctx.fillStyle='#2c2750';ctx.fillRect(gx0,36,12,1);
     for(let y=GY-14;y<GY;y+=4){ctx.fillStyle=((y/4)%2)?'#ffb547':'#1c1932';ctx.fillRect(gx0,y,12,2)}
     ctx.fillStyle='#211d3a';for(const by of [62,90,118])ctx.fillRect(gx0+12,by,140,4);
@@ -754,8 +769,8 @@ function drawLowerBG(t){
     ctx.fillStyle=Math.floor(t*2)%2?'#3ef2e0':'#1a7a70';ctx.fillRect(sx+52,GY-24,3,2)}}
   /* 企業区へのゲート（白い光） */
   {const gx0=X(872);if(gx0<W+10){
-    let lg=ctx.createLinearGradient(gx0,0,gx0+120,0);lg.addColorStop(0,'rgba(240,250,255,0.08)');lg.addColorStop(1,'rgba(240,250,255,0.85)');ctx.fillStyle=lg;ctx.fillRect(gx0+12,30,140,GY-30);
-    ctx.fillStyle='#2a2438';ctx.fillRect(gx0,30,12,GY-30);for(let y=40;y<GY;y+=6){ctx.fillStyle='#3a3350';ctx.fillRect(gx0+12,y,140,2)}
+    gateGlow(gx0,'240,250,255',0.08,0.85,t);
+    ctx.fillStyle='#2a2438';ctx.fillRect(gx0,30,12,GY-30);ctx.fillStyle='#3a3350';for(let y=40;y<GY;y+=6){ctx.globalAlpha=Math.max(0.25,gateFade(y));ctx.fillRect(gx0+12,y,140,2)}ctx.globalAlpha=1
     ctx.fillStyle='#0d0b18';ctx.fillRect(gx0+1,96,10,10);ctx.fillStyle=Math.floor(t*2)%2?'#ff4a5c':'#7a2030';ctx.fillRect(gx0+3,98,6,6)}}
 }
 /* 昇降機の扉。lit=行き先が登録済み */
@@ -806,10 +821,10 @@ function drawCorpBG(t){const prog=camX/Math.max(1,CAMMAX_OF('corp')),X=x=>Math.r
   /* 降格シュート：床の穴。下の層へ */
   {const sx=X(408);if(sx>-30&&sx<W+30){ctx.fillStyle='#0a0c14';ctx.fillRect(sx-14,GY-6,28,6);for(let k=0;k<28;k+=4){ctx.fillStyle=(k/4)%2?'#f2c230':'#1a1416';ctx.fillRect(sx-14+k,GY-9,4,3)}
     ctx.fillStyle='#ff4a5c';ctx.globalAlpha=0.6+0.4*Math.sin(t*4);ctx.fillRect(sx-2,GY-26,5,2);ctx.fillRect(sx-1,GY-24,3,2);ctx.fillRect(sx,GY-22,1,2);ctx.globalAlpha=1;ctx.fillStyle='#e8f0ff';ctx.font='5px monospace';ctx.fillText('配置転換',sx-10,GY-30)}}
-  /* ニュース画面：天穹区ゲート襲撃の続報 */
-  {const sx=X(470);if(sx>-50&&sx<W+50){ctx.fillStyle='#0c1020';ctx.fillRect(sx-24,GY-84,48,30);ctx.fillStyle='#e8f0ff';ctx.fillRect(sx-24,GY-84,48,1);ctx.fillStyle='#b8323c';ctx.fillRect(sx-22,GY-82,44,4);ctx.fillStyle='#fff';ctx.font='4px monospace';ctx.fillText('NEWS · 天穹区ゲート襲撃',sx-21,GY-79);
+  /* ニュース画面：中央区ゲート襲撃の続報 */
+  {const sx=X(470);if(sx>-50&&sx<W+50){ctx.fillStyle='#0c1020';ctx.fillRect(sx-24,GY-84,48,30);ctx.fillStyle='#e8f0ff';ctx.fillRect(sx-24,GY-84,48,1);ctx.fillStyle='#b8323c';ctx.fillRect(sx-22,GY-82,44,5);ctx.fillStyle='#fff';ctx.font='4px monospace';ctx.fillText('NEWS',sx-21,GY-78.5);ctx.fillStyle=Math.floor(t*2)%2?'#ffd0d4':'#b8323c';ctx.fillRect(sx+18,GY-81,2,2);
     ctx.fillStyle='#2a2028';ctx.fillRect(sx-20,GY-75,10,11);ctx.fillStyle='#b98a68';ctx.fillRect(sx-18,GY-73,6,6);ctx.fillStyle='#3ef2e0';ctx.fillRect(sx-14,GY-71,1,1);ctx.fillStyle='#8f97ad';ctx.fillRect(sx-19,GY-66,8,1);
-    ctx.fillStyle='rgba(220,235,255,.7)';for(let k=0;k<4;k++)ctx.fillRect(sx-6,GY-75+k*3,22-((k*7)%9),1);ctx.fillStyle='#ffb547';ctx.fillRect(sx-24+((t*20)%48),GY-58,8,1);ctx.fillStyle='#1a2034';ctx.fillRect(sx-1,GY-54,2,45)}}
+    ctx.fillStyle='rgba(220,235,255,.7)';for(let k=0;k<4;k++)ctx.fillRect(sx-6,GY-75+k*3,22-((k*7)%9),1);ctx.save();ctx.beginPath();ctx.rect(sx-22,GY-62,44,6);ctx.clip();ctx.fillStyle='#3a1820';ctx.fillRect(sx-22,GY-62,44,6);ctx.fillStyle='#ffb547';ctx.font='4px monospace';{const tk='中央区ゲート襲撃　主犯ソウ 逃走中　',tw=ctx.measureText(tk).width,ox=Math.round((t*12)%tw);ctx.fillText(tk+tk,sx-22-ox,GY-57.5)}ctx.restore();ctx.fillStyle='#1a2034';ctx.fillRect(sx-1,GY-54,2,45)}}
   /* ホログラムの手配書：ソウの顔が、ゆっくり回る */
   {const sx=X(560);if(sx>-30&&sx<W+30){const c=Math.cos(t*1.2),hw=Math.max(1,Math.round(Math.abs(c)*9)),y=GY-70;ctx.fillStyle='#1a2034';ctx.fillRect(sx-6,GY-12,12,3);
     ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,90,110,.18)';ctx.fillRect(sx-12,y-4,24,40);ctx.fillStyle='rgba(255,120,140,.75)';ctx.fillRect(sx-hw,y,hw*2,2);ctx.fillStyle=c>0?'rgba(255,190,200,.75)':'rgba(255,120,140,.45)';ctx.fillRect(sx-hw,y+4,hw*2,14);
@@ -820,8 +835,9 @@ function drawCorpBG(t){const prog=camX/Math.max(1,CAMMAX_OF('corp')),X=x=>Math.r
     ctx.fillStyle='#3a8aff';ctx.fillRect(sx+42,GY-72,12,4);ctx.fillRect(sx+46,GY-76,4,12);ctx.fillStyle='#1a2a48';ctx.font='5px monospace';ctx.fillText('正規クリニック',sx+28,GY-58);
     ctx.fillStyle='rgba(180,220,255,.6)';ctx.fillRect(sx+38,GY-30,20,21);ctx.fillStyle='#e8f0ff';ctx.fillRect(sx+47,GY-30,1,21);ctx.fillStyle='rgba(120,180,255,.35)';ctx.fillRect(sx+8,GY-48,22,14);ctx.fillRect(sx+66,GY-48,22,14)}}
   /* 天穹区ゲート：まぶしい白と、上の層の人工の空の色 */
-  {const gx0=X(872);if(gx0<W+10){let lg=ctx.createLinearGradient(gx0,0,gx0+120,0);lg.addColorStop(0,'rgba(240,250,255,0.1)');lg.addColorStop(1,'rgba(220,245,255,0.95)');ctx.fillStyle=lg;ctx.fillRect(gx0+12,30,140,GY-39);
-    ctx.fillStyle='rgba(150,220,255,.25)';ctx.fillRect(gx0+12,30,140,30);ctx.fillStyle='#e8f0ff';ctx.fillRect(gx0,30,12,GY-39);ctx.fillStyle='#9aaad0';for(let y=40;y<GY-9;y+=6)ctx.fillRect(gx0+12,y,140,1);
+  {const gx0=X(872);if(gx0<W+10){gateGlow(gx0,'225,245,255',0.1,0.95,t,GY-9);
+    ctx.fillStyle='rgba(150,220,255,.25)';for(let y=30;y<60;y+=3){ctx.globalAlpha=gateFade(y);ctx.fillRect(gx0+12,y,140,3)}ctx.globalAlpha=1;
+    ctx.fillStyle='#e8f0ff';ctx.fillRect(gx0,30,12,GY-39);ctx.fillStyle='#9aaad0';for(let y=40;y<GY-9;y+=6){ctx.globalAlpha=gateFade(y);ctx.fillRect(gx0+12,y,140,1)}ctx.globalAlpha=1;
     const col=gateLight==='deny'?'#ff4a5c':gateLight==='ok'?'#3ef2e0':(Math.floor(t*2)%2?'#3ef2e0':'#1a7a70');ctx.fillStyle='#0d0b18';ctx.fillRect(gx0+1,96,10,10);ctx.fillStyle=col;ctx.fillRect(gx0+3,98,6,6)}}
   /* 警備ドローン（ゆっくり行き来する） */
   for(const k of [0,1]){const dx=X(300+k*380+Math.sin(t*0.4+k*2)*60),dy=70+k*10+Math.round(Math.sin(t*2+k)*2);if(dx<-10||dx>W+10)continue;ctx.fillStyle='#4a5470';ctx.fillRect(dx-5,dy,10,3);ctx.fillRect(dx-7,dy-1,3,1);ctx.fillRect(dx+4,dy-1,3,1);ctx.fillStyle='#ff4a5c';ctx.fillRect(dx-1,dy+3,2,1);ctx.fillStyle='rgba(255,74,92,.07)';ctx.beginPath();ctx.moveTo(dx,dy+4);ctx.lineTo(dx-14,GY-9);ctx.lineTo(dx+14,GY-9);ctx.closePath();ctx.fill()}}
@@ -1047,7 +1063,9 @@ function drawPosterG(ctx,sx,y,o={}){const fc=WANTED_FACE[o.who||'sou'];ctx.fillS
   ctx.fillStyle='rgba(40,30,40,.7)';ctx.fillRect(sx+1.5,y+9,7,0.6);ctx.fillRect(sx+1.5,y+10.4,5,0.6);ctx.fillStyle='#b8323c';ctx.fillRect(sx+1.5,y+11.6,7,0.6);
   if(o.smear){ctx.fillStyle='rgba(50,50,70,.4)';ctx.fillRect(sx,y+6,10,7);ctx.fillRect(sx+2,y+8,1,6);ctx.fillRect(sx+6,y+9,1,5);ctx.fillRect(sx+8,y+7,1,6)}
   if(o.torn){ctx.fillStyle='#1a1416';ctx.fillRect(sx+7,y,3,3);ctx.fillRect(sx+8,y+3,2,1)}
-  if(o.graffiti){ctx.strokeStyle='rgba(255,61,139,.8)';ctx.lineWidth=0.7;ctx.beginPath();ctx.moveTo(sx+1,y+3);ctx.lineTo(sx+9,y+10);ctx.moveTo(sx+9,y+3);ctx.lineTo(sx+1,y+10);ctx.stroke();ctx.lineWidth=1}}
+  /* 落書き：ピンクのひげと角、波線（バツには見せない。赤いバツはエンディングの演出だけ） */
+  if(o.graffiti){ctx.fillStyle='rgba(255,61,139,.85)';ctx.fillRect(sx+2.5,y+6.5,2,0.5);ctx.fillRect(sx+6,y+6.5,2,0.5);ctx.fillRect(sx+2,y+2,0.5,1);ctx.fillRect(sx+8,y+2,0.5,1);ctx.fillRect(sx+1.5,y+1.5,1,0.5);ctx.fillRect(sx+8,y+1.5,1,0.5);
+    ctx.fillRect(sx+1,y+12.5,2,0.5);ctx.fillRect(sx+3,y+12,1.5,0.5);ctx.fillRect(sx+4.5,y+12.5,1.5,0.5);ctx.fillRect(sx+6,y+12,1.5,0.5);ctx.fillRect(sx+7.5,y+12.5,1.5,0.5)}}
 function drawNeon(n,t){const x=Math.round(n.x-camX),y=n.y;if(x<-20||x>W+20)return;const on=!n.broken||flick(t,n.s);
   ctx.fillStyle='#0c0a14';n.v?ctx.fillRect(x-1,y-1,6,18):ctx.fillRect(x-1,y-1,20,7);
   if(on){ctx.globalAlpha=0.2;ctx.fillStyle=`rgb(${n.c})`;n.v?ctx.fillRect(x-3,y-3,10,22):ctx.fillRect(x-3,y-3,24,11);ctx.globalAlpha=1}
@@ -1163,7 +1181,7 @@ function cbt(){const c=impLv('reflex'),r=impLv('buffer'),g=impLv('optic'),a=impL
 const AMMO_MAX=24;
 let T=0;/* 今の時刻（秒）。loop で更新 */
 const F={hp:6,ammo:AMMO_MAX,inv:0,dodgeT:0,dodgeCD:0,fireCD:0,kb:0,shots:[],eshots:[],foes:[],fx:[],zone:null,wave:0,waveT:0,heal:0,amCD:0,minaCD:1.5,souCD:1,flash:0,muzzle:0,beams:[]};
-function resetFight(full){F.shots=[];F.eshots=[];F.foes=[];F.fx=[];F.beams=[];F.zone=null;F.wave=0;F.waveT=0;if(full){F.hp=cbt().hp;F.ammo=AMMO_MAX;F.heal=0;F.amCD=0}}
+function resetFight(full){if(F.zone&&area()==='sky')mood('sky');F.shots=[];F.eshots=[];F.foes=[];F.fx=[];F.beams=[];F.zone=null;F.wave=0;F.waveT=0;if(full){F.hp=cbt().hp;F.ammo=AMMO_MAX;F.heal=0;F.amCD=0}}
 /* 仲間（天穹区ではミナがついてくる。ソウは再会のあと） */
 const ALLY={mina:{id:'mina',x:0,z:-3,ally:1,flip:false,mv:0,step:0},sou:{id:'sou',x:0,z:3,ally:1,flip:false,mv:0,step:0}};
 function placeAllies(){ALLY.mina.x=player.x-26*player.dir;ALLY.sou.x=player.x+22*player.dir}
@@ -1172,21 +1190,21 @@ const FOE={drone:{hp:3,w:14,h:9,fly:1,sp:44,weak:[0,-5],range:150,cd:2.3},
   trooper:{hp:5,w:10,h:17,sp:34,weak:[0,-14],range:120,cd:2.1},
   cyborg:{hp:8,w:12,h:18,sp:46,weak:[0,-10],range:46,cd:1.9},
   warden:{hp:70,w:40,h:54,sp:0,weak:[0,-32],range:400,cd:2.2,boss:1}};
-function spawnFoe(k,x){const d=FOE[k],c=cbt(),hp=Math.round(d.hp*c.foeHp);
-  F.foes.push({k,x,y:d.fly?-14:(d.boss?GY:-20),vy:0,hp,max:hp,dir:-1,st:'in',t:0,cd:0.6+Math.random()*0.8,hit:0,ph:Math.random()*6,burst:0})}
+function spawnFoe(k,x){const d=FOE[k],c=cbt(),max=Math.round(d.hp*c.foeHp),hp=d.boss&&F.wardenLeft?Math.min(max,F.wardenLeft):max;
+  F.foes.push({k,x,y:d.fly?-14:(d.boss?GY:-20),vy:0,hp,max,dir:-1,st:'in',t:0,cd:0.6+Math.random()*0.8,hit:0,ph:Math.random()*6,burst:0})}
 const foeHurt=(f,n,weak)=>{f.hp-=n;f.hit=T+0.1;F.fx.push({k:'spark',x:f.x,y:f.y-(FOE[f.k].h/2),t:T,c:weak?'#ffd34a':'#ffffff'});if(weak)F.fx.push({k:'txt',x:f.x,y:f.y-FOE[f.k].h-4,t:T,s:'WEAK',c:'#ffd34a'});sfx(weak?'weak':'ehit');
   if(f.hp<=0){f.dead=1;F.fx.push({k:'boom',x:f.x,y:f.y-FOE[f.k].h/2,t:T,r:FOE[f.k].boss?26:10});sfx('boom')}};
 const weakAt=f=>{const d=FOE[f.k];return{x:f.x+d.weak[0]*f.dir,y:f.y+d.weak[1]}};
 /* プレイヤーの当たり（足もと y から上に 15） */
 function hurtPlayer(n,from){if(T<F.inv||T<F.dodgeT||mode!=='play')return;const c=cbt();F.hp-=Math.max(1,Math.round(n*c.dmg));F.inv=T+1.0;F.kb=T+0.18;F.flash=T+0.15;
-  player.vx=(player.x<from?-1:1)*110;player.vy=-120;sfx('hit');if(F.hp<=0){F.hp=0;fallen()}}
+  player.vx=(player.x<from?-1:1)*110;player.vy=-120;sfx('hurt');if(F.hp<=0){F.hp=0;fallen()}}
 function playerHit(x,y,r=2){return Math.abs(x-player.x)<4+r&&y>player.y-16-r&&y<player.y+r}
 /* 倒れたら、ミナが助け起こす。区画の手前からやり直し（敵も元に戻る） */
-function fallen(){const z=F.zone;mode='fade';$('#fade').classList.add('on');keys.l=keys.r=keys.fire=false;
+function fallen(){const z=F.zone,w=F.foes.find(f=>f.k==='warden');if(w)F.wardenLeft=Math.min(w.max,Math.round(w.hp+(w.max-w.hp)/2));mode='fade';$('#fade').classList.add('on');keys.l=keys.r=keys.fire=false;
   setTimeout(()=>{resetFight(true);if(z){player.x=z.x0-14}player.y=groundAt(player.x);player.vx=player.vy=0;player.dir=1;placeAllies();camX=clamp(Math.round(player.x)-Math.round(W*0.42),0,CAMMAX_OF(area()));
     $('#fade').classList.remove('on');setTimeout(()=>{mode='play';talk(pick3('fallen',FALLEN).map(([w,t])=>L(w,t)))},380)},600)}
 /* 撃つ・跳ぶ・回避 */
-function fire(){if(!armed()||mode!=='play'||T<F.fireCD)return;if(F.ammo<=0){F.fireCD=T+0.3;sfx('empty');return}
+function fire(){if(!armed()||mode!=='play'||T<F.fireCD)return;if(!F.zone){if(T>(F.noFireT||0)){F.noFireT=T+3;toast('敵がいない所では撃たない',1600)}return}if(F.ammo<=0){F.fireCD=T+0.3;sfx('empty');return}
   F.ammo--;F.fireCD=T+0.2;F.muzzle=T+0.06;F.shots.push({x:player.x+player.dir*7,y:player.y-9,vx:player.dir*270,vy:0,life:0.9,by:'me',dmg:1});sfx('shot')}
 function jump(){if(mode!=='play'||!actArea()||!player.onGround)return;player.vy=-PHYS.jump;player.onGround=false;sfx('jump')}
 function dodge(){if(!armed()||mode!=='play'||T<F.dodgeCD)return;const c=cbt();F.dodgeT=T+c.dodgeInv;F.dodgeCD=T+c.dodgeCD;sfx('dodge');F.fx.push({k:'ghost',x:player.x,y:player.y,t:T,dir:player.dir})}
@@ -1197,8 +1215,8 @@ function bounds(st){let lo=12,hi=st.len-12;if(F.zone){lo=Math.max(lo,F.zone.x0+8
   for(const z of st.zones||[])if(!zoneDone(z)&&!zoneNeed(z)&&player.x<z.x0)hi=Math.min(hi,z.x0-6);
   if(st.endX)hi=Math.min(hi,st.endX);return[lo,hi]}
 function startZone(z){F.zone=z;F.wave=0;F.waveT=0;F.foes=[];F.eshots=[];const first=!(S.st['zs_'+z.id]);if(first){S.st={...S.st,['zs_'+z.id]:1};save()}
-  sfx('alarm');const intro=ZONE_TALK[z.id];if(first&&intro)talk(intro.map(([w,t])=>L(w,t)));else toast(z.boss?'番人が動き出した！':'敵が来る！',2400)}
-function clearZone(z){F.zone=null;F.eshots=[];S.st={...S.st,['z_'+z.id]:1};save();sfx('success');F.hp=Math.min(cbt().hp,F.hp+1);
+  sfx('lock');sfx('alarm');mood('fight');if(z.boss)setTimeout(()=>{if(F.zone===z){sfx('warden');mood('boss')}},1200);const intro=ZONE_TALK[z.id];if(first&&intro)talk(intro.map(([w,t])=>L(w,t)));else toast(z.boss?'番人が動き出した！':'敵が来る！',2400)}
+function clearZone(z){F.zone=null;F.eshots=[];S.st={...S.st,['z_'+z.id]:1};save();sfx('unlock');mood('sky');F.wardenLeft=null;F.hp=Math.min(cbt().hp,F.hp+1);
   const after=ZONE_CLEAR[z.id];after?talk(after.map(([w,t])=>L(w,t)),()=>hud()):toast('区画を突破した',3000);hud()}
 function landAt(x,y0,y1,vy){const g=groundAt(x);if(y1>=g)return g;if(vy>=0)for(const p of ST().plats||[])if(x>=p.x0&&x<=p.x1&&y0<=p.y+0.5&&y1>=p.y)return p.y;return null}
 /* 1コマぶんの戦い */
@@ -1258,10 +1276,10 @@ function stepAllies(dt){if(area()!=='sky')return;const m=ALLY.mina,so=ALLY.sou,c
     if(F.zone&&mode==='play'){F.heal-=dt;F.amCD-=dt;F.minaCD-=dt;
       if(F.hp<=Math.ceil(c.hp/2)&&F.heal<=0){F.hp=Math.min(c.hp,F.hp+2);F.heal=c.tell||c.weak||c.assist?16:22;sfx('heal');F.fx.push({k:'txt',x:m.x,y:GY-26,t:T,s:'手当て！',c:'#7dffb0'},{k:'heal',x:player.x,y:player.y,t:T})}
       if(F.ammo<=4&&F.amCD<=0){F.ammo=AMMO_MAX;F.amCD=6;sfx('ammo');F.fx.push({k:'txt',x:m.x,y:GY-26,t:T,s:'弾！',c:'#ffd34a'})}
-      if(near&&F.minaCD<=0&&Math.abs(near.x-m.x)<200){const a=Math.atan2(near.y-FOE[near.k].h/2-(GY-9),near.x-m.x);F.shots.push({x:m.x,y:GY-9,vx:Math.cos(a)*220,vy:Math.sin(a)*220,life:1.2,by:'mina',dmg:1});F.minaCD=2.4;sfx('shot2')}}}
+      if(near&&F.minaCD<=0&&Math.abs(near.x-m.x)<200){const a=Math.atan2(near.y-FOE[near.k].h/2-(GY-9),near.x-m.x);F.shots.push({x:m.x,y:GY-9,vx:Math.cos(a)*220,vy:Math.sin(a)*220,life:1.2,by:'mina',dmg:1});F.minaCD=2.4;sfx('shot')}}}
   if(S.st.sou){if(near&&F.zone){const tx=near.x-18*Math.sign(near.x-so.x||1);mv(so,FOE[near.k].fly?player.x+20*side:tx,120);F.souCD-=dt;
       if(F.souCD<=0&&mode==='play'){if(!FOE[near.k].fly&&Math.abs(near.x-so.x)<28){foeHurt(near,2,false);F.fx.push({k:'slash',x:so.x+(near.x>so.x?8:-8),y:GY-10,t:T,dir:near.x>so.x?1:-1});F.souCD=1.1;sfx('slash')}
-        else if(FOE[near.k].fly||Math.abs(near.x-so.x)<160){const a=Math.atan2(near.y-FOE[near.k].h/2-(GY-10),near.x-so.x);F.shots.push({x:so.x,y:GY-10,vx:Math.cos(a)*240,vy:Math.sin(a)*240,life:1,by:'sou',dmg:1});F.souCD=1.4;sfx('shot2')}}}
+        else if(FOE[near.k].fly||Math.abs(near.x-so.x)<160){const a=Math.atan2(near.y-FOE[near.k].h/2-(GY-10),near.x-so.x);F.shots.push({x:so.x,y:GY-10,vx:Math.cos(a)*240,vy:Math.sin(a)*240,life:1,by:'sou',dmg:1});F.souCD=1.4;sfx('shot')}}}
     else mv(so,player.x+22*player.dir,Math.abs(player.x+22*player.dir-so.x)>60?160:110)}}
 /* 戦いの絵 */
 function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
@@ -1291,7 +1309,7 @@ function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
   for(const z of ST().zones||[]){const act=F.zone===z,closed=!zoneDone(z)&&!zoneNeed(z);if(!act&&!closed)continue;
     for(const x of act?[z.x0,z.x1]:[z.x0]){const sx=Math.round(x-camX);if(sx<-6||sx>W+6)continue;ctx.fillStyle='rgba(255,61,90,.18)';ctx.fillRect(sx-4,GY-70,8,70);ctx.fillStyle=`rgba(255,90,120,${0.55+0.25*Math.sin(t*9)})`;for(let y=GY-68;y<GY;y+=4)ctx.fillRect(sx-1,y,2,2);ctx.fillStyle='#3a3a50';ctx.fillRect(sx-3,GY-72,6,3)}}}
 /* 体力・弾・番人の体力（画面の上） */
-function drawFightHud(t){if(!armed())return;ctx.setTransform(2,0,0,2,0,0);const c=cbt();
+function drawFightHud(t){if(!armed())return;ctx.setTransform(2,0,0,2,0,0);const c=cbt();ctx.fillStyle='rgba(8,10,28,.42)';ctx.fillRect(2,3,Math.max(78,c.hp*8+4),21);
   for(let i=0;i<c.hp;i++){const x=6+i*8,y=6,on=i<F.hp;ctx.fillStyle=on?'#ff3d6b':'rgba(255,255,255,.18)';ctx.fillRect(x,y,2,2);ctx.fillRect(x+3,y,2,2);ctx.fillRect(x-1,y+1,7,2);ctx.fillRect(x,y+3,5,1);ctx.fillRect(x+1,y+4,3,1);ctx.fillRect(x+2,y+5,1,1)}
   ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(5,15,50,4);ctx.fillStyle=F.ammo<=4?'#ffb547':'#3ef2e0';ctx.fillRect(6,16,Math.round(48*F.ammo/AMMO_MAX),2);
   ctx.font='7px "M PLUS 1 Code",monospace';ctx.fillStyle='rgba(10,12,30,.75)';ctx.fillText(`弾 ${F.ammo}`,59,21);ctx.fillStyle='#e8f0ff';ctx.fillText(`弾 ${F.ammo}`,58,20);
@@ -1301,7 +1319,7 @@ function drawFightHud(t){if(!armed())return;ctx.setTransform(2,0,0,2,0,0);const 
 /* ===== 終章：中央区（STORY.md の 1〜8）。セリフは END_TEXT ===== */
 /* 出てくる人：ソウ、ミナ、広間のサイボーグ（動かない）、上から降りてくるサイボーグ部隊。足もとの y からの浮き dy と、向かう先 goal を持つ */
 const TOP={list:[],sou:null,mina:null};
-let endWalk=false,endWatch=null,camT=null;/* camT：終章の場面で、カメラを寄せる相手 */
+let endWalk=false,endWatch=null,camT=null,inEnding=false;/* camT：終章の場面で、カメラを寄せる相手 */
 function topReset(){const ai=STAGES.top.ai,mk=(spr,x,z,d,dy=0)=>({spr,x,z,d,dy,goal:null});
   TOP.sou=mk(SOU,0,3,1);TOP.mina=mk(MINA,0,-3,1);
   const still=[150,190,230,300,340,380,430,470].map((x,i)=>mk(i%3?SKY_CY:CYBORG,x,-8-(i%2)*2,1));
@@ -1314,7 +1332,7 @@ const dropP=e=>new Promise(r=>{e.drop={done:r}});
 function stepTop(dt){for(const e of TOP.list){if(e.goal){const d=e.goal.tx-e.x,s=clamp(d,-e.goal.sp*dt,e.goal.sp*dt);e.x+=s;if(d)e.d=Math.sign(d);if(Math.abs(d)<1){const f=e.goal.done;e.goal=null;f()}}
     if(e.drop){e.dy=Math.min(0,e.dy+240*dt);if(e.dy>=0){const f=e.drop.done;e.drop=null;sfx('land');f()}}}
   if(endWatch&&mode==='play'&&(Math.abs(player.x-endWatch.x0)>46||T-endWatch.t0>7)){const f=endWatch.done;endWatch=null;f()}}
-async function endingSeq(){const ai=STAGES.top.ai;topReset();mode='cut';endWalk=false;player.x=40;player.dir=1;player.vx=0;TOP.sou.x=62;TOP.mina.x=24;camX=0;
+async function endingSeq(){const ai=STAGES.top.ai;inEnding=true;topReset();mode='cut';endWalk=false;player.x=40;player.dir=1;player.vx=0;TOP.sou.x=62;TOP.mina.x=24;camX=0;
   await waitP(500);await sayP(END_TEXT.a);mode='cut';
   /* 2：ソウが大規模AIに向かってダッシュ。3：サイボーグ部隊が取り囲む（予測済み） */
   camT=TOP.sou;sfx('dash');await moveP(TOP.sou,ai-60,170);
@@ -1326,7 +1344,7 @@ async function endingSeq(){const ai=STAGES.top.ai;topReset();mode='cut';endWalk=
   await Promise.all([moveP(TOP.mina,mx,140),waitP(300).then(()=>Promise.all([moveP(g1,mx+10,170),moveP(g2,mx+22,170)]))]);
   await sayP(END_TEXT.c);camT=null;
   /* 5：リクは見回す（ゆっくり歩ける） */
-  endWalk=true;mode='play';toast('……あたりを見回す（← → でゆっくり歩ける）',5200);
+  endWalk=true;mode='play';toast(innerWidth<=600?'……あたりを見回す（◀ ▶ でゆっくり歩ける）':'……あたりを見回す（← → でゆっくり歩ける）',5200);
   await new Promise(r=>{endWatch={x0:player.x,t0:T,done:r}});
   keys.l=keys.r=false;mode='cut';player.vx=0;
   /* 6：モノローグ（本音と同じく、ゆっくり文字送り）のあと、リクも捕まる */
@@ -1335,7 +1353,7 @@ async function endingSeq(){const ai=STAGES.top.ai;topReset();mode='cut';endWalk=
   await sayP(END_TEXT.d);mode='cut';await waitP(600);
   $('#fade').classList.add('on');await waitP(1200);endWalk=false;endPanel();$('#fade').classList.remove('on')}
 /* 7：手配書が3枚。BGMを止め、一枚ずつ赤いバツを書く音だけを鳴らす。8：END */
-function endPanel(){S.st={...S.st,top:1,end:1};S.area='sky';player.x=1840;S.pos={...(S.pos||{}),sky:{sx:1840}};save();try{SND&&SND.stop()}catch(e){}
+function endPanel(){inEnding=false;endQuiet=true;S.st={...S.st,top:1,end:1};S.area='sky';player.x=1840;S.pos={...(S.pos||{}),sky:{sx:1840}};save();try{SND&&SND.stop()}catch(e){}
   openPanel(`<div class="endwrap"><canvas class="endcv" id="ecv" width="${3*120}" height="${170}" role="img" aria-label="指名手配書が3枚。リク、ミナ、ソウ"></canvas>
   <p class="end-t" id="endT" hidden>END</p><div id="endB" hidden><p class="muted c">${esc(endNote())}</p><div class="prow" style="justify-content:center"><button class="nbtn" id="toT" type="button">タイトルへ</button></div></div></div>`);
   const g=$('#ecv').getContext('2d');g.imageSmoothingEnabled=false;const P=[['riku','リク'],['mina','ミナ'],['sou','ソウ']];
@@ -1349,7 +1367,7 @@ function endPanel(){S.st={...S.st,top:1,end:1};S.area='sky';player.x=1840;S.pos=
     if(done>=X.length&&now>t0+X.length*SEG*1.4+900){$('#endT').hidden=false;$('#endB').hidden=false;$('#toT').focus();return}
     requestAnimationFrame(strokes)};
   requestAnimationFrame(strokes);
-  $('#toT').onclick=()=>{closePanel();resetFight(true);$('#title').hidden=false;mode='title';placePlayer();titleButtons();hud()}}
+  $('#toT').onclick=()=>{endQuiet=false;closePanel();resetFight(true);$('#title').hidden=false;mode='title';placePlayer();titleButtons();hud()}}
 function endNote(){const o=overall(S.cur),hn=Object.keys(S.honne||{}).length;return `生身率 ${flesh()}% · 実効スペック ${effective()}（生身 ${o?Math.round(o.avg):'—'} ＋ 拡張 ${implantBonus()}）· 稼いだクレジット ${(S.earned||0).toLocaleString()} CR · 本音を聞いた人 ${hn} / ${Object.keys(HONNE).length}人`}
 /* ===== 描画 ===== */
 function draw(t){OY=H-180;ctx.setTransform(2,0,0,2,0,2*OY);ctx.imageSmoothingEnabled=false;
@@ -1398,7 +1416,7 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;T=
   if(area()==='top'&&mode!=='panel')stepTop(dt);
   if(mode==='play'){const st=ST(),cm=CAMMAX_OF(area());stepPlayer(dt,st);
     /* 主人公の位置を先に丸めて、カメラと描く位置をそろえる（ぶれ防止） */
-    camX=clamp(Math.round(player.x)-Math.round(W*(F.zone&&F.zone.boss?0.22:0.42)),0,cm);
+    {const bs=F.zone&&F.zone.boss,w=bs&&F.foes.find(f=>f.k==='warden');let cx=Math.round(player.x)-Math.round(W*(bs?0.22:0.42));if(w)cx=Math.min(Math.round(player.x)-14,Math.max(cx,Math.round(w.x)+28-W));camX=clamp(cx,0,cm)}
     /* 右（ゲート）へ進むほど BGM が明るい */
     const pr=camX/Math.max(1,cm),br=Math.round((area()==='sky'?0.75+0.25*pr:area()==='top'?1:area()==='corp'?0.6+0.3*pr:area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='cut'){const fx=camT?camT.x:player.x,tx=clamp(Math.round(fx)-Math.round(W*(camT?0.5:0.42)),0,CAMMAX_OF(area()));camX=Math.round(camX+(tx-camX)*Math.min(1,dt*3))}
@@ -1417,9 +1435,9 @@ function hud(){const o=overall(S.cur);
   if(typeof sndBtnUp==='function')sndBtnUp();
   {const ar=armed();$('#acts').hidden=!ar;document.querySelector('.ctrl').classList.toggle('fight',ar);$('#hint').textContent=ar?'← → 移動 ／ ↑・W・Space 跳ぶ ／ X・J 撃つ ／ C・L 回避 ／ Z・Enter 話す':'キーボード：← → / A D で移動（Shift で走る）／ Space・Enter で話す／ F でライト'}
   {const [a,b]=AREAS[area()].nm.split(' · ');$('#areaChip').innerHTML=esc(a)+(b?`<span class="nm2"> · ${esc(b)}</span>`:'')}cv.setAttribute('aria-label',AREAS[area()].label);
-  if(typeof goalNow==='function'&&S.started){const g=goalNow();if(S.goalK!==g.k){const had=S.goalK!=null;S.goalK=g.k;save();if(had){$('#goalBtn').classList.add('new');sfx('goal');toast('目的を更新：'+g.t,5200)}}}}
+  if(typeof goalNow==='function'&&S.started){const g=goalNow();if(S.goalK!==g.k){const had=S.goalK!=null;S.goalK=g.k;save();if(had&&!inEnding&&area()!=='top'){$('#goalBtn').classList.add('new');sfx('goal');toast('目的を更新：'+g.t,5200)}}}}
 let toastT=0;
-function toast(msg,ms=4200){const el=$('#toast');el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,ms)}
+function toast(msg,ms=4200){const el=$('#toast');el.classList.toggle('low',armed());el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,ms)}
 
 /* ===== 会話 ===== */
 let D=null,typeT=0;
@@ -1429,12 +1447,12 @@ function whoName(id){return WHO[id]}
 /* 文章の出し分け：{n:ふつう, c:澄み, m:機械} */
 const pickText=x=>typeof x==='string'?x:(docMood()>=2&&x.m)?x.m:(clarityLv()>=1&&x.c)?x.c:x.n;
 function talk(lines,onEnd){mode='dialog';D={lines,i:0,onEnd,typing:false,full:''};show()}
-function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who+(L.honne?' honne':'');D.at=performance.now();if(L.se)sfx(L.se);
+function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who+(L.honne?' honne':'')+(box.parentNode===$('#frame')?(area()==='top'?' top':''):' out');D.at=performance.now();if(L.se)sfx(L.se);
   $('#dlgWho').textContent=whoName(L.who);$('#dlgCh').innerHTML='';$('#dlgMore').hidden=true;
   D.full=pickText(L.text);D.n=0;D.typing=true;clearInterval(typeT);const el=$('#dlgTxt');el.textContent='';
   typeT=setInterval(()=>{D.n+=1;el.textContent=D.full.slice(0,D.n);if(D.n%2===0&&/[^\s…・。、]/.test(D.full[D.n-1]||''))sfx('text');if(D.n>=D.full.length)doneTyping()},L.honne?48:26)}
 function doneTyping(){clearInterval(typeT);D.typing=false;$('#dlgTxt').textContent=D.full;const L=D.lines[D.i];
-  if(L.choices){D.sel=0;$('#dlgCh').innerHTML=L.choices.map((c,i)=>`<button class="nbtn ${i===0?'sel':''}" type="button" data-i="${i}">${esc(c.label)}</button>`).join('');
+  if(L.choices){const sf=L.choices.findIndex(c=>/やめ|まだ|わかった|戻る/.test(c.label));D.sel=sf>=0?sf:L.choices.length-1;$('#dlgCh').innerHTML=L.choices.map((c,i)=>`<button class="nbtn ${i===D.sel?'sel':''}" type="button" data-i="${i}">${esc(c.label)}</button>`).join('');
     $('#dlgCh').querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();pick(+b.dataset.i)})}
   else $('#dlgMore').hidden=false}
 function pick(i){const c=D.lines[D.i].choices[i];sfx('ui');document.activeElement&&document.activeElement.blur();endDialog();c.fn&&c.fn()}
@@ -1466,8 +1484,8 @@ const wantedKey=id=>id==='mina'?'mina_'+area():id==='lift'?'kago':id==='gate'?'g
 function talkPoster(){const fk='poster_'+area(),first=!(S.st&&S.st[fk]);if(first){S.st={...S.st,poster:1,[fk]:1};save()}
   const three=area()==='sky'&&S.st.sou;
   const lines=area()==='sky'?(three?(S.st.poster3?['三枚並んだ手配書。ソウ、リク、ミナ。',{n:'……おれ、こんな顔してたっけ。',c:'……おれ、こんな顔してたっけ。',m:'……手配書の顔のほうが、今のおれより人間に見える。'}]:(S.st={...S.st,poster3:1},save(),['ソウの手配書の隣に、新しい二枚。『指名手配　リク』『指名手配　ミナ』。','『武器の不法所持、保安機体の破壊』。……もう、戻れないな。'])):first?['柱という柱に、ソウの顔が回ってる。通る人は、誰も見ていない。','ここの人たちには、見慣れた景色なんだろうな。']:['白い街のあちこちで、ソウの顔が回り続けてる。'])
-    :area()==='corp'?(first?['ガラスの壁に、ソウの顔のホログラムが回ってる。『指名手配　天穹区ゲート襲撃　主犯』。','下の層の紙よりずっときれいだ。……きれいに、晒されてる。']:['ソウの顔が、ゆっくり回り続けてる。']):area()==='lower'?(first?['ここにも、同じ手配書。何枚も重ねて貼られて、上から落書きされてる。','『指名手配　ソウ』。……この街の人は、この男を知ってるのか。']:['重ね貼りの手配書。破れた下からも、同じ顔がのぞいてる。'])
-    :(first?['……指名手配の紙だ。雨で、半分にじんでる。','『指名手配　ソウ』『天穹区ゲート襲撃』『情報提供者には報酬』……','天穹区って、東京のずっと上のほうだ。……あの中で、何が起きてるんだろう。']:['にじんだ手配書。男の目だけが、まっすぐこっちを見てる。']);
+    :area()==='corp'?(first?['ガラスの壁に、ソウの顔のホログラムが回ってる。『指名手配　中央区ゲート襲撃　主犯』。','下の層の紙よりずっときれいだ。……きれいに、晒されてる。']:['ソウの顔が、ゆっくり回り続けてる。']):area()==='lower'?(first?['ここにも、同じ手配書。何枚も重ねて貼られて、上から落書きされてる。','『指名手配　ソウ』。……この街の人は、この男を知ってるのか。']:['重ね貼りの手配書。破れた下からも、同じ顔がのぞいてる。'])
+    :(first?['……指名手配の紙だ。雨で、半分にじんでる。','『指名手配　ソウ』『中央区ゲート襲撃』『情報提供者には報酬』……','中央区って、東京のてっぺんだ。……あの中で、何が起きてるんだろう。']:['にじんだ手配書。男の目だけが、まっすぐこっちを見てる。']);
   talk(lines.map(t=>L('me',t)),()=>{if(first&&!(S.st.sawPosterTip)){S.st={...S.st,sawPosterTip:1};save();toast('手配書のことを、住人に聞いてみよう',5200)}})}
 /* 企業区の住人 */
 const CORP_TALK={
@@ -1476,15 +1494,15 @@ const CORP_TALK={
   kuro:['止まれ。……登録外の顔だな。通行証は確認した。行け。','この街では、数字が身分証だ。数字が落ちれば、身分も落ちる。','俺は警備用に換装された。……昔は、何の仕事をしていたかな。']
 };
 function talkCorp(id){talk([L(id,pick3(id,CORP_TALK[id]))])}
-/* ニュース画面：天穹区ゲート襲撃の続報（仲間がやられたことがわかる） */
+/* ニュース画面：中央区ゲート襲撃の続報（仲間がやられたことがわかる） */
 function talkNews(){const first=!S.st.news;if(first){S.st={...S.st,news:1};save()}
-  talk([L('news','【続報】天穹区ゲート襲撃事件。実行犯グループ5名のうち、4名を保安機体が無力化しました。'),L('news','主犯の元運送用義体・ソウは逃走中。天穹区の内部に潜伏しているとみられます。'),L('news','市民の皆さまは、不審な義体を見かけた場合、ただちに通報してください。'),
+  talk([L('news','【続報】中央区ゲート襲撃事件。実行犯グループ5名のうち、4名を保安機体が無力化しました。'),L('news','主犯の元鋼組の義体・ソウは逃走中。天穹区の内部に潜伏しているとみられます。'),L('news','市民の皆さまは、不審な義体を見かけた場合、ただちに通報してください。'),
     ...(first?[L('me','仲間は……4人とも、やられたのか。'),L('me','ソウは、一人で隠れてる。……ミナに、知らせないと。')]:[])])}
 /* 企業区のミナ：ニュースのあと、二人で覚悟を決める */
 function talkMinaCorp(){const ls=[];
   if(S.st.news&&!S.st.resolve){S.st={...S.st,resolve:1};save();
     ls.push(L('me','ニュースを見た。ソウの仲間は、ほとんどやられたらしい。ソウは天穹区に隠れてる。'),L('mina','……そっか。'),
-      L('mina','お兄ちゃんに会えば、きっと戦いになる。お兄ちゃんを追ってるやつらと。'),
+      L('mina','お兄ちゃんのところへ行くなら、戦いは避けられない。お兄ちゃんを追ってるやつらと。'),
       L('mina','あたしは、インプラントは入れない。……でも、後ろからなら撃てる。けがの手当てもできる。'),
       L('mina','リク。……一緒に、来てくれる？'),L('me','行くよ。ここまで来たんだ。'),L('mina','……ありがと。'),
       L('mina','武器がいるね。RAY なら、鋼組の裏ルートで何とかしてくれるかも。さっき、配送で上がってきてたよ。奥のほうにいる。'));
@@ -1498,7 +1516,7 @@ function talkMinaCorp(){const ls=[];
 /* 企業区の RAY：武器を渡す */
 function talkRayCorp(){if(!S.st.weapon){S.st={...S.st,weapon:1};save();
     return talk([L('ray','……来たか。ミナから話は聞いた。'),L('ray','ソウを上に送ったのは、俺だ。換えれば上に行けるって、あいつに教えた。'),
-      L('ray','だから、これを持っていけ。鋼組の裏ルートで回ってきた、保安機体用のパルスガンだ。'),L('ray','今度は、引きずり下ろさねえように使え。'),L('me','……ありがとう、RAY。')],
+      L('ray','だから、これを持っていけ。鋼組の裏ルートで回ってきた、保安機体用のパルスガンだ。'),L('ray','今度は、引きずり下ろさねえように使え。'),L('me','……ミナは？ 天穹区のゲートは 78 だ。生身じゃ通れない。'),L('ray','ミナは配送の荷として上げる。……鋼組の裏ルートなら、ゲートは見ねえ。'),L('me','……ありがとう、RAY。')],
       ()=>toast('持ち物に「パルスガン」が入った',5200))}
   talk([L('ray',pick3('ray_corp',['使い方は、撃つ前に考えることだ。……ソウは、それを忘れた。','天穹区は、空まで作り物だ。足もとを見失うなよ。','俺はまた配送に戻る。……生きて、会いに来い。']))])}
 /* 正規クリニック：サエキ（企業の正規品。値段は高いが、性能もいい） */
@@ -1517,7 +1535,7 @@ function talkGate3(){const o=overall(S.cur),cur=effective(),req=gateReq('corp');
       return talk([L('gate',`基準に届きません。あと ${req-cur} 不足しています。通行を拒否します。`),...(first?[L('me',`${req}……。生身で鍛えるだけじゃ、届きそうにない。`),L('me','上に行くには、体を差し出すしかないのか。')]:[])])}
     if(!S.st.weapon)return talk([L('gate','基準を満たしています。'),L('me','……まだ行けない。ミナと話して、準備をしてからだ。')]);
     gateLight='ok';gateLightUntil=performance.now()+4000;sfx('allow');S.st={...S.st,tenkyu:1};save();
-    talk([L('gate','基準を満たしています。通行を許可します。'),L('me','白い光の向こうに、作り物の空が見える。'),L('mina','……行こう、リク。お兄ちゃんのところへ。')],()=>travel('sky','gate'))})}
+    talk([L('gate','基準を満たしています。通行を許可します。'),L('me','白い光の向こうに、作り物の空が見える。'),L('me','ミナは RAY の荷にまぎれて、先に上がった。……向こうで、待ってる。')],()=>travel('sky','gate'))})}
 /* ===== 第3層・天穹区と第4層・中央区の会話（3章・終章） ===== */
 /* 区画に入ったとき（最初の1回）と、突破したとき。[話す人, 文] */
 const ZONE_TALK={
@@ -1546,10 +1564,15 @@ function talkMinaSky(){const st=S.st;
 function talkSou(){if(!S.st.sou){S.st={...S.st,sou:1};save();placeAllies();
     return talk([L('me','整備路の奥。壊れた照明の下に、誰かが座り込んでいる。'),L('sou','……来るな。撃つぞ。'),L('mina','お兄ちゃん。'),L('sou','……ミナ？'),
       L('sou','なんで、ここに。お前は、圏外に……'),L('mina','迎えに来たんだよ。……ばか。'),
-      L('sou','……見ての通りだ。換えすぎた。もう、数字は上がらない。'),L('sou','仲間は、みんなやられた。おれが誘った。……おれのせいだ。'),
-      L('me','リク。圏外の村から来た。ミナと一緒に、ここまで上ってきた。'),
+      L('sou','……見ての通りだ。換えすぎた。もう、数字は上がらない。'),
+      L('me','ソウの首に、荒い継ぎ目が走っている。急いで継いだような跡だ。'),L('sou','沈殿街のツギハギに継いでもらった。……急がせたのは、おれだ。'),
+      L('sou','仲間は、みんなやられた。おれが誘った。……おれのせいだ。'),
+      L('mina','RAY も、自分のせいだって言ってた。'),L('sou','RAY は……悪くない。選んだのはおれだ。'),
+      L('me','おれはリク。圏外の村から来た。ミナと一緒に、ここまで上ってきた。'),
       L('sou',{n:'圏外から……。目が、まだ生身だな。',c:'圏外から……。土の匂いがする。',m:'圏外から……。お前も、換えてきたのか。'}),
       L('sou',{n:'……ここまで、よく来た。',c:'……ここまで、よく来た。',m:'……おれみたいには、なるなよ。'}),
+      L('sou','……ゲンさんの麺、まだあるか。'),L('me','あるよ。ゲンジさん、あんたのことを覚えてた。'),
+      L('sou','ミナ。……あの日、母さんが握ってたのは、おれの手だった。'),L('sou','ずっと、謝りたかった。'),L('mina','……今さら、遅いよ。……でも、聞いた。'),
       L('sou','おれは、まだ中央区を目指してる。'),L('sou','てっぺんの大規模AIを止めれば、制度は止まる。'),
       L('mina','また一人で行く気だったの？'),L('sou','……。'),L('me','一緒に行こう。三人で。'),L('sou','……ああ。今度は、一人で行かない。'),
       L('pa','手配情報を更新します。新たな手配者：リク、ミナ。'),L('me','……壁のホログラムに、おれたちの顔が増えた。'),L('mina','これで三人とも、手配者だね。……お兄ちゃんと、おそろい。')],
@@ -1561,14 +1584,16 @@ function talkGate4(){if(!(S.st&&S.st.z_z3))return talk([L('gate','中央区ゲ�
 /* 終章（中央区）の文章。STORY.md の 1〜6 */
 const END_TEXT={
   a:[L('me','ゲートの向こうは、まぶしい白だった。'),L('me','広間の真ん中に、巨大な機械がそびえている。'),L('sou','……あれだ。この街の全部を決めてる、AIだ。'),L('mina','お兄ちゃん、待って。まず周りを……'),L('sou','……みんな、見ててくれ。')],
-  b:[L('ai','予測どおりです。'),L('sou','……っ！ 放せ！'),L('ai','侵入者3名。ここへ来ることは、天穹区に入った時点で計算済みです。'),L('sou','まだだ……まだ、届く……！')],
-  c:[L('mina','はなして！ お兄ちゃん！ お兄ちゃん！'),L('ai','手配者ミナ。生身。脅威度、低。')],
+  b:[L('ai','行動予測、的中率 98.7%。想定範囲です。'),L('sou','……っ！ 放せ！'),L('ai','侵入者3名。天穹区に入った時点で、ここへの到達確率 99.2%。想定範囲です。'),L('sou','まだだ……まだ、届く……！')],
+  c:[L('mina','はなして！ お兄ちゃん！ お兄ちゃん！'),L('ai','手配者ミナ。生身。脅威度 0.4%。想定範囲です。')],
   mono:[LH('me','……あたりを見回す。'),LH('me','人間が、いない。並んでいるのは、サイボーグだけだ。'),LH('me','誰も叫ばない。誰も、こっちを見ていない。'),
     LH('me',{n:'上に行くほど、人は減っていった。……ここが、その行き止まりだ。',c:'おれの息の音だけが、やけに大きく聞こえる。',m:'……おれの体も、もうほとんど、あっち側だ。'}),
     LH('me','世界のてっぺんで動いていたのは、AIだった。'),
     LH('me',{n:'おれが見たかったのは、これだったのか。',c:'おれが見たかったのは、これだったのか。',m:'ここに来るために、おれは何を換えてきたんだろう。'}),
+    LH('me','生身のまま、ここにいるのは、天才と呼ばれるほんの一握りだけ。'),
+    LH('me','残りはみんな、その天才に追いつくために、体を換えた人たちだ。'),
     LH('me','……人間の進化の先は、これなのか。')],
-  d:[L('me','両側から、腕をつかまれた。'),L('ai','最後の1名を確保。……すべて、予測どおりです。')]
+  d:[L('me','両側から、腕をつかまれた。'),L('ai','最後の1名を確保。全行動の予測一致率 99.9%。……想定範囲です。')]
 };
 /* 手配書を見た住人の反応（STORY.md の表） */
 const WANTED={
@@ -1579,20 +1604,20 @@ const WANTED={
   yuki:[['yuki','この人にも、家族がいるんでしょうね。……どこかで、この紙を見て泣いてる人がいるのよ。']],
   haru:[['haru','あの手配書の男……機械の顔にされても、目だけは人間のままだね。'],['haru','……うちの子の写真も、こんな目をしてた。']],
   ken:[['ken','この人、上のやつらと戦ったんだぜ。オレも大きくなったら、こういうふうになる。']],
-  shiro:[['shiro','天穹区のゲートか。……あそこを力で抜けた奴はいねえ。抜けられないように、できてるんだ。']],
+  shiro:[['shiro','中央区のゲートか。……あそこを力で抜けた奴はいねえ。抜けられないように、できてるんだ。']],
   genji:[['genji','あいつはここで麺をすすりながら言ってた。「てっぺんに上って、全部変える」ってな。'],['genji','……変わったのは、あいつの体のほうだった。']],
   daimon:[['daimon','あの手配書の男は、機械に使われるのを拒んだ。それだけは、人間として正しかった。……やり方は、間違えたがな。']],
   ray:[['ray','……俺が教えたんだ。上に行くには換えるしかねえって。あいつは、俺の言葉を信じて上った。']],
-  tsugi:[['tsugi','あの手配書の男、首の継ぎ目が雑な仕事ね。急いで換えたのがわかる。……体がついていかなかったのよ。']],
+  tsugi:[['tsugi','あの手配書の男……この首、あたしが継いだのよ。'],['tsugi','急がせたのは、あの子のほう。……体がついていかないって、言ったのにね。']],
   mina_out:[['mina','……お兄ちゃん。'],['me','……ミナ？'],['mina','……なんでもない。']],
   mina_lower:[['mina','この紙、剥がしたいのに、剥がしたらもう顔が見られない気がして。']],
   mina_corp:[['mina','ここだと、お兄ちゃんの顔が光ってる。……下の紙より、ずっと遠く見える。']],
-  aoi:[['aoi','あの人、昔ここで配送をしてたの。毎朝あの査定ゲートで、数字が少しずつ落ちていくのを見てた。'],['aoi','……落ちる前に、上に逆らった。あたしには、できない。']],
+  aoi:[['aoi','あの人の数字が、査定ゲートで少しずつ落ちていくのを見てた。'],['aoi','……落ちる前に、上に逆らった。あたしには、できない。']],
   yamashiro:[['yamashiro','反乱か。……わしには、そんな力は残っとらん。今日の査定で、下の層行きだ。']],
   kuro:[['kuro','主犯の顔認証データは、全機体に配布済みだ。お前の顔は、まだ登録されていない。'],['kuro','……まだ、な。']],
   saeki:[['saeki','あの手配書の男、首の継ぎ目はうちの正規品じゃないわね。正規品なら、もっときれいに壊れたのに。']],
   gate_corp:[['gate','手配者の顔認証データを照合中。……一致なし。通行を判定します。']],
-  kago:[['kago','手配者ソウ。天穹区ゲートへの不正侵入、ならびに保安機体の破壊。発見した場合は、ただちに通報してください。']],
+  kago:[['kago','手配者ソウ。中央区ゲートへの不正侵入、ならびに保安機体の破壊。発見した場合は、ただちに通報してください。']],
   gate_out:[['gate','手配者の顔認証データを照合中。……一致なし。通行を判定します。']],
   gate_lower:[['gate','手配者の顔認証データを照合中。……一致なし。通行を判定します。']],
   hisui:[['hisui','あの顔？ ええ、毎日見てるわ。……見慣れると、壁の模様と同じね。'],['hisui','怒った顔をしてるでしょう。ここでそんな顔ができるの、あの人くらいよ。']],
@@ -1606,7 +1631,7 @@ const WARM={
   doc:['……まだ帰らねえのか。','……しょうがねえな。茶でも淹れるか。'],
   genji:['お、また来たのか。腹は減ってねえのか？','……閉店まで、まだ時間がある。座っていきな。'],
   daimon:['……仕事の邪魔だ。','……ちっ。休憩にしてやる。'],
-  ray:['……同じ問いの繰り返しは、記録の無駄だ。','……ひとつだけ、記録にない話をしてもいい。'],
+  ray:['……同じことを何度も聞くんじゃねえ。','……ひとつだけ、記録にない話をしてもいい。'],
   tsugi:['あら、今日はおしゃべりね。','……手を休めるわ。少し、聞いていく？'],
   jiro:['……まだいたのか。','……火が消えるまで、付き合ってやるか。'],
   take:['なんだよ、まだ何か用か？','……しょうがねえな。誰にも言うなよ。'],
@@ -1638,7 +1663,7 @@ const HONNE={
 /* 圏外：ドラム缶の火にあたる人たち */
 const FIRE={
   jiro:['寒いだろ。火にあたっていけ。','ピラミッドの上は、雨が降らないらしいな。……一度でいいから、乾いた空を見たかった。','この村の連中はな、みんな、どこかの層から落ちてきたか、外で生まれたかだ。畑を耕して、自分の食いもんは自分で作る。'],
-  take:['……なんだよ。見てんじゃねえよ。','ゲート？ ……行けるやつは、いいよな。','ミナさん、たまに食いもん分けてくれたんだ。……もう、下に行っちまったけど。'],
+  take:['……なんだよ。見てんじゃねえよ。','ゲート？ ……行けるやつは、いいよな。',{get n(){return minaIn()==='out'?'ミナさん、たまに食いもん分けてくれるんだ。':'ミナさん、たまに食いもん分けてくれたんだ。……もう、下に行っちまったけど。'}}],
   yuki:['夜は冷えるね。火のそばにおいで。','あのピラミッドの灯り、きれいでしょう。……遠いけど。','あなた、ゲートを通るの？ ……そう。気をつけてね。'],
   haru:['鉄くず、買うかい？ ……冗談だよ。村の子から、お金は取らないさ。','この村の家はね、みんな自分たちで建てたんだ。釘一本まで、拾った鉄くずさ。','雨の日は、ピラミッドの灯りがにじんで、きれいに見えるんだよ。'],
   ken:['お、リクじゃん。畑の手伝い、終わったのか？','ゲートの前のでっかい機械、SENTRY っていうんだ。目が合うと、ちょっと怖い。','ドクのじいさん、怖い顔してるけど、オレのケガはタダで診てくれた。'],
@@ -1646,7 +1671,7 @@ const FIRE={
 };
 function talkFire(id){talk([L(id,pick3(id,FIRE[id]))])}
 function talkMina(){const o=overall(S.cur);
-  if(!o){S.mina=Math.max(S.mina,1);save();return talk([L('mina','村の子だね。……東京を見てる顔してる。ここは圏外。あの光は、ここまで届かないよ。'),L('mina','東京に入りたいなら、まず脳を測ってもらいな。この先の闇医者、ドク・カゲロウのとこ。'),L('mina','スペックがわからない奴には、仕事も回せないからさ。')])}
+  if(!o){S.mina=Math.max(S.mina,1);save();return talk([L('mina','リクだっけ。畑のとこの子。……東京を見てる顔してる。'),L('mina','ここは圏外。あの光は、ここまで届かないよ。'),L('mina','東京に入りたいなら、まず脳を測ってもらいな。この先の闇医者、ドク・カゲロウのとこ。'),L('mina','スペックがわからない奴には、仕事も回せないからさ。')])}
   let ls;
   if(area()==='sky')return talkMinaSky();
   if(S.st.tenkyu)return talk([L('mina',pick3('mina_back',['上で、お兄ちゃんが待ってる。……準備ができたら、昇降機で戻ろう。','稼いでおくなら、今のうちだよ。上じゃ、ゆっくりできないから。','あたしは平気。……あんたこそ、体、大丈夫？'])),L('mina','どうする？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}])]);
@@ -1702,7 +1727,7 @@ function doBuy(id,after,tier='out'){const m=IMPLANTS.find(x=>x.id===id),lv=impLv
 /* 鋼組の施術師ツギハギ（片腕が義体。機械寄りの客には親しげ） */
 function talkTsugi(){const fc=fac(),first=!S.st.tsugi,ch=[{label:'インプラント',fn:()=>shopPanel('lower')},{label:'やめておく'}];
   if(first){S.st={...S.st,tsugi:1};save()}
-  const head=fc==='open'?(first?[L('tsugi','あら、生身のお客さん。この街じゃ、珍しくもないけど。'),L('tsugi','ここは鋼組の施術所。上の層から落ちてくる廃棄品を拾って、磨いて、継ぎ直して、インプラントにしてるの。'),L('tsugi','企業区のゴミも、ここじゃ宝物よ。改良が済んで型落ちになったのは、圏外のドクに回してる。だから、あの爺さんの店より、ちょっと高くて、ちょっといい。')]:[L('tsugi',pick3('tsugi_open',['生身のまま来るのね。……まあ、見るだけならタダよ。','今朝も上から落ちてきたの。企業区の新型の腕。まだ温かかった。','ゲンさんの屋台、行った？ あたしは行かない。……あそこは生身の店だから。']))])
+  const head=fc==='open'?(first?[L('tsugi',flesh()>=100?'あら、生身のお客さん。この街じゃ、珍しくもないけど。':'あら、ほとんど生身のお客さん。この街じゃ、珍しくもないけど。'),L('tsugi','ここは鋼組の施術所。上の層から落ちてくる廃棄品を拾って、磨いて、継ぎ直して、インプラントにしてるの。'),L('tsugi','企業区のゴミも、ここじゃ宝物よ。改良が済んで型落ちになったのは、圏外のドクに回してる。'),L('tsugi','だから、あの爺さんの店より、ちょっと高くて、ちょっといい。')]:[L('tsugi',pick3('tsugi_open',[flesh()>=100?'生身のまま来るのね。……まあ、見るだけならタダよ。':'まだほとんど生身ね。……まあ、見るだけならタダよ。','今朝も上から落ちてきたの。企業区の新型の腕。まだ温かかった。','ゲンさんの屋台、行った？ あたしは行かない。……あそこは生身の店だから。']))])
     :fc==='mid'?(first?[L('tsugi','半分こっち側ね。いい選択よ。'),L('tsugi','うちの部品は、上から落ちてきた廃棄品をあたしが改良したもの。ドクのとこに流れてるのは、その型落ち。'),L('tsugi','だから少し高い。そのぶん、よく効く。')]:[L('tsugi',pick3('tsugi_mid',['その継ぎ目、ちゃんと馴染んでる？','半分機械って、いちばん痛むのよ。生身の側が、拒むから。','次はどこを換える？ ……急がなくていいわ。部品は逃げないから。']))])
     :(first?[L('tsugi','おかえり、同類さん。'),L('tsugi','この腕も、上から落ちてきた部品を、半分は自分で継いだの。だから「ツギハギ」。'),L('tsugi','あんたの体に入ってる部品も、もとはあたしの手を通ったものかもね。ドクの爺さんには、型落ちを回してるから。')]:[L('tsugi',pick3('tsugi_closed',['調子はどう？ 換えたいところがあれば、言って。','いい部品が落ちてきたの。磨いたら、上の層のより良くなったわ。','同類さんが増えるのは嬉しい。……でも、ときどき、寂しくもなるの。']))]);
   talk([...head,L('tsugi','どうする？',ch)])}
@@ -1732,7 +1757,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">天穹区は次の版で</p>
-  <p class="muted">試作版 v0.26 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
+  <p class="muted">試作版 v0.27 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">企業区に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -1767,7 +1792,7 @@ function arrive(to){if(to==='top')return endingSeq();
     L('mina','……変わってない。'),L('mina','あたしが変わったのか。'),
     L('mina','ここが沈殿街。ピラミッドのいちばん底。上から落ちてきたものが、溜まる場所。……あたしが生まれた街。'),
     L('mina','十年前、あたしだけ検査に落ちて、ここを出された。お兄ちゃん……ソウは、東京に残った。'),
-    L('mina','そのお兄ちゃんが、天穹区のゲートを襲って、手配されてる。……何があったのか、知りたい。'),
+    L('mina','そのお兄ちゃんが、中央区のゲートを襲って、手配されてる。……何があったのか、知りたい。'),
     L('mina','あたしは、ここで待ってる。昇降機のそばにいるから。'),
     L('mina','あたしはインプラントは入れたくない。だから、次のゲートを通れるように、ここで勉強してる。'),
     L('mina','お兄ちゃんのことは、屋台のゲンさんか、奥の鋼組の連中に聞いてみて。'),
@@ -1789,17 +1814,17 @@ function liftRide(to){const from=area(),fl={out:'ふもと',lower:'第1層',corp
 /* 沈殿街のミナ（昇降機のそばで勉強している） */
 function talkMinaLower(){const m=docMood(),ls=[];
   if(S.st.genji&&S.st.ray&&!S.st.done){S.st={...S.st,done:1};save();
-    ls.push(L('me','ソウのことがわかった。体を換えて上ったけど、スペックが上がらなくなって……仲間と天穹区のゲートを襲ったらしい。'),L('me','失敗して、今は天穹区のどこかに隠れてるって。'),L('mina','……そっか。'),
+    ls.push(L('me','ソウのことがわかった。体を換えて上ったけど、スペックが上がらなくなって……仲間と中央区のゲートを襲ったらしい。'),L('me','失敗して、今は天穹区のどこかに隠れてるって。'),L('mina','……そっか。'),
       L('me',{n:'ミナは本を閉じた。',c:'ミナは本を閉じた。指先が、表紙の上で白くなっていた。',m:'対象の心拍が上昇。動揺と推定。'}),
       L('mina','生きてるんだね。……それだけで、いい。'),
       L('mina','お兄ちゃんは、てっぺんを変えたかったんだ。あたしを外に出した、この街の仕組みを。'),
       L('mina','あたしは、生身のまま迎えに行く。企業区を越えて、天穹区まで。'),
       L('mina','奥のゲートが企業区への入口。基準は、圏外のゲートよりずっと高いよ。……一緒に、来てくれる？'))}
-  else if(m>=3&&!S.st.m3){S.st={...S.st,m3:1};save();ls.push(L('mina','……ねえ。'),L('mina','今、あたしのこと、名前で見てないでしょ。'))}
+  else if(m>=3&&!S.st.m3){S.st={...S.st,m3:1};save();ls.push(L('mina','……ねえ。'),L('mina','最近、あたしの顔じゃなくて、数字を見てるでしょ。'))}
   else if(m>=4&&!S.st.m4){S.st={...S.st,m4:1};save();ls.push(L('mina','お兄ちゃんもね、最後に会ったとき、そういう目をしてた。'))}
   else ls.push(...pick3('mina_lower',[
     ['あたしはインプラントは入れたくない。だから、ゲートを通れるように、ここで勉強してる。','仕事がほしくなったら言って。仕事なら、いくらでもあるから。'],
-    ['この本、ゲンさんにもらったの。昔の技術者の教本。','読めば読むほど、頭が熱くなる。……生身の脳も、まだ捨てたもんじゃないよ。'],
+    [S.st.genji?'この本、ゲンさんにもらったの。昔の技術者の教本。':'この本、昔の技術者の教本。だいぶ読み古してるけどね。','読めば読むほど、頭が熱くなる。……生身の脳も、まだ捨てたもんじゃないよ。'],
     [S.st.done?'お兄ちゃんのこと？ ……焦ってもしかたない。まずは、あたしが次のゲートを通れるようにならなきゃ。':'お兄ちゃんのこと、何かわかった？ 屋台のゲンさんか、鋼組の運び屋なら知ってるかも。','仕事、回そうか？']]).map(t=>L('mina',t)));
   ls.push(L('mina',gateNote()+'で、どうする？',[...gateChoice(),{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}]));talk(ls)}
 /* 生身派「灯」：ゲンジ */
@@ -1839,7 +1864,7 @@ function talkRay(){if(area()==='corp')return talkRayCorp();const fc=fac();
       :[L('ray','いい体だ。どこの店で入れた？'),L('ray','……ドク・カゲロウか。あの爺さん、腕は確かだ。')];
     const sou=[L('me','ソウって男を知らないか。ミナの兄さんで、手配書が出てる。'),L('ray','……ソウ、か。'),L('ray','……俺が教えたんだ。上に行くには、体を換えるしかねえって。'),
       L('ray','あいつは換え続けて、企業区を越えて、天穹区まで上った。……だが、体がついてこなかった。スペックが、もう上がらねえ。'),
-      L('ray','下に落とされると知って、仲間を集めて天穹区のゲートを襲った。……失敗だ。仲間はやられて、あいつだけ逃げた。'),
+      L('ray','下に落とされると知って、仲間を集めて中央区のゲートを襲った。……失敗だ。仲間はやられて、あいつだけ逃げた。'),
       L('ray','今は手配者として、天穹区のどこかに隠れてるって話だ。')];
     const tail=fc==='closed'?[L('ray','あいつ、最後に会ったとき言ってた。「ミナの顔を、もう一度だけ見たい」ってな。'),L('ray','……悪いな。機械同士だと、つい口が軽くなる。')]
       :fc==='mid'?[L('ray','天穹区は、企業区のさらに上だ。……半端な体じゃ、たどり着けねえぞ。')]
@@ -1870,21 +1895,24 @@ function useRecord(rec){applyScan(rec);talk([L('doc','診断サイトの記録�
 /* ===== パネル ===== */
 let timers=[],offs=[];const clearTimers=()=>{timers.forEach(t=>{clearTimeout(t);clearInterval(t)});timers=[];offs.forEach(f=>f());offs=[]};
 const on=(el,ev,fn)=>{el.addEventListener(ev,fn);offs.push(()=>el.removeEventListener(ev,fn))};
-function openPanel(html){mode='panel';clearTimers();tagsHTML='';$('#tags').innerHTML='';$('#frame').classList.add('is-panel');cv.hidden=true;$('#dlg').hidden=true;const p=$('#panel');p.hidden=false;p.innerHTML=html;return p}
-function closePanel(after){setTimeout(fitView,0);clearTimers();document.activeElement&&document.activeElement.blur();$('#panel').hidden=true;$('#panel').innerHTML='';cv.hidden=false;$('#frame').classList.remove('is-panel');mode='play';hud();after&&after()}
+let panelAt=0,inTest=false;
+addEventListener('keydown',e=>{if(mode==='panel'&&performance.now()-panelAt<400&&(e.key==='Enter'||e.key===' '||e.repeat)){e.preventDefault();e.stopImmediatePropagation()}},true);
+addEventListener('pointerdown',e=>{if(mode==='panel'&&performance.now()-panelAt<250&&e.target.closest('#panel')){e.preventDefault();e.stopImmediatePropagation()}},true);
+function openPanel(html){panelAt=performance.now();mode='panel';clearTimers();tagsHTML='';$('#tags').innerHTML='';$('#frame').classList.add('is-panel');cv.hidden=true;$('#dlg').hidden=true;const p=$('#panel');p.hidden=false;p.innerHTML=html;if(inTest){p.insertAdjacentHTML('beforeend','<div class="prow" style="justify-content:flex-end"><button class="nbtn ghost" id="quitT" type="button">やめる（記録しない）</button></div>');$('#quitT').onclick=()=>{inTest=false;practice?practicePanel():closePanel()}}return p}
+function closePanel(after){inTest=false;setTimeout(fitView,0);clearTimers();document.activeElement&&document.activeElement.blur();$('#panel').hidden=true;$('#panel').innerHTML='';cv.hidden=false;$('#frame').classList.remove('is-panel');mode='play';hud();after&&after()}
 
 let scanData={},scanI=0;
 function scanIntro(){practice=false;scanData={};scanI=0;
   openPanel(`<div class="eyebrow">BRAIN SCAN · ドク・カゲロウ診療所</div><h3>ブレインスキャン</h3>
-  <p class="muted">脳をパソコンに見立てて、4つのパーツを測ります。結果がこのゲームでのあなたの初期スペックになります。</p>
+  <p class="muted">脳をパソコンに見立てて、4つのパーツを測ります。結果がこのゲームでのリクの初期スペックになります。</p>
   <ul class="plist">${TESTS.map(t=>`<li><span class="tag">${t.tag}</span><span>${t.nm}</span></li>`).join('')}</ul>
   <div class="prow"><button class="nbtn" id="go" type="button" data-se="scan">スキャン開始</button><button class="nbtn ghost" id="back" type="button">やめる</button></div>`);
   $('#go').onclick=()=>testIntro(0);$('#back').onclick=()=>closePanel();$('#go').focus()}
 function testIntro(i){scanI=i;const t=TESTS[i];
   openPanel(`<div class="eyebrow">${practice?'PRACTICE · 練習':`${t.tag} · ${i+1} / 4`}</div><h3>${t.nm}</h3><p>${t.desc}</p>
   <div class="prow"><button class="nbtn" id="go" type="button">開始</button><button class="nbtn ghost" id="back" type="button">${practice?'練習場に戻る':'中断する'}</button></div>`);
-  $('#go').onclick=()=>({cpu:runCpu,ram:runRam,gpu:runGpu,alu:runAlu})[t.id]();$('#back').onclick=()=>practice?practicePanel():closePanel();$('#go').focus()}
-function testDone(id,val){clearTimers();if(practice)return practiceDone(id,val);scanData[id]=val;const s=spec(id,val),t=TESTS[scanI],last=scanI===3;
+  $('#go').onclick=()=>{inTest=true;({cpu:runCpu,ram:runRam,gpu:runGpu,alu:runAlu})[t.id]()};$('#back').onclick=()=>practice?practicePanel():closePanel();$('#go').focus()}
+function testDone(id,val){inTest=false;clearTimers();if(practice)return practiceDone(id,val);scanData[id]=val;const s=spec(id,val),t=TESTS[scanI],last=scanI===3;
   openPanel(`<div class="eyebrow">${t.tag} · 計測結果</div><h3 class="mono" style="color:var(--cyan)">${s.main}</h3>
   <p>${esc(like(id,val))}に相当</p><p class="muted mono">${s.raw}</p>
   <div class="prow"><button class="nbtn" id="nx" type="button">${last?'診断結果を見る':'次へ：'+TESTS[scanI+1].nm}</button><button class="nbtn ghost" id="again" type="button">やり直す</button></div>`);
@@ -1946,7 +1974,7 @@ function bindVol(root){const st=()=>{const el=root.querySelector('[data-st]');if
   root.querySelectorAll('[data-v]').forEach(r=>{r.oninput=()=>{r.nextElementSibling.textContent=r.value+'%';setSnd(r.dataset.v,r.value/100)};if(r.dataset.v==='se')r.onchange=()=>sfx('credit')});
   root.querySelector('[data-mute]').onclick=e=>{setSnd('muted',!S.snd.muted);const b=e.currentTarget;b.textContent=S.snd.muted?'ミュート中':'ミュート';b.classList.toggle('pink',S.snd.muted);b.classList.toggle('ghost',!S.snd.muted);b.setAttribute('aria-pressed',S.snd.muted)};
   root.querySelector('[data-test]').onclick=()=>{sndStart();sfx('allow');setTimeout(st,300)}}
-function sndBtnUp(){const b=$('#sndBtn');b.textContent=S.snd.muted?'音量 · ミュート':`音量 · ${pct(S.snd.bgm??0.6)}%`}
+function sndBtnUp(){const b=$('#sndBtn');b.textContent=S.snd.muted?'ミュート':`音量 · ${pct(S.snd.bgm??0.6)}%`}
 function sndPop(open){const pop=$('#sndPop'),b=$('#sndBtn');open=open??pop.hidden;pop.hidden=!open;b.setAttribute('aria-expanded',open);
   if(open){sndStart();pop.innerHTML=`<div class="eyebrow">SOUND · 音量</div>${volHTML()}<p class="note">設定画面からも変えられます。</p>`;bindVol(pop);pop.querySelector('input').focus()}}
 $('#sndBtn').onclick=()=>sndPop();
@@ -1956,16 +1984,17 @@ sndBtnUp();
 /* ===== 目的：今やること、ゲートの条件、これまでのあらすじ ===== */
 function goalNow(){const o=overall(S.cur),st=S.st||{};
   if(!o)return{k:'scan',t:'ドク・カゲロウの診療所で、ブレインスキャンを受ける',h:'診療所は圏外の中ほど。赤い十字の看板が目印。'};
-  if(!S.passed){const cur=effective(),req=gateReq();return{k:'gate1',t:`実効スペックを ${req} 以上にして、圏外のゲートを通る（今 ${cur}）`,h:'ミナから仕事を受けてクレジットを稼ぎ、生身を鍛えて再スキャンするか、ドクの店でインプラントを入れる。'}}
+  if(!S.passed){const cur=effective(),req=gateReq();if(cur>=req)return{k:'gate1',t:'圏外のゲートへ行こう',h:`基準 ${req} には届いている（今 ${cur}）。村の右のはしのゲート。`};return{k:'gate1',t:`実効スペックを ${req} 以上にして、圏外のゲートを通る（今 ${cur}）`,h:'ミナから仕事を受けてクレジットを稼ぎ、生身を鍛えて再スキャンするか、ドクの店でインプラントを入れる。'}}
   if(!st.join)return{k:'join',t:'圏外のゲートを、もう一度くぐる',h:'ミナが話したがっている。'};
   if(!st.genji||!st.ray)return{k:'clue',t:'沈殿街で、ミナの兄・ソウの手がかりを探す',h:`屋台のゲンジ ${st.genji?'✓':'□'}　／　鋼組の運び屋RAY ${st.ray?'✓':'□'}　（昇降機で沈殿街へ）`};
   if(!st.done)return{k:'tell',t:'昇降機のそばのミナに、ソウのことを知らせる',h:'沈殿街の入り口、昇降機のそばで勉強している。'};
-  if(!st.corp){const cur=effective(),req=gateReq('lower');return{k:'gate2',t:`実効スペックを ${req} 以上にして、企業区ゲートを通る（今 ${cur}）`,h:`沈殿街の奥のゲート。基準は ${GATES.lower.lb}。仕事とインプラント、再スキャンで上げる。生身で鍛えるだけでは、だんだん厳しくなる。`}}
+  if(!st.corp){const cur=effective(),req=gateReq('lower');if(cur>=req)return{k:'gate2',t:'企業区ゲートへ行こう',h:`基準 ${req} には届いている（今 ${cur}）。沈殿街の奥のゲート。`};return{k:'gate2',t:`実効スペックを ${req} 以上にして、企業区ゲートを通る（今 ${cur}）`,h:`沈殿街の奥のゲート。基準は ${GATES.lower.lb}。仕事とインプラント、再スキャンで上げる。生身で鍛えるだけでは、だんだん厳しくなる。`}}
   if(!st.news)return{k:'news',t:'企業区のニュース画面で、ソウの続報を確かめる',h:'ガラスのオフィスの先、査定ゲートとシュートのさらに奥。'};
   if(!st.resolve)return{k:'mina2',t:'昇降機のそばのミナに、ニュースのことを話す',h:'企業区の入り口、昇降機のそば。'};
   if(!st.weapon)return{k:'ray2',t:'企業区の奥にいる RAY に会う',h:'配送で上がってきている。正規クリニックの先。'};
-  if(!st.tenkyu){const cur=effective(),req=gateReq('corp');return{k:'end',t:`実効スペックを ${req} 以上にして、天穹区ゲートを通る（今 ${cur}）`,h:`企業区の奥のゲート。基準は ${GATES.corp.lb}。インプラントなしでは、ほぼ届かない。`}}
+  if(!st.tenkyu){const cur=effective(),req=gateReq('corp');if(cur>=req)return{k:'end',t:'天穹区ゲートへ行こう',h:`基準 ${req} には届いている（今 ${cur}）。企業区の奥のゲート。`};return{k:'end',t:`実効スペックを ${req} 以上にして、天穹区ゲートを通る（今 ${cur}）`,h:`企業区の奥のゲート。基準は ${GATES.corp.lb}。インプラントなしでは、ほぼ届かない。`}}
   const ctl=innerWidth<=600?'下のボタンで 撃つ・跳ぶ・避ける':'X・J で撃つ／↑・W・Space で跳ぶ／C・L で回避';
+  if(area()==='top')return{k:'topin',t:'東京のてっぺん、中央区',h:'まぶしい光の真ん中に、巨大な機械がある。'};
   if(!S.reached.includes('sky'))return{k:'end',t:'天穹区ゲートを通って、天穹区へ',h:'企業区の奥のゲート。'};
   if(!st.z_z1)return{k:'sky1',t:'天穹区を進み、保安部隊を突破する',h:`${ctl}。ミナが後ろから、回復・弾・援護射撃で支えてくれる。`};
   if(!st.sou)return{k:'sou',t:'奥の整備路で、ソウを探す',h:'白い建物のすき間。照明の壊れた、暗い入り口。'};
@@ -1999,9 +2028,9 @@ function goGate(){mode='fade';$('#fade').classList.add('on');keys.l=keys.r=false
     $('#fade').classList.remove('on');setTimeout(()=>{mode='play';proceed(n)},380)},380)}
 function goalPanel(){$('#goalBtn').classList.remove('new');const g=goalNow(),st=S.st||{},o=overall(S.cur),cur=effective(),req=gateReq(),hn=Object.keys(S.honne||{}).length;
   const mark=(ok,lock)=>lock?'<span class="lock">－</span>':ok?'<span class="ok">✓</span>':'<span class="ng">✗</span>';
-  const story=[S.started&&'リク、18歳。圏外の畑の村で生まれ育った。子どものころから、ピラミッド都市・東京の中が見たかった。脳のスペックが基準に届けば、圏外からでも東京に入れる。',st.poster&&'村の掲示板に、指名手配の紙が貼られていた。「指名手配　ソウ」「天穹区ゲート襲撃」。',o&&`ドク・カゲロウのブレインスキャンで、脳は「${o.tier.name}」と測られた。`,S.passed&&'圏外のゲートを通った。ミナが追ってきた。手配書のソウは、ミナの兄だった。基準は越えていたが、一人では入れなかったのだという。',
+  const story=[S.started&&'リク、18歳。圏外の畑の村で生まれ育った。子どものころから、ピラミッド都市・東京の中が見たかった。脳のスペックが基準に届けば、圏外からでも東京に入れる。',st.poster&&'村の掲示板に、指名手配の紙が貼られていた。「指名手配　ソウ」「中央区ゲート襲撃」。',o&&`ドク・カゲロウのブレインスキャンで、脳は「${o.tier.name}」と測られた。`,S.passed&&'圏外のゲートを通った。ミナが追ってきた。手配書のソウは、ミナの兄だった。基準は越えていたが、一人では入れなかったのだという。',
     st.arrive&&'ピラミッドの底、第1層・沈殿街に着いた。ミナはここで生まれ、十年前に検査に落ちて圏外へ出された。兄のソウは東京に残った。ミナは昇降機のそばに残り、インプラントに頼らず次のゲートを通るため勉強を始めた。',
-    st.genji&&'屋台のゲンジいわく、ソウは昔の常連で、「てっぺんに上って、全部変える」と言って鋼組に入り、体を換え始めた。',st.ray&&'鋼組のRAYいわく、ソウに体を換える道を勧めたのは自分だった。ソウは天穹区まで上ったが、スペックが上がらなくなり、仲間と天穹区のゲートを襲って失敗した。今は手配者として隠れている。',st.done&&'ミナに知らせた。ミナは、生身のまま兄を迎えに行くと決めた。',st.corp&&'企業区ゲートを通った。ミナも、生身のままぎりぎりで基準に届いた。企業区では毎日の査定で、数字が落ちた人から下の層へ送られている。',st.news&&'ニュースによると、ソウの仲間5人のうち4人は保安機体にやられた。ソウは一人で天穹区に潜んでいる。',st.resolve&&'ミナと話した。ソウに会えば、戦いは避けられない。ミナは生身のまま後ろから支えると言い、二人で覚悟を決めた。',st.weapon&&'RAY から、鋼組の裏ルートのパルスガンを受け取った。「今度は、引きずり下ろさねえように使え」。',st.tenkyu&&'天穹区ゲートを通った。作り物の空の下、白く整いすぎた街。ソウの手配書が、至るところで回っていた。',st.z_z1&&'銃を持ちこんだことを知られ、保安部隊と戦った。ミナは後ろから、手当てと弾と援護射撃で支えてくれた。',st.sou&&'整備路の奥で、ソウと再会した。体を換えすぎて、スペックはもう上がらない。仲間を失ったのは自分のせいだと、ソウは言った。それでも今も、中央区の大規模AIを止めれば制度は止まると信じている。三人で中央区を目指すことにした。リクとミナも、手配者になった。',st.z_z2&&'ソウと並んで、サイボーグ部隊を突破した。',st.z_z3&&'中央区ゲートの番人を倒した。ソウの仲間たちが、たどり着けなかった場所。',st.end&&'東京のてっぺん、中央区。そこにいたのは、AIと、サイボーグだけだった。三人とも、そこで捕まった。'].filter(Boolean);
+    st.genji&&'屋台のゲンジいわく、ソウは昔の常連で、「てっぺんに上って、全部変える」と言って鋼組に入り、体を換え始めた。',st.ray&&'鋼組のRAYいわく、ソウに体を換える道を勧めたのは自分だった。ソウは天穹区まで上ったが、スペックが上がらなくなり、仲間と中央区のゲートを襲って失敗した。今は手配者として、天穹区に隠れている。',st.done&&'ミナに知らせた。ミナは、生身のまま兄を迎えに行くと決めた。',st.corp&&'企業区ゲートを通った。ミナも、生身のままぎりぎりで基準に届いた。企業区では毎日の査定で、数字が落ちた人から下の層へ送られている。',st.news&&'ニュースによると、ソウの仲間5人のうち4人は保安機体にやられた。ソウは一人で天穹区に潜んでいる。',st.resolve&&'ミナと話した。ソウのところへ行くなら、戦いは避けられない。ミナは生身のまま後ろから支えると言い、二人で覚悟を決めた。',st.weapon&&'RAY から、鋼組の裏ルートのパルスガンを受け取った。「今度は、引きずり下ろさねえように使え」。生身のミナは、RAY が配送の荷として上へ運ぶ。',st.tenkyu&&'天穹区ゲートを通った。作り物の空の下、白く整いすぎた街。ソウの手配書が、至るところで回っていた。',st.z_z1&&'銃を持ちこんだことを知られ、保安部隊と戦った。ミナは後ろから、手当てと弾と援護射撃で支えてくれた。',st.sou&&'整備路の奥で、ソウと再会した。体を換えすぎて、スペックはもう上がらない。仲間を失ったのは自分のせいだと、ソウは言った。それでも今も、中央区の大規模AIを止めれば制度は止まると信じている。三人で中央区を目指すことにした。リクとミナも、手配者になった。',st.z_z2&&'ソウと並んで、サイボーグ部隊を突破した。',st.z_z3&&'中央区ゲートの番人を倒した。ソウの仲間たちが、たどり着けなかった場所。',st.end&&'東京のてっぺん、中央区。そこにいたのは、AIと、サイボーグだけだった。三人とも、そこで捕まった。'].filter(Boolean);
   openPanel(`<div class="eyebrow">OBJECTIVE · 目的</div><h3>目的</h3>
   <div class="goal"><b>いまやること</b><p style="margin:4px 0 0">${esc(g.t)}</p><p class="note" style="margin-top:4px">${esc(g.h)}</p></div>
   <div><p>ゲートの条件</p><p class="note">実効スペック＝生身のスキャン点数＋インプラント。インプラントでも通れるが、生身率が下がると、人の態度や会話が変わる。</p></div>
@@ -2015,9 +2044,10 @@ function goalPanel(){$('#goalBtn').classList.remove('new');const g=goalNow(),st=
   <p class="note">本音を聞いた人：${hn} / ${Object.keys(HONNE).length}人${hn?'':'（同じ人と、とことん話してみると……）'}</p>
   <div class="prow"><button class="nbtn" id="cl" type="button">閉じる</button></div>`);
   $('#cl').onclick=()=>closePanel();$('#cl').focus()}
-$('#goalBtn').onclick=()=>{sndPop(false);if(mode==='title')return toast('「はじめる」か「つづきから」でゲームを始めると見られます');if(mode==='panel'&&!$('#panel').querySelector('#cl'))return;if(mode==='dialog')endDialog();goalPanel()};
-$('#itemBtn').onclick=()=>{sndPop(false);if(mode==='title')return toast('「はじめる」か「つづきから」でゲームを始めると見られます');if(mode==='panel'&&!$('#panel').querySelector('#cl'))return;if(mode==='dialog')endDialog();itemsPanel()};
-$('#setBtn').onclick=()=>{sndPop(false);if(mode==='panel'&&!$('#panel').querySelector('#cl'))return;if(mode==='dialog')endDialog();settingsPanel()};
+const endLock=()=>{if(!inEnding)return false;toast('今は開けない',1600);return true};
+$('#goalBtn').onclick=()=>{sndPop(false);if(endLock())return;if(mode==='title')return toast('「はじめる」か「つづきから」でゲームを始めると見られます');if(mode==='panel'&&!$('#panel').querySelector('#cl'))return;if(mode==='dialog')endDialog();goalPanel()};
+$('#itemBtn').onclick=()=>{sndPop(false);if(endLock())return;if(mode==='title')return toast('「はじめる」か「つづきから」でゲームを始めると見られます');if(mode==='panel'&&!$('#panel').querySelector('#cl'))return;if(mode==='dialog')endDialog();itemsPanel()};
+$('#setBtn').onclick=()=>{sndPop(false);if(endLock())return;if(mode==='panel'&&!$('#panel').querySelector('#cl'))return;if(mode==='dialog')endDialog();settingsPanel()};
 
 /* ===== スキャン：4テスト ===== */
 function runCpu(){const times=[];let phase='wait',start=0;
@@ -2490,7 +2520,7 @@ cv.addEventListener('pointerdown',()=>{if(mode==='dialog')advance()});
 function titleButtons(){const has=S.started;$('#titleBtns').innerHTML=(has?'<button class="nbtn" id="cont" type="button">つづきから</button><button class="nbtn ghost" id="newg" type="button">はじめから</button>':'<button class="nbtn" id="newg" type="button">はじめる</button>');
   const c=$('#cont');if(c)c.onclick=startGame;$('#newg').onclick=()=>{if(has){S={...fresh(),snd:S.snd};save();hud()}startGame()};($('#cont')||$('#newg')).focus({preventScroll:true})}
 function startGame(){sndStart();if(!SND)toast('音のファイル（sound.js）を読み込めなかったため、音なしで動いています',6000);document.activeElement&&document.activeElement.blur();$('#title').hidden=true;mode='play';placePlayer();
-  if(!S.started){S.started=true;save();talk([L('me','……東京の光が、今夜もあんなに遠い。'),L('me','村の畑と、ランタンの灯り。ここには、電気もほとんど来ない。'),L('me','あの光の中に入るには、脳のスペックがいる。……まずは、誰かに話を聞こう。')])}}
+  if(!S.started){S.started=true;save();talk([L('me','……東京の光が、今夜もあんなに遠い。'),L('me','子どものころ、あの光の中を見てみたいと思った。……今も、思ってる。'),L('me','村の畑と、ランタンの灯り。ここには、電気もほとんど来ない。'),L('me','あの光の中に入るには、脳のスペックがいる。……まずは、誰かに話を聞こう。')])}}
 /* 層ごとの位置（S.pos[層].sx＝横の位置）。v0.13〜v0.18 の見下ろしの位置（{x,y}、北がゲート）は、ゲートまでの近さで横の位置に置き換える */
 const TOP_H=480;
 function placePlayer(){if(S.area==='top'){S.area='sky';S.pos={...(S.pos||{}),sky:{sx:1840}}}const a=area(),st=STAGES[a];resetFight(true);let p=(S.pos||{})[a],x=null;
@@ -2513,7 +2543,8 @@ function itemsPanel(){openPanel(`<div class="eyebrow">ITEMS · 持ち物</div><h
 
 /* 画面の大きさ：スマホの縦向きでは、カメラを寄せて（見える範囲を横 176 に狭くして）人物を大きく映す。縦は少しだけ広げる（横スクロールなので、上に広げても空と天井しか映らない） */
 function fitView(){const fr=$('#frame');if(fr.classList.contains('is-panel'))return;const phone=innerWidth<=600&&innerHeight>innerWidth;let w=320,h=180;
-  if(phone){w=176;const fw=fr.clientWidth||innerWidth-32,others=$('.wrap').offsetHeight-fr.offsetHeight,avail=innerHeight-others-40;h=clamp(Math.round(w*avail/fw),150,212)}
+  {const dl=$('#dlg'),home=phone?$('.wrap'):fr;if(dl.parentNode!==home)home.appendChild(dl);dl.classList.toggle('out',phone)}
+  if(phone){w=176;const fw=fr.clientWidth||innerWidth-32,others=$('.wrap').offsetHeight-fr.offsetHeight+($('#dlg').hidden?118:0),avail=innerHeight-others-40;h=clamp(Math.round(w*avail/fw),150,212)}
   if(w===W&&h===H)return;W=w;H=h;cv.width=W*2;cv.height=H*2;fr.style.setProperty('--ar',`${W}/${H}`);darkC=null;ctx.imageSmoothingEnabled=false}
 addEventListener('resize',fitView);
 function start(data){if(data&&data.S)S=Object.assign(fresh(),data.S);placePlayer();hud();titleButtons();fitView();requestAnimationFrame(loop)}
