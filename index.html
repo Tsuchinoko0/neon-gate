@@ -863,6 +863,10 @@ const TORU=sprite(["...hhhh...","..hhhhhC..","..hsssCCc.","..sesCvCc.","..ssssCC
 const SEEK_M=sprite(["...hhhh...","..hhhhhh..","..ssssss..","..sesses..","..ssssss..","...ssss...",".ggGssGgg.","gggGggGggg","ggnnnggggg","rggggggggr","s.gggggg.s","..gggGgg..","..ss..ss..","..ss..ss..","..ww..ww..",".www..www."],{h:'#3a3048',s:'#c98f6a',e:'#07060d',g:'#cfe0ee',G:'#8ea4bc',n:'#ffffff',r:'#ff6a90',w:'#e4eaf2'});
 const SEEK_F=sprite(["..hhhh....",".hhhhhh...",".hsssshh..",".hsesesh..",".hssssh.h.","..ssss..h.",".gGssGg...","ggggGgggg.","gnnggggGg.","rgggggggr.","s.ggggg.s.","..ggGgg...","..ss.ss...","..ss.ss...",".www.www.."],{h:'#7a4a3a',s:'#d9a07a',e:'#07060d',g:'#d8e6f0',G:'#8ea4bc',n:'#ffffff',r:'#ff6a90',w:'#e4eaf2'});
 const SEEK_SPR=[SEEK_M,SEEK_F,SEEK_M,SEEK_F,WK_A,WK_M,WK_F,SUIT_A,SUIT_F];
+/* 最後の絵（END4）：駆け寄るミナ（走る2コマと、手を伸ばす形） */
+const MINA_PAL={c:'#3ef2e0',C:'#1a9e94',s:'#d9a07a',e:'#07060d',k:'#ff3d8b',K:'#a3245a',p:'#191828',b:'#0b0a12'},MINA_TOP=["..cccc...",".ccCCcc..",".cssssc..",".csesec..",".cssssc..","..ssss..."];
+const MINA_RUN=[sprite([...MINA_TOP,".kkkkkk..","kkKkkKkss",".kkkkkk..",".kkkkkk..","..pppp...",".pp...p..","pp....pp.","b......bb"],MINA_PAL),sprite([...MINA_TOP,".kkkkkk..","kkKkkKkk.","skkkkkks.",".kkkkkk..","..pppp...","...pp....","...pp....","...bbb..."],MINA_PAL)];
+const MINA_HUG=sprite([...MINA_TOP,".kkkkkkss","kkKkkKk..","skkkkkk..",".kkkkkk..","..pppp...","..p..p...","..p..p...",".bb..bb.."],MINA_PAL);
 /* 天穹区の住人（歩く人。戦いの区画の外だけ） */
 const CROWD_SKY=[{spr:SKY_CY,x0:100,x1:280,sp:14,z:7,sex:'f',cy:1},{spr:SKY_CY,x0:200,x1:200,sp:0,z:-6,sex:'m',cy:1,dir:-1},{spr:HISUI,x0:1290,x1:1400,sp:10,z:-5,sex:'f',cy:1}].map((c,i)=>({...c,x:c.x0+(c.x1-c.x0)*((i*0.41)%1),d:c.dir||(i%2?1:-1)}));
 function drawFoe(f,sx,fy,t){const fl=f.dir<0,wh=T<f.hit;
@@ -876,9 +880,37 @@ function drawFoe(f,sx,fy,t){const fl=f.dir<0,wh=T<f.hit;
     if(f.st==='atk'&&f.k==='cyborg'){ctx.fillStyle='rgba(255,74,92,.35)';ctx.fillRect(sx-(fl?-6:12),fy-12,6,8);ctx.fillStyle='rgba(255,176,188,.3)';ctx.fillRect(sx-(fl?-12:18),fy-10,6,4)}}
   if(wh){ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,255,255,.55)';const d=FOE[f.k];ctx.fillRect(sx-d.w/2,fy-d.h,d.w,d.h);ctx.globalCompositeOperation='source-over'}}
 /* 大規模AIの核：ふだんは盾（予測の網）に守られ、「予測不能」のあいだだけむき出しになる */
-function drawAIShield(f,sx,fy,t){const cy=fy-78,open=T<f.open;
-  if(open){const a=0.5+0.4*Math.sin(t*14);ctx.fillStyle=`rgba(255,90,130,${a*0.5})`;ctx.fillRect(sx-12,cy-12,24,24);ctx.fillStyle='#fff0f4';ctx.fillRect(sx-3,cy-3,6,6)}
-  else{ctx.strokeStyle=`rgba(150,210,255,${0.55+0.25*Math.sin(t*3)})`;ctx.lineWidth=1;ctx.beginPath();for(let i=0;i<=6;i++){const b=i*Math.PI/3+t*0.4,x=sx+Math.cos(b)*14,y=cy+Math.sin(b)*14;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();ctx.fillStyle='rgba(150,210,255,.15)';ctx.fill()}}
+let AI_NET=null;/* 予測の網（六角の網を球に巻いた形）。半ピクセルの細かさで一度だけ作る */
+function aiNet(){if(AI_NET)return AI_NET;const R=27,c=document.createElement('canvas');c.width=c.height=(R*2+4)*2;const g=c.getContext('2d'),o=R+2,a=6,Rp=R*2/Math.PI;
+  const map=(x,y)=>{const r=Math.hypot(x,y);if(r>=Rp*Math.PI/2)return null;const k=r?R*Math.sin(r/Rp)/r:1;return[x*k,y*k]},dot=(x,y,col)=>{g.fillStyle=col;g.fillRect(Math.round((o+x)*2),Math.round((o+y)*2),1,1)};
+  const vs=[];for(let q=-8;q<=8;q++)for(let r=-8;r<=8;r++){const cx=a*1.5*q,cy=a*Math.sqrt(3)*(r+q/2);for(let k=0;k<6;k++){const b1=k*Math.PI/3,b2=(k+1)*Math.PI/3,p1=[cx+a*Math.cos(b1),cy+a*Math.sin(b1)],p2=[cx+a*Math.cos(b2),cy+a*Math.sin(b2)];
+    for(let i=0;i<=10;i++){const m=map(p1[0]+(p2[0]-p1[0])*i/10,p1[1]+(p2[1]-p1[1])*i/10);if(m)dot(m[0],m[1],'rgba(60,140,240,.85)')}const m=map(p1[0],p1[1]);if(m)vs.push(m)}}
+  for(const [x,y] of vs){dot(x,y,'#ffffff');dot(x+0.5,y,'rgba(90,170,255,.9)')}
+  for(let i=0;i<360;i++){const b=i*Math.PI/180;dot(Math.cos(b)*R,Math.sin(b)*R,'#3a8aff');dot(Math.cos(b)*(R-0.5),Math.sin(b)*(R-0.5),'rgba(200,235,255,.9)')}
+  AI_NET=c;return c}
+function drawAIShield(f,sx,fy,t){const cy=fy-78,R=27,left=f.open-T,open=left>0,net=aiNet();
+  if(!open){/* 盾：薄い膜、網、上から下へなぞる予測の線、網の上を回る光 */
+    for(let dy=-R;dy<=R;dy++){const hw=Math.round(Math.sqrt(R*R-dy*dy));ctx.fillStyle=`rgba(110,180,255,${0.16+0.06*Math.sin(t*2+dy*0.2)})`;ctx.fillRect(sx-hw,cy+dy,hw*2,1)}
+    ctx.globalAlpha=0.8+0.2*Math.sin(t*3);ctx.drawImage(net,sx-R-2,cy-R-2,R*2+4,R*2+4);ctx.globalAlpha=1;
+    const sy=Math.round(((t*26)%(R*2))-R),hw=Math.round(Math.sqrt(Math.max(0,R*R-sy*sy)));ctx.fillStyle='rgba(255,255,255,.95)';ctx.fillRect(sx-hw,cy+sy,hw*2,1);ctx.fillStyle='rgba(90,170,255,.4)';ctx.fillRect(sx-hw,cy+sy-2,hw*2,2);
+    for(let k=0;k<3;k++){const b=t*1.6+k*2.1;ctx.fillStyle='#ffffff';ctx.fillRect(Math.round(sx+Math.cos(b)*R)-1,Math.round(cy+Math.sin(b)*R*0.35)-1,2,2)}
+    return}
+  const e=3.5-left;
+  /* 割れた網のかけら（最初の0.8秒） */
+  if(e<0.8){const a=1-e/0.8;for(let i=0;i<14;i++){const b=i*0.449+0.3,d=R+e*46*(0.7+(i%3)*0.2),x=Math.round(sx+Math.cos(b)*d),y=Math.round(cy+Math.sin(b)*d*0.9+e*e*20);ctx.fillStyle=`rgba(200,235,255,${a})`;ctx.fillRect(x,y,3,1);ctx.fillRect(x+(i%2?2:0),y+1,1,2);ctx.fillStyle=`rgba(120,190,255,${a*0.7})`;ctx.fillRect(x+1,y+1,1,1)}
+    ctx.fillStyle=`rgba(255,255,255,${a*0.6})`;for(let dy=-R;dy<=R;dy+=1){const hw=Math.round(Math.sqrt(R*R-dy*dy));ctx.fillRect(sx-hw,cy+dy,1,1);ctx.fillRect(sx+hw-1,cy+dy,1,1)}}
+  /* むき出しの核：広がる輪、脈打つ芯、黄色い照準の角 */
+  const pu=0.5+0.5*Math.sin(t*12);
+  for(let k=0;k<2;k++){const r=Math.round(10+((e*18+k*9)%18)),al=0.6*(1-(r-10)/18);ctx.fillStyle=`rgba(255,110,150,${al})`;for(let i=0;i<40;i++){const b=i*Math.PI/20;ctx.fillRect(Math.round(sx+Math.cos(b)*r),Math.round(cy+Math.sin(b)*r),1,1)}}
+  ctx.fillStyle=`rgba(255,80,120,${0.35+0.25*pu})`;ctx.fillRect(sx-11,cy-9,22,18);ctx.fillRect(sx-9,cy-11,18,22);
+  ctx.fillStyle='#5a1a30';ctx.fillRect(sx-8,cy-7,16,14);ctx.fillRect(sx-7,cy-8,14,16);
+  ctx.fillStyle='#ff3d6a';ctx.fillRect(sx-7,cy-6,14,12);ctx.fillRect(sx-6,cy-7,12,14);
+  ctx.fillStyle='#ff9ab8';ctx.fillRect(sx-4,cy-4,8,8);ctx.fillStyle=pu>0.5?'#ffffff':'#fff0f4';ctx.fillRect(sx-2,cy-3,4,6);ctx.fillRect(sx-3,cy-2,6,4);
+  ctx.fillStyle='#ffd0dc';ctx.fillRect(sx-5,cy-6,2,1);ctx.fillRect(sx-6,cy-5,1,2);
+  const bl=left<0.8?(Math.floor(t*10)%2?1:0.3):1,c=`rgba(255,211,74,${bl})`,o=14;ctx.fillStyle=c;
+  for(const [dx,dy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){const x=sx+dx*o-(dx>0?1:0),y=cy+dy*o-(dy>0?1:0);ctx.fillRect(dx<0?x:x-3,y,4,1);ctx.fillRect(x,dy<0?y:y-3,1,4)}
+  /* 閉じる直前：網がまた張られていく */
+  if(left<0.8){ctx.globalAlpha=(1-left/0.8)*(Math.floor(t*14)%2?0.7:0.3);ctx.drawImage(net,sx-R-2,cy-R-2,R*2+4,R*2+4);ctx.globalAlpha=1}}
 /* 中央区ゲートの番人：脚の長い白い警備機。胸の赤い核が弱点 */
 function drawWarden(f,sx,fy,t){const x=sx,y=fy,w=f.st==='wind',p=f.pat,R=(c,a,b,ww,hh)=>{ctx.fillStyle=c;ctx.fillRect(x+a,y+b,ww,hh)},O='#4a5470',D='#8a94aa',M='#c4cad8',L='#eef2f8',G='#e0b85a';
   R('rgba(40,50,80,.25)',-22,-1,44,2);
@@ -977,7 +1009,7 @@ function drawTopBG(t){const ax=Math.round(STAGES.top.ai-camX);
   ctx.fillStyle='#b8a888';ctx.fillRect(ax-40,GY-14,80,14);ctx.fillStyle='#e8dcc4';ctx.fillRect(ax-38,GY-14,76,3);ctx.fillStyle='#d6c8a8';ctx.fillRect(ax-30,GY-24,60,10);ctx.fillStyle='#f4ecdc';ctx.fillRect(ax-30,GY-24,60,2);
   ctx.fillStyle='#d6c8a8';ctx.fillRect(ax-8,GY-100,16,78);ctx.fillStyle='#f4ecdc';ctx.fillRect(ax-8,GY-100,5,78);ctx.fillStyle='#b8a888';ctx.fillRect(ax+5,GY-100,3,78);
   for(const s of [-1,1]){ctx.fillStyle='#c8b898';ctx.fillRect(ax+s*20-(s<0?6:0),GY-80,6,58);ctx.fillStyle='#e8dcc4';ctx.fillRect(ax+s*20-(s<0?6:0),GY-80,2,58);ctx.fillRect(ax+s*8-(s<0?14:0),GY-82,14,3)}
-  {const cy=GY-70,eye=0.6+0.4*Math.sin(t*1.3);
+  {const cy=GY-78,eye=0.6+0.4*Math.sin(t*1.3);
     for(let dy=-22;dy<=22;dy++){const hw=Math.round(Math.sqrt(22*22-dy*dy));ctx.fillStyle=dy<-14?'#fffaf0':dy<8?'#f4ecdc':'#ddd0b4';ctx.fillRect(ax-hw,cy+dy,hw*2,1)}
     ctx.fillStyle='#c8b898';ctx.fillRect(ax-22,cy-1,44,2);ctx.fillRect(ax-1,cy-22,2,44);
     ctx.fillStyle=`rgba(255,80,120,${0.3*eye})`;ctx.fillRect(ax-12,cy-12,24,24);ctx.fillStyle='#5a3a48';ctx.fillRect(ax-9,cy-9,18,18);ctx.fillStyle=`rgba(255,90,130,${0.55+0.4*eye})`;ctx.fillRect(ax-7,cy-7,14,14);ctx.fillStyle='#ff9ab8';ctx.fillRect(ax-4,cy-4,8,8);ctx.fillStyle='#fff0f4';ctx.fillRect(ax-2,cy-2,4,4);
@@ -1210,7 +1242,7 @@ const FOE={drone:{hp:3,w:14,h:9,fly:1,sp:44,weak:[0,-5],range:150,cd:2.3},
   seeker:{hp:2,w:10,h:16,sp:40,weak:[0,-14],range:0,cd:9},
   ai:{hp:90,w:44,h:100,sp:0,weak:[0,-78],range:999,cd:2.4,boss:1}};
 function spawnFoe(k,x){const d=FOE[k],c=cbt(),max=Math.round(d.hp*c.foeHp),hp=d.boss&&F.wardenLeft?Math.min(max,F.wardenLeft):max;
-  F.foes.push({k,x,y:d.fly?-14:(d.boss||k==='seeker'?GY:-20),vy:0,hp,max,spr:k==='seeker'?[WK_A,WK_B,WK_C,WK_M,WK_F,SUIT_A,SUIT_F][Math.floor(Math.random()*7)]:null,born:T,lastU:T,open:0,dir:-1,st:'in',t:0,cd:0.6+Math.random()*0.8,hit:0,ph:Math.random()*6,burst:0})}
+  F.foes.push({k,x,y:d.fly?-14:(d.boss||k==='seeker'?GY:-20),vy:0,hp,max,spr:k==='seeker'?SEEK_SPR[Math.floor(Math.random()*SEEK_SPR.length)]:null,born:T,lastU:T,open:0,dir:-1,st:'in',t:0,cd:0.6+Math.random()*0.8,hit:0,ph:Math.random()*6,burst:0})}
 const foeHurt=(f,n,weak)=>{if(f.k==='ai'&&T>=f.open){if(T>(f.blk||0)){f.blk=T+0.5;F.fx.push({k:'txt',x:f.x,y:f.y-FOE.ai.h-4,t:T,s:'予測済み',c:'#9ad0ff'});sfx('ehit')}return}f.hp-=n;f.hit=T+0.1;F.fx.push({k:'spark',x:f.x,y:f.y-(FOE[f.k].h/2),t:T,c:weak?'#ffd34a':'#ffffff'});if(weak)F.fx.push({k:'txt',x:f.x,y:f.y-FOE[f.k].h-4,t:T,s:'WEAK',c:'#ffd34a'});sfx(weak?'weak':'ehit');
   if(f.hp<=0){f.dead=1;F.fx.push({k:'boom',x:f.x,y:f.y-FOE[f.k].h/2,t:T,r:FOE[f.k].boss?26:10});sfx('boom')}};
 const weakAt=f=>{const d=FOE[f.k];return{x:f.x+d.weak[0]*f.dir,y:f.y+d.weak[1]}};
@@ -1386,7 +1418,7 @@ function endPanel(no=1){inEnding=false;const happy=no>=4;endQuiet=!happy;S.st={.
   <p class="end-t" id="endT" hidden>END ${no}：${END_NAMES[no]}</p><div id="endB" hidden><p class="muted c">${esc(endNote())}</p><div class="prow" style="justify-content:center"><button class="nbtn" id="toT" type="button">タイトルへ</button></div></div></div>`);
   const g=$('#ecv').getContext('2d');g.imageSmoothingEnabled=false;
   /* 手配書：big は大きく3枚並べる（END1・2）。小さいときは絵の右下 */
-  const big=no<=2,sc=big?8:4,pos=i=>big?[20+i*120,20]:[196+i*52,128],mark={1:['x','x','x'],2:['x','x','stamp'],3:['x','x',null],4:[null,null,null],5:[null,null,null]}[no];
+  const big=no<=2,sc=big?8:4,pos=i=>big?[20+i*120,20]:no===3?[14+i*52,12]:[196+i*52,128],mark={1:['x','x','x'],2:['x','x','stamp'],3:['x','x',null],4:[null,null,null],5:[null,null,null]}[no];
   const X=[];P.forEach((_,i)=>{if(mark[i]==='x')[0,1].forEach(k=>X.push({i,k}));else if(mark[i]==='stamp')X.push({i,stamp:1})});
   const t0=performance.now()+(big?1400:2600),SEG=520,tEnd=t0+Math.max(X.length,3)*SEG*1.4+900;let done=0;
   const frame=()=>{if(!$('#ecv'))return;const now=performance.now(),t=now/1000,k=clamp((now-t0)/3000,0,1);
@@ -1399,26 +1431,106 @@ function endPanel(no=1){inEnding=false;const happy=no>=4;endQuiet=!happy;S.st={.
     g.strokeStyle='#e8102a';g.lineWidth=big?7:4;g.lineCap='round';
     X.forEach((s,j)=>{const st=t0+j*SEG+(j>>1)*SEG*0.8,p=clamp((now-st)/SEG*1.4,0,1);if(p<=0)return;if(!s.snd){s.snd=1;done++;sfx('xmark')}
       const [px,py]=pos(s.i),x0=px,y0=py,x1=x0+10*sc,y1=y0+13*sc;
-      if(s.stamp){g.save();g.globalAlpha=p;g.translate((x0+x1)/2,(y0+y1)/2);g.rotate(-0.25);g.strokeStyle='#3a8aff';g.lineWidth=3;g.strokeRect(-36,-14,72,28);g.fillStyle='#3a8aff';g.font='bold 17px "M PLUS 1 Code",monospace';g.textAlign='center';g.fillText('保護済み',0,6);g.restore();return}
+      if(s.stamp){/* 保護済みの印：手配書の下半分（文字の行の上）に、白い下地つきの青いはんこ */const sp=1+0.25*(1-p);g.save();g.globalAlpha=Math.min(1,p*1.5);g.translate((x0+x1)/2,y0+(y1-y0)*0.66);g.rotate(-0.18);g.scale(sp,sp);g.fillStyle='rgba(236,244,255,.88)';g.fillRect(-40,-15,80,30);g.strokeStyle='#1f5fd0';g.lineWidth=3;g.strokeRect(-38,-13,76,26);g.lineWidth=1;g.strokeRect(-34,-9,68,18);g.fillStyle='#1f5fd0';g.font='bold 15px "M PLUS 1 Code",monospace';g.textAlign='center';g.textBaseline='middle';g.fillText('保護済み',0,1);g.textBaseline='alphabetic';g.textAlign='start';g.restore();return}
       const [ax,ay,bx,by]=s.k?[x1-4,y0+6,x0+4,y1-6]:[x0+4,y0+6,x1-4,y1-6];g.beginPath();g.moveTo(ax,ay);g.lineTo(ax+(bx-ax)*p,ay+(by-ay)*p);g.stroke()});
     if(done>=X.length&&now>tEnd&&$('#endT').hidden){$('#endT').hidden=false;$('#endB').hidden=false;$('#toT').focus()}
     requestAnimationFrame(frame)};
   requestAnimationFrame(frame);
   $('#toT').onclick=()=>{endQuiet=false;TOPF.fight=false;closePanel();resetFight(true);$('#title').hidden=false;mode='title';placePlayer();titleButtons();hud();sndApply()}}
 const END_ALT={1:'指名手配書が3枚。リク、ミナ、ソウ。赤いバツが書かれていく',2:'指名手配書が3枚。リクとミナにバツ、ソウには保護済みの印',3:'施術室の前に、どこまでも続く人の列',4:'圏外の村の焚き火。手配書が風で飛んでいく',5:'圏外の村の焚き火に、仲間たちが集まっている'};
-/* 最後の絵（END3〜5）。g は 360×200 の別の canvas */
-function drawEndScene(g,no,t,party){
-  if(no===3){g.fillStyle='#f4efe4';g.fillRect(0,0,360,200);g.fillStyle='#e0d6c4';g.fillRect(0,120,360,80);g.fillStyle='#c8bea8';g.fillRect(300,40,46,80);g.fillStyle='#ff4a5c';g.fillRect(312,48,22,3);
-    g.fillStyle='#7a6a5a';g.font='9px "M PLUS 1 Code",monospace';g.fillText('施術室',306,64);
-    for(let i=0;i<26;i++){const x=290-i*12+Math.sin(t*2+i)*0.6,s=Math.max(0.35,1-i*0.025),y=120-i*1.2;g.fillStyle=`rgba(60,50,70,${0.9-i*0.025})`;g.fillRect(Math.round(x),Math.round(y-18*s),Math.round(6*s),Math.round(18*s));g.fillRect(Math.round(x+1),Math.round(y-22*s),Math.round(4*s),Math.round(4*s))}
+/* 最後の絵（END3〜5）。g は 360×200 の別の canvas。人物はスプライトの4倍（Scale2x の2倍）で、2px のますめにそろえる */
+const ES={g:null,t0:0,c:null};
+const esN=(a,b)=>{const x=Math.sin(a*127.1+b*311.7)*43758.5453;return x-Math.floor(x)};
+/* 人物：x は中心、fy は足もと。dark は夜の暗さ、lit は焚き火の側（-1 左・1 右・0 なし）と強さ */
+function esSpr(g,spr,x,fy,k,flip,dark=0,lit=0,la=0,alpha=1){const w=Math.round(spr.lw*k),h=Math.round(spr.lh*k),x0=Math.round(x-w/2),y0=Math.round(fy-h);
+  if(!dark&&!la){g.save();g.globalAlpha=alpha;if(flip){g.translate(x0+w,y0);g.scale(-1,1);g.drawImage(spr,0,0,w,h)}else g.drawImage(spr,x0,y0,w,h);g.restore();return}
+  const c=ES.c||(ES.c=document.createElement('canvas'));c.width=w;c.height=h;const o=c.getContext('2d');o.imageSmoothingEnabled=false;o.save();if(flip){o.translate(w,0);o.scale(-1,1)}o.drawImage(spr,0,0,w,h);o.restore();
+  o.globalCompositeOperation='source-atop';if(dark){o.fillStyle=`rgba(10,8,28,${dark})`;o.fillRect(0,0,w,h)}
+  if(la){const gr=o.createLinearGradient(lit<0?0:w,0,lit<0?w:0,0);gr.addColorStop(0,`rgba(255,150,60,${la})`);gr.addColorStop(0.55,`rgba(255,120,50,${la*0.35})`);gr.addColorStop(1,'rgba(255,120,50,0)');o.fillStyle=gr;o.fillRect(0,0,w,h);
+    const gv=o.createLinearGradient(0,0,0,h);gv.addColorStop(0,'rgba(0,0,0,0)');gv.addColorStop(1,`rgba(255,140,60,${la*0.4})`);o.fillStyle=gv;o.fillRect(0,0,w,h)}
+  g.globalAlpha=alpha;g.drawImage(c,x0,y0);g.globalAlpha=1}
+/* 焚き火：石の輪、組んだ薪、ゆらぐ炎（2px のます）、火の粉と煙 */
+function esFire(g,fx,fy,t,big){const B=(x,y,c)=>{g.fillStyle=c;g.fillRect(x,y,2,2)},fl=0.85+0.15*Math.sin(t*9)*Math.sin(t*5.3);
+  const gl=g.createRadialGradient(fx,fy-14,4,fx,fy-14,big?150:120);gl.addColorStop(0,`rgba(255,170,80,${0.38*fl})`);gl.addColorStop(0.35,`rgba(255,120,50,${0.16*fl})`);gl.addColorStop(1,'rgba(255,90,40,0)');g.globalCompositeOperation='lighter';g.fillStyle=gl;g.fillRect(0,0,360,200);g.globalCompositeOperation='source-over';
+  /* 地面の明るみ */
+  g.save();g.translate(fx,fy);g.scale(1,0.32);const ge=g.createRadialGradient(0,0,4,0,0,90);ge.addColorStop(0,`rgba(255,170,90,${0.5*fl})`);ge.addColorStop(1,'rgba(255,120,60,0)');g.fillStyle=ge;g.beginPath();g.arc(0,0,90,0,7);g.fill();g.restore();
+  /* 薪 */
+  for(const [a,b,c] of [[-18,-2,'#4a2a1a'],[-14,-4,'#6a3a22'],[4,-4,'#5a3220'],[8,-2,'#3a2016']])for(let i=0;i<12;i+=2){B(fx+a+i,fy+b-(c==='#6a3a22'||c==='#5a3220'?Math.round(i/3)*(a<0?1:-1)+(a<0?0:-4):0),c)}
+  for(let i=-16;i<16;i+=2)B(fx+i,fy,'#2a1810');
+  /* 石の輪 */
+  for(let i=-24;i<=22;i+=6){const y=fy+2+Math.round(Math.abs(i)<12?2:0);g.fillStyle='#3a3440';g.fillRect(fx+i,y,5,3);g.fillStyle=`rgba(255,160,90,${0.6*fl})`;g.fillRect(fx+i,y,5,1)}
+  /* 炎：まん中ほど高い。外から赤・橙・黄・白 */
+  const H=big?30:26;for(let x=-12;x<12;x+=2){const u=(x+1)/13,base=H*(1-u*u),n=0.65+0.35*Math.sin(t*11+x*1.7)*Math.sin(t*7.1+x*0.6),h=Math.max(2,Math.round(base*n/2)*2);
+    for(let y=0;y<h;y+=2){const r=y/h,c=r>0.82?'#c8302a':r>0.6?'#ff6a2a':r>0.35?'#ffb547':Math.abs(x)<6?'#fff4d6':'#ffd25a';B(fx+x,fy-4-y,c)}}
+  for(let i=0;i<3;i++){const ph=(t*1.6+i*0.33)%1,x=Math.round(fx-4+i*4+Math.sin(t*6+i)*3),y=Math.round(fy-4-H*0.7-ph*14);if(ph<0.7)B(x&~1,y&~1,ph<0.35?'#ff8a2a':'#c8302a')}
+  /* 火の粉 */
+  for(let i=0;i<10;i++){const ph=(t*0.35+i*0.1)%1,x=Math.round(fx+Math.sin(i*2.3+t*1.2)*10+Math.sin(ph*6+i)*6),y=Math.round(fy-20-ph*80);g.fillStyle=`rgba(255,${180-ph*100|0},80,${1-ph})`;g.fillRect(x,y,ph<0.5?2:1,ph<0.5?2:1)}
+  /* 煙 */
+  for(let i=0;i<5;i++){const ph=(t*0.12+i*0.2)%1,x=Math.round(fx+Math.sin(ph*4+i)*10+ph*20),y=Math.round(fy-40-ph*90),r=Math.round(2+ph*6)*2;g.fillStyle=`rgba(120,110,140,${0.07*(1-ph)})`;g.fillRect(x-r/2,y-2,r,4);g.fillRect(x-r/4,y-4,r/2,8)}}
+/* 圏外の夜：なめらかな空、星、遠くのピラミッド都市、丘と村の影、焚き火の地面 */
+function esNight(g,t){const sk=g.createLinearGradient(0,0,0,130);sk.addColorStop(0,'#04030b');sk.addColorStop(0.6,'#0e0b22');sk.addColorStop(1,'#231a3a');g.fillStyle=sk;g.fillRect(0,0,360,200);
+  for(let i=0;i<70;i++){const x=Math.floor(esN(i,1)*360),y=Math.floor(esN(i,2)*105),tw=0.5+0.5*Math.sin(t*(1+esN(i,3)*2)+i);g.fillStyle=`rgba(230,230,255,${0.25+0.6*tw*esN(i,4)})`;g.fillRect(x,y,esN(i,5)>0.9?2:1,esN(i,5)>0.9?2:1)}
+  /* 遠くのピラミッド都市（東京）。小さく、うすく */
+  {const px=250,by=112;const hg=g.createRadialGradient(px,by-20,2,px,by-20,60);hg.addColorStop(0,'rgba(255,90,160,.14)');hg.addColorStop(1,'rgba(255,90,160,0)');g.fillStyle=hg;g.fillRect(px-60,by-80,120,80);for(let y=0;y<40;y+=2){const hw=Math.round(36-y*0.85);g.fillStyle=y<6?'#2a2240':'#1c1730';g.fillRect(px-hw,by-y-2,hw*2,2);
+      for(let x=-hw+2;x<hw-2;x+=4)if(esN(x,y)>0.78){g.fillStyle=esN(y,x)>0.6?'rgba(255,120,190,.7)':'rgba(255,200,120,.6)';g.fillRect(px+x,by-y-2,1,1)}}
+    g.fillStyle='rgba(255,240,220,.5)';g.fillRect(px-1,by-48,2,6);g.fillStyle=`rgba(255,110,170,${0.15+0.1*Math.sin(t)})`;g.fillRect(px,0,1,by-48)}
+  /* 丘（2段）と村の家・木の影 */
+  const hill=(y0,amp,f,ph,col)=>{g.fillStyle=col;for(let x=0;x<360;x+=2){const y=Math.round(y0-amp*(0.5+0.5*Math.sin(x*f+ph))-amp*0.4*Math.sin(x*f*2.3+ph*2));g.fillRect(x,y&~1,2,200)}};
+  hill(116,10,0.012,1.3,'#151129');hill(124,8,0.02,4.1,'#110e1e');
+  for(const [x,w,h] of [[30,18,12],[58,14,10],[318,16,11]]){const y=120-h;g.fillStyle='#0b0914';g.fillRect(x,y,w,h+8);for(let i=0;i<w/2+2;i+=2)g.fillRect(x-2+i,y-2-i/2|0,w+4-i*2,2);g.fillStyle=`rgba(255,180,80,${0.55+0.2*Math.sin(t*3+x)})`;g.fillRect(x+4,y+4,2,2)}
+  for(const [x,h] of [[8,30],[96,22],[344,26]]){g.fillStyle='#0a0812';g.fillRect(x,126-h,2,h);for(let i=0;i<h-4;i+=2){const w=Math.round(i*0.32)+1;g.fillRect(x+1-w,126-h-4+i,w*2,2)}}
+  /* 地面：丘のすそから手前へ、暗い土。草と小石 */
+  const gd=g.createLinearGradient(0,122,0,200);gd.addColorStop(0,'#110e1e');gd.addColorStop(1,'#1a1218');g.fillStyle=gd;g.fillRect(0,124,360,76);
+  for(let i=0;i<60;i++){const x=Math.floor(esN(i,7)*180)*2,y=130+Math.floor(esN(i,8)*34)*2;g.fillStyle=esN(i,9)>0.5?'#1e1a26':'#241c22';g.fillRect(x,y,2,2);if(esN(i,6)>0.6){g.fillStyle='#1c2a1e';g.fillRect(x+2,y-2,2,2)}}}
+/* 夜のなかの人：焚き火からの距離で暗さと照らされ方を決める */
+function esLit(g,spr,x,fy,flip,fx,fl){const d=Math.abs(x-fx),side=x<fx?1:-1;esSpr(g,spr,x,fy,4,flip,clamp(0.15+d/260,0.15,0.6),side,clamp(0.55-d/220,0.1,0.5)*fl)}
+function drawEndScene(g,no,t,party){if(ES.g!==g){ES.g=g;ES.t0=t}const e=t-ES.t0;
+  if(no===3){/* 中央区：まぶしい白い広間。右手前の施術室へ、奥の消える点から人の列がどこまでも続く */
+    const vx=64,vy=98;const bg=g.createLinearGradient(0,0,0,200);bg.addColorStop(0,'#fff1d6');bg.addColorStop(0.45,'#fffaf0');bg.addColorStop(1,'#f2eadb');g.fillStyle=bg;g.fillRect(0,0,360,200);
+    /* 天井の光の板（消える点へ） */
+    for(let i=0;i<12;i++){const z=1+i*0.7,y=Math.round(vy+(-6-vy)/z),xa=Math.round(vx+(-60-vx)/z),xb=Math.round(vx+(420-vx)/z),h=Math.max(1,Math.round(6/z));g.fillStyle='#e8dcc4';g.fillRect(xa,y+h,xb-xa,1);g.fillStyle='#ffffff';g.fillRect(xa,y,xb-xa,h);
+      for(let k=0;k<6;k++){g.fillStyle=(Math.floor(t*3)+k+i)%7===0?'#ff6a90':'#ffc070';g.fillRect(Math.round(xa+(xb-xa)*(k+0.5)/6),y+h,1,1)}}
+    /* 奥の大規模AIの塔（光の中にかすむ） */
+    g.fillStyle='rgba(236,222,196,.7)';for(let i=0;i<6;i++){const hw=10-Math.abs(i-2)*2;g.fillRect(vx-hw,vy-60+i*9,hw*2,7)}g.fillStyle='rgba(255,255,255,.9)';g.fillRect(vx-1,0,2,vy);for(let i=0;i<5;i++){g.fillStyle='rgba(255,120,170,.7)';g.fillRect(vx,Math.round((t*30+i*20)%vy),1,3)}
+    /* 両側の計算機の壁 */
+    for(let i=0;i<10;i++){const z=1+i*0.9,x1=Math.round(vx+(-20-vx)/z),y1=Math.round(vy+(30-vy)/z),y2=Math.round(vy+(150-vy)/z),w=Math.max(1,Math.round(18/z));g.fillStyle='#ece2cc';g.fillRect(x1,y1,w,y2-y1);g.fillStyle='#f8f2e4';g.fillRect(x1,y1,Math.max(1,w>>2),y2-y1);for(let r=0;r<6;r++){g.fillStyle=esN(i,r+Math.floor(t*3))>0.6?'#ff6a90':'#ffb050';g.fillRect(x1+Math.round(w/2),Math.round(y1+(y2-y1)*(r+0.5)/6),1,1)}}
+    /* 床：消える点へ向かう線と、流れる桃色の光 */
+    const fg=g.createLinearGradient(0,vy,0,200);fg.addColorStop(0,'#fffaf2');fg.addColorStop(1,'#efe6d4');g.fillStyle=fg;g.fillRect(0,vy+4,360,200);
+    g.fillStyle='rgba(255,180,120,.45)';for(let k=-6;k<=12;k++){const ex=vx+k*44;for(let y=vy+6;y<200;y+=2){const f=(y-vy)/(200-vy);g.fillRect(Math.round(vx+(ex-vx)*f),y,1,2)}}
+    for(let i=1;i<10;i++){const y=Math.round(vy+(200-vy)/(1+ (10-i)*0.7));g.fillRect(0,y,360,1)}
+    /* 施術室の扉（右手前） */
+    {const dx=272,dy=56,dw=70,dh=126;g.fillStyle='#d6c8a8';g.fillRect(dx-6,dy-6,dw+12,dh+6);g.fillStyle='#f4ecdc';g.fillRect(dx-4,dy-4,dw+8,dh+4);g.fillStyle='#c8bea8';g.fillRect(dx,dy,dw,dh);
+      const op=0.5+0.5*Math.sin(t*1.3);g.fillStyle=`rgba(255,255,255,${0.6+0.3*op})`;g.fillRect(dx+dw/2-3,dy,6,dh);g.fillStyle='rgba(255,255,255,.35)';g.fillRect(dx+dw/2-10,dy,20,dh);
+      g.fillStyle='#ece2cc';g.fillRect(dx+6,dy+8,dw/2-12,dh-16);g.fillRect(dx+dw/2+6,dy+8,dw/2-12,dh-16);
+      g.fillStyle='#2a2230';g.fillRect(dx+4,dy-26,dw-8,16);g.fillStyle='#ff4a5c';g.fillRect(dx+4,dy-26,dw-8,2);g.fillStyle=Math.floor(t*2)%2?'#ff6a90':'#ff3d6a';g.fillRect(dx+dw-14,dy-20,6,6);
+      g.fillStyle='#fff0f4';g.font='bold 10px "M PLUS 1 Code",monospace';g.textAlign='left';g.fillText('施術室',dx+8,dy-14);
+      g.fillStyle='#2a2230';g.fillRect(dx-34,dy+4,30,16);g.fillStyle='#ffb050';g.font='8px "M PLUS 1 Code",monospace';g.textAlign='center';g.fillText(String(4812+Math.floor(e/2.4)),dx-19,dy+15);g.textAlign='start';
+      g.fillStyle='rgba(255,120,170,.8)';g.fillRect(dx-34,dy+20,30,1)}
+    /* 列：少しずつ前へ進み、先頭は扉へ消える。奥ほど小さく、光にかすむ */
+    const ph=(e/2.4)%1,step=ph<0.3?ph/0.3:1,sm=step*step*(3-2*step),fx0=268,fy0=186,N=44;
+    for(let i=N-1;i>=0;i--){const z=1+(i-sm)*0.32;if(z<0.82)continue;const x=Math.round(vx+(fx0-vx)/z),fy=Math.round(vy+(fy0-vy)/z),k=4/z,fog=clamp(1-1/z,0,1)*0.8,spr=SEEK_SPR[(i+Math.floor(e/2.4))%SEEK_SPR.length];
+      const al=i===0?clamp(1-sm*1.4,0,1):1;g.fillStyle=`rgba(180,160,130,${0.25/z})`;g.fillRect(Math.round(x-12/z),fy-1,Math.round(24/z),Math.max(1,Math.round(3/z)));
+      if(k>=1)esSpr(g,spr,x+Math.round(Math.sin(t*1.5+i)*0.6),fy,k,false,0,0,0,al*(1-fog*0.5));
+      else{const h=Math.max(2,Math.round(64/z));g.fillStyle=`rgba(150,170,190,${0.8-fog*0.5})`;g.fillRect(x-Math.max(1,h>>3),fy-h+Math.round(h/4),Math.max(1,h>>2),h-Math.round(h/4));g.fillStyle=`rgba(90,70,80,${0.8-fog*0.5})`;g.fillRect(x-Math.max(0,h>>4),fy-h,Math.max(1,h>>3),Math.max(1,h>>3))}}
+    /* まぶしさ */
+    const gl=g.createRadialGradient(vx,vy-20,4,vx,vy-20,140);gl.addColorStop(0,'rgba(255,255,255,.75)');gl.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gl;g.fillRect(0,0,360,200);
+    for(let i=0;i<4;i++){g.fillStyle='rgba(255,255,255,.22)';for(let y=0;y<200;y+=4)g.fillRect(Math.round(110+i*70+y*0.35),y,10,4)}
     return}
   /* END4・5：圏外の村、夜の焚き火 */
-  g.fillStyle='#07060d';g.fillRect(0,0,360,200);g.fillStyle='#120e22';g.fillRect(0,60,360,80);g.fillStyle='#0d0c13';g.fillRect(0,140,360,60);
-  for(let i=0;i<40;i++){g.fillStyle='rgba(255,255,255,.5)';g.fillRect((i*83)%360,(i*37)%60,1,1)}
-  const fx=150,fy=150,fl=0.8+0.2*Math.sin(t*9);const gr=g.createRadialGradient(fx,fy-6,2,fx,fy-6,90);gr.addColorStop(0,`rgba(255,160,70,${0.45*fl})`);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,40,360,160);
-  g.fillStyle='#ffb547';g.fillRect(fx-6,fy-10-Math.round(3*fl),12,10);g.fillStyle='#fff4d6';g.fillRect(fx-2,fy-8,4,6);g.fillStyle='#5a3a2a';g.fillRect(fx-10,fy,20,3);
-  const who=[[SOU,fx-44,false],[MINA,fx-26,false],[P_A,fx+24,true]];if(no===5)party.forEach((id,i)=>{const f=NPC_SPR[id];if(f)who.push([f(),fx+44+i*16,true])});
-  for(const [spr,x,fl2] of who){g.save();if(fl2){g.translate(x+spr.lw,fy+3-spr.lh);g.scale(-1,1);g.drawImage(spr,0,0,spr.lw,spr.lh)}else g.drawImage(spr,x,fy+3-spr.lh,spr.lw,spr.lh);g.restore()}}
+  esNight(g,t);const fx=170,fy=180,fl=0.85+0.15*Math.sin(t*9)*Math.sin(t*5.3),P=[];
+  if(no===4){/* ソウが待っていて、ミナが駆け寄る。リクはうしろで見ている */
+    const r=clamp((e-2.4)/2.6,0,1),mx=Math.round(250-(250-136)*(1-(1-r)*(1-r))),run=r>0&&r<1,ms=run?MINA_RUN[Math.floor(e*8)%2]:r>=1?MINA_HUG:MINA;
+    P.push([SOU,110,182,false],[P_A,244,178,true],[ms,mx,190-(run&&Math.floor(e*8)%2?2:0),true])}
+  else{/* 同じ焚き火を囲む：奥に仲間、手前にソウ・ミナ・リク */
+    const n=party.length;party.forEach((id,i)=>{const f=NPC_SPR[id];if(!f)return;const x=Math.round(fx+(i-(n-1)/2)*46);P.push([f(),x,158,x>fx+8])});
+    P.push([SOU,84,186,false],[MINA,120,194,false],[P_A,246,190,true])}
+  P.sort((a,b)=>a[2]-b[2]);
+  const back=P.filter(p=>p[2]<fy),front=P.filter(p=>p[2]>=fy);
+  for(const [s,x,y,f] of back)esLit(g,s,x,y,f,fx,fl);
+  esFire(g,fx,fy,t,no===5);
+  for(const [s,x,y,f] of front)esLit(g,s,x,y,f,fx,fl);
+  /* 手前のふち：少し暗く */
+  const vg=g.createLinearGradient(0,180,0,200);vg.addColorStop(0,'rgba(5,4,12,0)');vg.addColorStop(1,'rgba(5,4,12,.5)');g.fillStyle=vg;g.fillRect(0,180,360,20)}
 function endNote(){const o=overall(S.cur),hn=Object.keys(S.honne||{}).length;return `生身率 ${flesh()}% · 実効スペック ${effective()}（生身 ${o?Math.round(o.avg):'—'} ＋ 拡張 ${implantBonus()}）· 稼いだクレジット ${(S.earned||0).toLocaleString()} CR · 本音を聞いた人 ${hn} / ${Object.keys(HONNE).length}人 · エンディング ${Object.keys(S.endings||{}).length} / 5`}
 /* ===== 中央区へ行く準備：ヒント・仲間・ソウの避難（エンディングの分岐。STORY.md の終章） ===== */
 /* サイボーグ化 70%以上の体は、中央区の大規模AIにハッキングされる。圏外にはネットが届かない。ソウは 80% */
@@ -1526,7 +1638,14 @@ function draw(t){OY=H-180;const sk=T<shakeT?(Math.random()<0.5?-1:1)*Math.round(
   if(TOPF.fight&&(F.hacked||PALLY.some(a=>a.hacked))&&Math.floor(t*2)%2){ctx.setTransform(2,0,0,2,0,0);ctx.font='bold 9px "M PLUS 1 Code",monospace';ctx.textAlign='center';ctx.fillStyle='rgba(8,10,28,.7)';ctx.fillRect(W/2-34,28,68,13);ctx.fillStyle='#ff4a5c';ctx.fillText('同期中',W/2,38);ctx.textAlign='start'}
 }
 /* 豆電球マーク（黄色く光る小さな電球） */
-function drawBulb(x,y,t){const a=0.6+0.4*Math.sin(t*4);ctx.fillStyle=`rgba(255,226,90,${0.25*a})`;ctx.fillRect(x-4,y-1,9,9);ctx.fillStyle='#ffe25a';ctx.fillRect(x-2,y,5,4);ctx.fillRect(x-1,y+4,3,1);ctx.fillStyle='#fff8d0';ctx.fillRect(x-1,y+1,1,2);ctx.fillStyle='#8a8aa0';ctx.fillRect(x-1,y+5,3,2)}
+const BULB_MAP=["...OOOOOO...","..OyyyyyyO..",".OyWWyyyyyO.",".OyWyyyyyYO.",".OyyyfffyYO.",".OyyyfyfyYO.","..OyyyyyYO..","...OyyyYO...","...OmmmmO...","...OMMMMO...","...OmmmmO...","....OOOO...."];
+let BULB_C=null;/* 2つ（ふつう・強く光る）を一度だけ作る。半ピクセルの細かさ */
+function bulbC(){if(BULB_C)return BULB_C;BULB_C=[0,1].map(hi=>{const c=document.createElement('canvas');c.width=12;c.height=12;const g=c.getContext('2d'),pal={O:'#5a3c0a',y:hi?'#ffe866':'#ffd84a',Y:'#e8a422',W:'#fffbe6',f:hi?'#fff6c0':'#ff9a2a',m:'#c4cad8',M:'#6a7088'};
+  BULB_MAP.forEach((r,y)=>[...r].forEach((ch,x)=>{if(pal[ch]){g.fillStyle=pal[ch];g.fillRect(x,y,1,1)}}));return c});return BULB_C}
+function drawBulb(x,y,t){const a=0.6+0.4*Math.sin(t*4),hi=a>0.8;
+  ctx.fillStyle=`rgba(255,226,90,${0.22*a})`;ctx.fillRect(x-4,y-1,8,6);ctx.fillRect(x-3,y-2,6,8);
+  if(hi){ctx.fillStyle='#ffe25a';ctx.fillRect(x-6,y+1.5,1.5,0.5);ctx.fillRect(x+4.5,y+1.5,1.5,0.5);ctx.fillRect(x-0.5,y-3,1,1.5);ctx.fillRect(x-4.5,y-1.5,0.5,0.5);ctx.fillRect(x-4,y-1,0.5,0.5);ctx.fillRect(x+4,y-1.5,0.5,0.5);ctx.fillRect(x+3.5,y-1,0.5,0.5)}
+  ctx.drawImage(bulbC()[hi?1:0],x-3,y,6,6)}
 const markY=n=>n.id==='poster'?n.py-8:n.id==='gate'?84:n.id==='lift'?GY-52:feetY(n)-((NPC_SPR[n.id]?NPC_SPR[n.id]().lh:16)+6);
 /* 見え方のフィルター：機械化しても画面の見え方は変えない（見づらいため v0.18 でやめた）。生身の澄みだけ、色を少し深める */
 /* 機械化 2 以上：人の上にタグを出す */
