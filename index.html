@@ -90,7 +90,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .lift-ind{font-family:var(--f-data);font-size:clamp(36px,9vw,60px);color:var(--amber);text-align:center;letter-spacing:.1em;text-shadow:0 0 14px rgba(255,181,71,.5);padding-block:30px}
 .dlg.npc-me{border-left-color:var(--muted)} .dlg.npc-me .who{color:var(--muted)}
 /* 本音：金色の縁と文字。ふだんの会話と見分けがつくように */
-.endrec{font-family:var(--f-data);font-size:12px;color:var(--muted);margin:8px 0 0;line-height:1.6}
+.endrec{font-family:var(--f-data);font-size:12px;color:var(--ink);margin:8px 0 0;line-height:1.6;background:rgba(7,6,13,.72);padding:4px 10px;display:inline-block}.endrec:empty{display:none}
 .dlg.top{top:4%;bottom:auto}
 .dlg.out{position:relative;left:auto;right:auto;bottom:auto;min-height:104px}
 .dlg.honne{border:1px solid rgba(201,160,255,.7);border-left:4px solid #ffd27a;background:rgba(28,16,38,.96);box-shadow:0 0 22px rgba(201,160,255,.35),inset 0 0 30px rgba(255,210,122,.06)}
@@ -228,7 +228,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .acts{display:flex;gap:8px}.acts[hidden]{display:none}.acts .kbtn{width:56px;font-size:17px}#kF{color:var(--cyan);border-color:rgba(62,242,224,.45)}
 .endwrap{display:grid;gap:14px;justify-items:center;padding-block:10px}
 .endcv{width:min(100%,540px);aspect-ratio:360/170;image-rendering:pixelated;background:#07060d}
-.end-t{font-family:var(--f-data);font-size:clamp(28px,7vw,44px);letter-spacing:.4em;color:var(--ink);margin:0}
+.end-t{font-family:var(--f-data);font-size:clamp(20px,6vw,44px);letter-spacing:.2em;white-space:nowrap;color:var(--ink);margin:0}
 @media (max-width:560px){.hint{display:none}}
 /* スマホ：上のバーを2段にまとめ、ゲーム画面を広くする */
 @media (max-width:600px){
@@ -545,8 +545,8 @@ const minaIn=()=>S.st&&S.st.tenkyu?(area()==='sky'||area()==='top'?'':area()):S.
 /* 天穹区では、ミナ（とソウ）が仲間としてついてくる。ソウは保安部隊を突破したあと、整備路の奥に現れる */
 /* 仲間になった人は元の場所からいなくなり、番人を倒したあと中央区ゲートの前で待つ。ソウを避難させると、圏外の村にいる */
 const npcsHere=()=>{const a=area(),st=S.st||{};
-  if(a==='top')return TOPF.fight?[ALLY.mina,...PALLY]:[];
-  let ns=AREAS[a].npcs.filter(n=>(n.id!=='mina'||minaIn()===a)&&!(n.area==='corp'&&!st.resolve)&&!(n.id==='sou'&&(n.evac?st.souPlan!=='evac':(st.sou||!st.z_z1)))&&!inParty(n.id));
+  if(a==='top')return TOPF.fight||TOPF.show?[ALLY.mina,...PALLY]:[];
+  let ns=AREAS[a].npcs.filter(n=>(n.id!=='mina'||minaIn()===a)&&!(n.area==='corp'&&!st.resolve)&&!(n.id==='sou'&&(n.evac?st.souPlan!=='evac':(st.sou||!st.z_z1)))&&!(inParty(n.id)&&n.id!=='tsugi'));
   if(a==='sky'){if(st.tenkyu)ns=[...ns,ALLY.mina];if(st.sou&&!souEvac())ns=[...ns,ALLY.sou];if(st.z_z3)ns=[...ns,...partySpots()]}return ns};
 /* 人の見え方（知覚）に使う情報 */
 const PEOPLE={haru:{nm:'ハル',sex:'f',age:'60代'},ken:{nm:'ケン',sex:'m',age:'10代'},shiro:{nm:'シロ',sex:'m',age:'40代'},jiro:{nm:'ジロウ',sex:'m',age:'70代'},take:{nm:'タケ',sex:'m',age:'10代'},yuki:{nm:'ユキ',sex:'f',age:'30代'},mina:{nm:'ミナ',sex:'f',age:'20代'},doc:{nm:'ドク・カゲロウ',sex:'m',age:'50代'},genji:{nm:'ゲンジ',sex:'m',age:'60代'},daimon:{nm:'ダイモン',sex:'m',age:'40代'},tsugi:{nm:'ツギハギ',sex:'f',age:'40代'},ray:{nm:'RAY',model:'RAY-07 ／ 運送用義体 ／ 稼働14年'}};
@@ -1240,7 +1240,7 @@ const FOE={drone:{hp:3,w:14,h:9,fly:1,sp:44,weak:[0,-5],range:150,cd:2.3},
   cyborg:{hp:8,w:12,h:18,sp:46,weak:[0,-10],range:46,cd:1.9},
   warden:{hp:70,w:40,h:54,sp:0,weak:[0,-32],range:400,cd:2.2,boss:1},
   seeker:{hp:2,w:10,h:16,sp:40,weak:[0,-14],range:0,cd:9},
-  ai:{hp:90,w:44,h:100,sp:0,weak:[0,-78],range:999,cd:2.4,boss:1}};
+  ai:{hp:60,w:44,h:100,sp:0,weak:[0,-78],range:999,cd:2.4,boss:1}};
 function spawnFoe(k,x){const d=FOE[k],c=cbt(),max=Math.round(d.hp*c.foeHp),hp=d.boss&&F.wardenLeft?Math.min(max,F.wardenLeft):max;
   F.foes.push({k,x,y:d.fly?-14:(d.boss||k==='seeker'?GY:-20),vy:0,hp,max,spr:k==='seeker'?SEEK_SPR[Math.floor(Math.random()*SEEK_SPR.length)]:null,born:T,lastU:T,open:0,dir:-1,st:'in',t:0,cd:0.6+Math.random()*0.8,hit:0,ph:Math.random()*6,burst:0})}
 const foeHurt=(f,n,weak)=>{if(f.k==='ai'&&T>=f.open){if(T>(f.blk||0)){f.blk=T+0.5;F.fx.push({k:'txt',x:f.x,y:f.y-FOE.ai.h-4,t:T,s:'予測済み',c:'#9ad0ff'});sfx('ehit')}return}f.hp-=n;f.hit=T+0.1;F.fx.push({k:'spark',x:f.x,y:f.y-(FOE[f.k].h/2),t:T,c:weak?'#ffd34a':'#ffffff'});if(weak)F.fx.push({k:'txt',x:f.x,y:f.y-FOE[f.k].h-4,t:T,s:'WEAK',c:'#ffd34a'});sfx(weak?'weak':'ehit');
@@ -1288,7 +1288,7 @@ function stepFight(dt){const st=ST(),c=cbt();
     else if(f.k==='seeker'){if(dist>6)f.x+=Math.sign(dx)*d.sp*dt;if(dist<9&&Math.abs(player.y-f.y)<14)hurtPlayer(1,f.x);continue}
     f.x=clamp(f.x,(z?z.x0:0)+6,(z?z.x1:st.len)-6);
     if(f.st==='move'){f.cd-=dt;if(f.cd<=0&&dist<d.range){f.st='wind';f.t=0;f.wind=f.k==='warden'?c.windup+0.35:c.windup;f.tx=player.x;f.ty=player.y-9;
-        if(f.k==='ai'){f.wind=c.windup+0.75;f.tx=clamp(player.x+player.vx*0.55,(z?z.x0:0)+10,f.x-30);f.unp=Math.random()<unpredChance()||T-f.lastU>=20;if(f.unp)f.lastU=T}
+        if(f.k==='ai'){f.wind=c.windup+0.75;f.tx=clamp(player.x+player.vx*0.55,(z?z.x0:0)+10,f.x-30);f.unp=Math.random()<unpredChance()||T-f.lastU>=16;if(f.unp)f.lastU=T}
         if(f.k==='warden'){f.pat=['laser','pillar','drones','laser','shot','pillar'][f.burst++%6];if(f.pat==='drones'&&F.foes.filter(o=>o.k==='drone').length>=2)f.pat='shot'}
         if(c.tell)sfx('warn')}}
     else if(f.st==='wind'){if(f.t>=f.wind){f.st='atk';f.t=0;foeAttack(f)}}
@@ -1317,7 +1317,7 @@ function foeAttack(f){const d=FOE[f.k];
   if(f.k==='drone'){const a=Math.atan2(f.ty-f.y,f.tx-f.x);F.eshots.push({x:f.x,y:f.y,vx:Math.cos(a)*115,vy:Math.sin(a)*115,life:2.6,dmg:1});sfx('eshot')}
   else if(f.k==='trooper'){f.n=0}
   else if(f.k==='cyborg'){sfx('dash')}
-  else if(f.k==='ai'){if(f.unp){f.open=T+3.5;F.fx.push({k:'txt',x:player.x,y:player.y-26,t:T,s:'予測不能',c:'#ffd34a'},{k:'txt',x:f.x,y:f.y-FOE.ai.h-4,t:T,s:'核がむき出しになった',c:'#ff9ac8'});sfx('unlock')}
+  else if(f.k==='ai'){if(f.unp){f.open=T+4;F.fx.push({k:'txt',x:player.x,y:player.y-26,t:T,s:'予測不能',c:'#ffd34a'},{k:'txt',x:f.x,y:f.y-FOE.ai.h-16,t:T,s:'核がむき出しになった',c:'#ff9ac8'});sfx('unlock')}
     else{F.beams.push({k:'pillar',x:f.tx,on:T,off:T+0.5});sfx('laser');const a=Math.atan2(player.y-12-(f.y-70),player.x-f.x);F.eshots.push({x:f.x-20,y:f.y-70,vx:Math.cos(a)*125,vy:Math.sin(a)*125,life:3,dmg:1})}}
   else if(f.k==='warden'){if(f.pat==='laser'){F.beams.push({k:'laser',x0:f.x-20,on:T,off:T+0.55});sfx('laser')}
     else if(f.pat==='pillar'){F.beams.push({k:'pillar',x:f.tx,on:T,off:T+0.45});sfx('laser')}
@@ -1327,7 +1327,7 @@ function foeAttack(f){const d=FOE[f.k];
 function stepAllies(dt){if(area()!=='sky'&&!TOPF.fight)return;const m=ALLY.mina,so=ALLY.sou,c=cbt(),near=F.foes.filter(f=>f.st!=='in').sort((a,b)=>Math.abs(a.x-player.x)-Math.abs(b.x-player.x))[0];
   const side=near?Math.sign(near.x-player.x)||player.dir:player.dir;
   const mv=(a,tx,sp)=>{const d=tx-a.x,st=clamp(d,-sp*dt,sp*dt);a.x+=st;a.mv=Math.abs(d)>3;if(a.mv){a.step+=dt;a.flip=d<0}else if(near)a.flip=near.x<a.x;else a.flip=player.x<a.x};
-  if(S.st.tenkyu){mv(m,player.x-30*side,Math.abs(player.x-30*side-m.x)>60?160:110);
+  if(S.st.tenkyu){mv(m,player.x-17*side,Math.abs(player.x-17*side-m.x)>60?160:110);
     if(F.zone&&mode==='play'){F.heal-=dt;F.amCD-=dt;F.minaCD-=dt;
       if(F.hp<=Math.ceil(c.hp/2)&&F.heal<=0){F.hp=Math.min(c.hp,F.hp+2);F.heal=c.tell||c.weak||c.assist?16:22;sfx('heal');F.fx.push({k:'txt',x:m.x,y:GY-26,t:T,s:'手当て！',c:'#7dffb0'},{k:'heal',x:player.x,y:player.y,t:T})}
       if(F.ammo<=4&&F.amCD<=0){F.ammo=AMMO_MAX;F.amCD=6;sfx('ammo');F.fx.push({k:'txt',x:m.x,y:GY-26,t:T,s:'弾！',c:'#ffd34a'})}
@@ -1337,7 +1337,7 @@ function stepAllies(dt){if(area()!=='sky'&&!TOPF.fight)return;const m=ALLY.mina,
   if(S.st.sou&&!souEvac()&&area()==='sky'){if(near&&F.zone){const tx=near.x-18*Math.sign(near.x-so.x||1);mv(so,FOE[near.k].fly?player.x+20*side:tx,120);F.souCD-=dt;
       if(F.souCD<=0&&mode==='play'){if(!FOE[near.k].fly&&Math.abs(near.x-so.x)<28){foeHurt(near,2,false);F.fx.push({k:'slash',x:so.x+(near.x>so.x?8:-8),y:GY-10,t:T,dir:near.x>so.x?1:-1});F.souCD=1.1;sfx('slash')}
         else if(FOE[near.k].fly||Math.abs(near.x-so.x)<160){const a=Math.atan2(near.y-FOE[near.k].h/2-(GY-10),near.x-so.x);F.shots.push({x:so.x,y:GY-10,vx:Math.cos(a)*240,vy:Math.sin(a)*240,life:1,by:'sou',dmg:1});F.souCD=1.4;sfx('shot')}}}
-    else mv(so,player.x+22*player.dir,Math.abs(player.x+22*player.dir-so.x)>60?160:110)}}
+    else mv(so,player.x+16*player.dir,Math.abs(player.x+16*player.dir-so.x)>60?160:110)}}
 /* 戦いの絵 */
 function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
   for(const b of F.beams){const on=T>=b.on;if(b.k==='laser'){const x1=Math.round(b.x0-camX);ctx.fillStyle=`rgba(255,61,90,${on?0.45:0.2})`;ctx.fillRect(0,GY-7,x1,7);ctx.fillStyle='#ffd6de';ctx.fillRect(0,GY-4,x1,2)}
@@ -1411,7 +1411,7 @@ async function endingSeq(){const ai=STAGES.top.ai;inEnding=true;topReset();mode=
   await sayP(END_TEXT.d);mode='cut';await waitP(600);
   $('#fade').classList.add('on');await waitP(1200);endWalk=false;endPanel();$('#fade').classList.remove('on')}
 /* 7：最後の絵と手配書。END1・2＝手配書3枚に赤いバツ（END2 はソウに「保護済み」）。END3＝施術室の前の列。END4＝焚き火、手配書が風で飛ぶ。END5＝焚き火に仲間、手配書をくべる */
-function endPanel(no=1){inEnding=false;const happy=no>=4;endQuiet=!happy;S.st={...S.st,top:1,end:1};S.endings={...(S.endings||{}),[no]:1};S.area='sky';player.x=1840;S.pos={...(S.pos||{}),sky:{sx:1840}};save();
+function endPanel(no=1){inEnding=false;TOPF.show=false;F.foes=[];const happy=no>=4;endQuiet=!happy;S.st={...S.st,top:1,end:1};S.endings={...(S.endings||{}),[no]:1};S.area='sky';player.x=1840;S.pos={...(S.pos||{}),sky:{sx:1840}};save();
   try{if(happy)mood('out');else SND&&SND.stop()}catch(e){}
   const CW=360,CH=200,P=[['riku','リク'],['mina','ミナ'],['sou','ソウ']],party=[...(S.party||[])];
   openPanel(`<div class="endwrap"><canvas class="endcv" id="ecv" width="${CW}" height="${CH}" role="img" aria-label="${esc(END_ALT[no])}"></canvas>
@@ -1560,7 +1560,7 @@ const partySpots=()=>(S.party||[]).map((id,i)=>({id,x:1700+i*24,z:i%2?4:-4,party
 const souEvac=()=>!!(S.st&&S.st.souPlan==='evac');
 function souChoice(){talk([L('sou',SOU_PLAN.ask,[{label:'一緒に中央区へ行く',fn:()=>{S.st={...S.st,souPlan:'with'};save();talk(SOU_PLAN.with.map(([w,t])=>L(w,t)))}},{label:'圏外に避難してもらう',fn:souEvacTry},{label:'やめておく'}])])}
 function souEvacTry(){if(!hintN())return talk(SOU_PLAN.refuse.map(([w,t])=>L(w,t)));
-  talk(SOU_PLAN.evac.map(([w,t])=>L(w,t)),()=>{S.st={...S.st,souPlan:'evac'};save();toast('ソウは鋼組の裏ルートで、圏外の村へ下りた',4600)})}
+  talk(SOU_PLAN.evac.map(([w,t])=>L(w,t)),()=>{S.st={...S.st,souPlan:'evac'};save();toast('ソウは鋼組の裏ルートで、圏外の村へ下りた',3000)})}
 function souRecall(){S.st={...S.st,souPlan:'with'};save();placeAllies();talk(SOU_PLAN.recall.map(([w,t])=>L(w,t)))}
 /* エンディングの番号（中央区ゲートを通るときに決まる） */
 function endingNo(){const ps=(S.party||[]).map(id=>PARTY[id].cy),hi=ps.some(c=>c>=HACK_AT),lo=ps.filter(c=>c<HACK_AT).length,r=rikCy()>=HACK_AT;
@@ -1568,7 +1568,7 @@ function endingNo(){const ps=(S.party||[]).map(id=>PARTY[id].cy),hi=ps.some(c=>c
 const END_NAMES={1:'捕縛',2:'ごめん',3:'終わらない列',4:'予測の外',5:'共に'};
 /* ===== 中央区のエンディング 2〜5（END1 は endingSeq の今の終章） ===== */
 /* TOPF.fight：中央区で戦っている（END3＝終わらない列、END4・5＝大規模AIとの戦い） */
-const TOPF={fight:false,no:0,t0:0,hacked:false,spawnT:0,dim:0};
+const TOPF={show:false,fight:false,no:0,t0:0,hacked:false,spawnT:0,dim:0};
 let shakeT=0;/* 画面の揺れ（END2） */
 /* 仲間（中央区で一緒に戦う）。hacked はハッキングされて止まった */
 let PALLY=[];
@@ -1578,7 +1578,7 @@ function unpredChance(){const f=flesh(),base=0.1+0.2*clamp((f-31)/69,0,1),lo=TOP
 function topZone(){const st=STAGES.top;return{id:'top',top:1,x0:30,x1:st.ai+30,boss:TOPF.no!==3,end3:TOPF.no===3,waves:TOPF.no===3?[]:[[{k:'ai',x:st.ai}]]}}
 function startTopFight(){TOPF.fight=true;TOPF.t0=T;TOPF.hacked=false;TOPF.spawnT=T+0.5;STAGES.top.endX=STAGES.top.ai-46;resetFight(true);makePartyAllies();placeAllies();ALLY.mina.x=player.x-26;
   const z=topZone();F.zone=z;F.wave=0;F.waveT=0;sfx('lock');sfx('alarm');mood(z.end3?'fight':'boss');mode='play';hud()}
-function stopTopFight(){TOPF.fight=false;F.zone=null;F.foes=[];F.eshots=[];F.beams=[];STAGES.top.endX=450}
+function stopTopFight(keep){TOPF.fight=false;TOPF.show=!!keep;F.zone=null;if(!keep)F.foes=[];F.eshots=[];F.beams=[];F.shots=[];STAGES.top.endX=450}
 /* 1コマぶん（END3 の列と、ハッキング） */
 function stepTop2(dt){if(!TOPF.fight||mode!=='play')return;const z=F.zone;if(!z)return;
   if(z.end3){
@@ -1591,9 +1591,9 @@ function stepTop2(dt){if(!TOPF.fight||mode!=='play')return;const z=F.zone;if(!z)
 function topFallen(){if(TOPF.no===3)return end3Capture();
   mode='fade';$('#fade').classList.add('on');setTimeout(()=>{player.x=70;player.y=GY;player.vx=player.vy=0;player.dir=1;F.wardenLeft=null;startTopFight();camX=0;
     $('#fade').classList.remove('on');setTimeout(()=>{talk(pick3('fallen',FALLEN).map(([w,t])=>L(w,t)))},380)},600)}
-async function end3Capture(){if(!TOPF.fight)return;stopTopFight();mode='cut';keys.l=keys.r=keys.fire=false;F.hacked=false;
+async function end3Capture(){if(!TOPF.fight)return;stopTopFight(true);mode='cut';keys.l=keys.r=keys.fire=false;F.hacked=false;
   await sayP(END3_TEXT.d);mode='cut';$('#fade').classList.add('on');await waitP(1200);endPanel(3);$('#fade').classList.remove('on')}
-async function topWin(){stopTopFight();mode='cut';keys.l=keys.r=keys.fire=false;mood('top');
+async function topWin(){stopTopFight(true);mode='cut';keys.l=keys.r=keys.fire=false;mood('top');
   await sayP(END45_TEXT.win);mode='cut';for(let i=0;i<20;i++){TOPF.dim=i/20;await waitP(80)}
   if(TOPF.no===5)await sayP(PALLY.map(a=>L(a.id,END45_TEXT.party[a.id])));
   await sayP(END45_TEXT.mono);mode='cut';$('#fade').classList.add('on');await waitP(1200);TOPF.dim=0;endPanel(TOPF.no);$('#fade').classList.remove('on')}
@@ -1617,7 +1617,7 @@ function draw(t){OY=H-180;const sk=T<shakeT?(Math.random()<0.5?-1:1)*Math.round(
   if(area()==='lower')drawLowerBG(t);else if(area()==='corp')drawCorpBG(t);else if(area()==='sky'){drawSkyBG(t);drawSkyNear(t)}else if(area()==='top')drawTopBG(t);else drawOutBG(t);
   if(actArea())drawPlats(t);
   drawPeopleAndProps(t);
-  if(area()==='sky'||TOPF.fight)drawFight(t);
+  if(area()==='sky'||TOPF.fight||TOPF.show)drawFight(t);
   if(area()==='lower')drawCeiling(t);
   lighting(t);
   if(area()==='top'&&TOPF.dim>0){ctx.setTransform(2,0,0,2,0,0);ctx.fillStyle=`rgba(4,3,10,${TOPF.dim*0.85})`;ctx.fillRect(0,0,W,H)}
@@ -1629,7 +1629,7 @@ function draw(t){OY=H-180;const sk=T<shakeT?(Math.random()<0.5?-1:1)*Math.round(
   /* 目的で話す相手には赤い印（！） */
   if(mode==='play'||mode==='dialog'){const tg=goalTargets();for(const n of npcsHere()){if(!tg.includes(n.id))continue;const sx=Math.round(n.x-camX);if(sx<-8||sx>W+8)continue;const y=markY(n)-9+Math.round(Math.sin(t*4)*1.5);
     ctx.fillStyle='rgba(255,74,92,.25)';ctx.fillRect(sx-3,y-1,7,9);ctx.fillStyle='#ff4a5c';ctx.fillRect(sx-1,y,3,5);ctx.fillRect(sx-1,y+6,3,2);ctx.fillStyle='#ffd0d6';ctx.fillRect(sx,y+1,1,3)}}
-  const n=near();if(n&&mode==='play'){const sx=Math.round(n.x-camX),bob=Math.round(Math.sin(t*5)*1.5),y=markY(n)+bob;
+  const n=!F.zone&&near();if(n&&mode==='play'){const sx=Math.round(n.x-camX),bob=Math.round(Math.sin(t*5)*1.5),y=markY(n)+bob;
     ctx.fillStyle='#3ef2e0';ctx.fillRect(sx-3,y,7,1);ctx.fillRect(sx-2,y+1,5,1);ctx.fillRect(sx-1,y+2,3,1);ctx.fillRect(sx,y+3,1,1)}
   /* 豆電球：ヒントを持っている住人（聞いたら消える） */
   if(mode==='play'||mode==='dialog'){ctx.setTransform(2,0,0,2,0,2*OY);const tg=goalTargets();for(const n of npcsHere()){if(!hintReady(n.id))continue;const sx=Math.round(n.x-camX)+(tg.includes(n.id)?7:0);if(sx<-8||sx>W+8)continue;drawBulb(sx,markY(n)-10+Math.round(Math.sin(t*3)*1.5),t)}}
@@ -1653,7 +1653,8 @@ let tagsHTML='';
 /* 澄み：生身のまま層を進み、本人の実力が伸びるほど上がる（0〜3） */
 function clarityLv(){const f=flesh();if(f<40)return 0;const o=overall(S.cur),b=overall(S.base),grow=o&&b?o.avg-b.avg:0;
   const v=Math.min(3,(S.reached||['out']).length-1+(grow>=5?1:0));return f>=70?v:Math.min(1,v)}
-function near(){let best=null,bd=22;for(const n of npcsHere()){const d=Math.abs(n.x-player.x);if(d<bd){bd=d;best=n}}return best}
+/* ついてくる仲間（ミナ・ソウ）より、ほかの人やゲートを先に選ぶ（仲間は近くにいるので、ゲートの前をふさがないように） */
+function near(){let best=null,bd=22,ab=null,ad=22;for(const n of npcsHere()){const d=Math.abs(n.x-player.x);if(n.ally){if(d<ad){ad=d;ab=n}}else if(d<bd){bd=d;best=n}}return best||ab}
 
 let mode='title',last=0,titlePan=0,stepIdx=0,lastBright=-1;
 /* 沈殿街のしずく（画面に対して落ちる） */
@@ -1705,7 +1706,7 @@ function whoName(id){return WHO[id]}
 /* 文章の出し分け：{n:ふつう, c:澄み, m:機械} */
 const pickText=x=>typeof x==='string'?x:(docMood()>=2&&x.m)?x.m:(clarityLv()>=1&&x.c)?x.c:x.n;
 function talk(lines,onEnd){mode='dialog';D={lines,i:0,onEnd,typing:false,full:''};show()}
-function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who+(L.honne?' honne':'')+(box.parentNode===$('#frame')?(area()==='top'?' top':''):' out');D.at=performance.now();if(L.se)sfx(L.se);
+function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who+(L.honne?' honne':'')+(box.parentNode===$('#frame')?(area()==='top'||(area()==='sky'&&player.x>1640)?' top':''):' out');D.at=performance.now();if(L.se)sfx(L.se);
   $('#dlgWho').textContent=whoName(L.who);$('#dlgCh').innerHTML='';$('#dlgMore').hidden=true;
   D.full=pickText(L.text);D.n=0;D.typing=true;clearInterval(typeT);const el=$('#dlgTxt');el.textContent='';
   typeT=setInterval(()=>{D.n+=1;el.textContent=D.full.slice(0,D.n);if(D.n%2===0&&/[^\s…・。、]/.test(D.full[D.n-1]||''))sfx('text');if(D.n>=D.full.length)doneTyping()},L.honne?48:26)}
@@ -1980,7 +1981,7 @@ function talkMina(){const o=overall(S.cur);
   if(!o){S.mina=Math.max(S.mina,1);save();return talk([L('mina','リクだっけ。畑のとこの子。……東京を見てる顔してる。'),L('mina','ここは圏外。あの光は、ここまで届かないよ。'),L('mina','東京に入りたいなら、まず脳を測ってもらいな。この先の闇医者、ドク・カゲロウのとこ。'),L('mina','スペックがわからない奴には、仕事も回せないからさ。')])}
   let ls;
   if(area()==='sky')return talkMinaSky();
-  if(S.st.tenkyu)return talk([L('mina',pick3('mina_back',['上で、お兄ちゃんが待ってる。……準備ができたら、昇降機で戻ろう。','稼いでおくなら、今のうちだよ。上じゃ、ゆっくりできないから。','あたしは平気。……あんたこそ、体、大丈夫？'])),L('mina','どうする？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}])]);
+  if(S.st.tenkyu)return talk([L('mina',pick3('mina_back',[souEvac()?'お兄ちゃん、村で静かにしてる。……あたしたちが、てっぺんを見てこなきゃ。':'上で、お兄ちゃんが待ってる。……準備ができたら、昇降機で戻ろう。','稼いでおくなら、今のうちだよ。上じゃ、ゆっくりできないから。','あたしは平気。……あんたこそ、体、大丈夫？'])),L('mina','どうする？',[{label:'仕事をもらう',fn:jobBoard},{label:'やめておく'}])]);
   if(area()==='lower')return talkMinaLower();
   if(area()==='corp')return talkMinaCorp();
   if(S.passed){ls=[L('mina','ゲート、通ったんだってね。……やるじゃん。'),L('mina','……ねえ。次にゲートをくぐるとき、声かけて。話があるんだ。',[...gateChoice(),{label:'仕事をもらう',fn:jobBoard},{label:'わかった'}])];return talk(ls)}
