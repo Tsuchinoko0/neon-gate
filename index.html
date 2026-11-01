@@ -405,7 +405,19 @@ function hackReset(){clearInterval(HACK.timer);HACK.timer=0;document.querySelect
 /* 「従う」に化けたボタンは、押しても何も起きない */
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-hk]');if(b){e.preventDefault();e.stopImmediatePropagation()}},true);
 /* タブのアイコンになる、AIの目（32×32）。ドット絵係が整える */
-function drawAIEyeIcon(g){g.fillStyle='#07060d';g.fillRect(0,0,32,32);g.fillStyle='#3a1020';g.fillRect(4,10,24,12);g.fillStyle='#ff3b4e';g.fillRect(6,12,20,8);g.fillStyle='#ff9ac8';g.fillRect(12,13,8,6);g.fillStyle='#fff0f4';g.fillRect(14,14,4,4);g.fillStyle='#38e8ff';g.fillRect(2,15,2,2);g.fillRect(28,15,2,2)}
+function drawAIEyeIcon(g){g.clearRect(0,0,32,32);
+  /* 16×16 の升目で形を決めて2倍で描く（タブで半分に縮んでもくずれない）。白い殻の球に、四角い枠の赤い目（中央区の大規模AIと同じ顔つき） */
+  for(let y=0;y<16;y++)for(let x=0;x<16;x++){const dx=x-7.5,dy=y-7.5,d=Math.hypot(dx,dy),m=Math.max(Math.abs(dx),Math.abs(dy)),c=Math.abs(dx)+Math.abs(dy);if(d>8.1)continue;
+    let col=d>6.9?'#2a1420':dx+dy<-5?'#fffaf0':dx+dy>4?'#c8b898':'#f4ecdc';
+    if(m<=5&&c<=8)col='#2a0c18';
+    if(m<=4&&c<=6)col=dx+dy>3?'#c0183a':'#ff3048';
+    if(m<=2)col='#ff9ab8';
+    if(m<=1)col='#fff0f4';
+    g.fillStyle=col;g.fillRect(x*2,y*2,2,2)}
+  /* 32×32 のときだけ見える細かいところ：殻の継ぎ目、赤い目のつや、芯の白 */
+  g.fillStyle='#c8b898';g.fillRect(15,2,2,4);g.fillRect(15,26,2,4);g.fillRect(2,15,4,2);g.fillRect(26,15,4,2);
+  g.fillStyle='#ffd0dc';g.fillRect(9,10,3,1);g.fillRect(9,11,1,2);
+  g.fillStyle='#ffffff';g.fillRect(15,15,2,2)}
 /* ===== 音（sound.js） ===== */
 const SND=window.NGSound||null;
 const sfx=n=>{try{SND&&SND.se(n)}catch(e){}};
