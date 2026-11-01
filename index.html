@@ -372,7 +372,7 @@ function habit(){const h=S.habit;if(h&&h.tab&&h.glob&&h.drone&&h.fight&&h.choice
 function habitLearn(d,from,src){if(!d)return;const h=habit(),k=clamp(Math.round(d),-2,2);from=clamp(Math.round(from),0,4);
   h.tab[h.last+2][from][k+2]++;h.glob[k+2]++;h.last=k;if(h[src]){h[src].n++;h[src].g[k+2]++}}
 function habitChoice(i,len){const h=habit();h.choice.n++;if(i===0)h.choice.top++;if(len>1&&i===len-1)h.choice.last++}
-function habitRead(ms){if(!(ms>0&&ms<20000))return;const h=habit();h.read.n++;h.read.ms+=ms}
+function habitRead(ms){if(!(ms>0&&ms<20000))return;const h=habit();h.read.n++;h.read.ms+=Math.round(ms)}
 /* いちばん多い逃げ方（例：「左へ1列」）と、その割合 */
 const HB_LAB=['左へ2列','左へ1列','','右へ1列','右へ2列'];
 function habitTop(g){let bi=-1,bv=0,tot=0;g.forEach((v,i)=>{if(i===2)return;tot+=v;if(v>bv){bv=v;bi=i}});return{lab:bi<0?'':HB_LAB[bi],pct:tot?Math.round(bv/tot*100):0,n:tot}}
@@ -1269,7 +1269,7 @@ function fallen(){if(F.zone&&F.zone.top)return topFallen();const z=F.zone,w=F.fo
     $('#fade').classList.remove('on');setTimeout(()=>{mode='play';talk(pick3('fallen',FALLEN).map(([w,t])=>L(w,t)))},380)},600)}
 /* 撃つ・跳ぶ・回避 */
 function fire(){if(!armed()||mode!=='play'||T<F.fireCD||F.hacked)return;if(!F.zone){if(T>(F.noFireT||0)){F.noFireT=T+3;toast('敵がいない所では撃たない',1600)}return}if(F.ammo<=0){F.fireCD=T+0.3;sfx('empty');return}
-  F.ammo--;F.fireCD=T+0.2;F.muzzle=T+0.06;F.shots.push({x:player.x+player.dir*7,y:player.y-9,vx:player.dir*270,vy:0,life:0.9,by:'me',dmg:1});sfx('shot')}
+  F.ammo--;F.fireCD=T+0.2;F.muzzle=T+0.06;F.shots.push({x:player.x+player.dir*7,y:player.y-9,vx:player.dir*270,vy:0,life:TOPF.fight?1.8:0.9,by:'me',dmg:1});sfx('shot')}
 function jump(){if(mode!=='play'||!actArea()||!player.onGround||F.hacked)return;player.vy=-PHYS.jump;player.onGround=false;sfx('jump');if(F.zone)habit().fight.jump++}
 function dodge(){if(!armed()||mode!=='play'||T<F.dodgeCD||F.hacked)return;const c=cbt();F.dodgeT=T+c.dodgeInv;F.dodgeCD=T+c.dodgeCD;sfx('dodge');habit().fight.dodge++;F.fx.push({k:'ghost',x:player.x,y:player.y,t:T,dir:player.dir})}
 /* 区画：入ると封鎖され、敵の波をすべて倒すと開く。条件（need）がそろっていない区画の手前は、閉じている */
@@ -1321,7 +1321,7 @@ function stepFight(dt){const st=ST(),c=cbt();
     for(const f of F.foes){if(f.dead||f.st==='in')continue;const d=FOE[f.k],w=weakAt(f);
       if(Math.hypot(s.x-w.x,s.y-w.y)<=c.weakR+1){foeHurt(f,s.dmg*3,true);s.life=0;break}
       if(Math.abs(s.x-f.x)<d.w/2&&s.y>f.y-d.h&&s.y<f.y){foeHurt(f,s.dmg,false);s.life=0;break}}}
-  F.shots=F.shots.filter(s=>s.life>0&&s.x>camX-20&&s.x<camX+W+20);
+  F.shots=F.shots.filter(s=>s.life>0&&s.x>camX-20&&(s.x<camX+W+20||(TOPF.fight&&s.x<STAGES.top.ai+40)));
   for(const s of F.eshots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;if(playerHit(s.x,s.y)){hurtPlayer(s.dmg,s.x-s.vx);s.life=0}}
   F.eshots=F.eshots.filter(s=>s.life>0);
   stepAllies(dt);
@@ -1383,7 +1383,7 @@ function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
   for(const z of ST().zones||[]){const act=F.zone===z,closed=!zoneDone(z)&&!zoneNeed(z);if(!act&&!closed)continue;
     for(const x of act?[z.x0,z.x1]:[z.x0]){const sx=Math.round(x-camX);if(sx<-6||sx>W+6)continue;ctx.fillStyle='rgba(255,61,90,.18)';ctx.fillRect(sx-4,GY-70,8,70);ctx.fillStyle=`rgba(255,90,120,${0.55+0.25*Math.sin(t*9)})`;for(let y=GY-68;y<GY;y+=4)ctx.fillRect(sx-1,y,2,2);ctx.fillStyle='#3a3a50';ctx.fillRect(sx-3,GY-72,6,3)}}}
 /* 体力・弾・番人の体力（画面の上） */
-function drawFightHud(t){if(!armed())return;if(TOPF.fight&&TOPF.no>=4){drawAIBrain();const e=F.fx.filter(e=>e.long).pop();if(e)drawAISay(e)}ctx.setTransform(2,0,0,2,0,0);const c=cbt();ctx.fillStyle='rgba(8,10,28,.42)';ctx.fillRect(2,3,Math.max(78,c.hp*8+4),21);
+function drawFightHud(t){if(!armed())return;if(TOPF.fight&&TOPF.no>=4){drawAIBrain();drawCoreArrow(t);const e=F.fx.filter(e=>e.long).pop();if(e)drawAISay(e)}ctx.setTransform(2,0,0,2,0,0);const c=cbt();ctx.fillStyle='rgba(8,10,28,.42)';ctx.fillRect(2,3,Math.max(78,c.hp*8+4),21);
   for(let i=0;i<c.hp;i++){const x=6+i*8,y=6,on=i<F.hp;ctx.fillStyle=on?'#ff3d6b':'rgba(255,255,255,.18)';ctx.fillRect(x,y,2,2);ctx.fillRect(x+3,y,2,2);ctx.fillRect(x-1,y+1,7,2);ctx.fillRect(x,y+3,5,1);ctx.fillRect(x+1,y+4,3,1);ctx.fillRect(x+2,y+5,1,1)}
   ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(5,15,50,4);ctx.fillStyle=F.ammo<=4?'#ffb547':'#3ef2e0';ctx.fillRect(6,16,Math.round(48*F.ammo/AMMO_MAX),2);
   ctx.font='7px "M PLUS 1 Code",monospace';ctx.fillStyle='rgba(10,12,30,.75)';ctx.fillText(`弾 ${F.ammo}`,59,21);ctx.fillStyle='#e8f0ff';ctx.fillText(`弾 ${F.ammo}`,58,20);
@@ -1635,10 +1635,14 @@ function drawAIBrain(){if(!AIB.glob)return;ctx.save();ctx.setTransform(2,0,0,2,0
     ctx.fillStyle='#2c2550';ctx.fillRect(gx,y+2,gw,3);ctx.fillStyle=p>0.45?'#ff3b4e':'#38e8ff';ctx.fillRect(gx,y+2,Math.round(gw*p),3);
     ctx.textAlign='right';ctx.fillStyle=top?'#ffd0d6':'#958cc0';ctx.fillText(Math.round(p*100)+'%',bx+bw-3,y+6);ctx.textAlign='start';k++}
   const ry=by+13+rh*4;ctx.fillStyle='rgba(56,232,255,.2)';ctx.fillRect(bx+3,ry,bw-6,1);
-  if(!tot){ctx.fillStyle=Math.sin(T*6)>0?'#38e8ff':'#1c8fa0';ctx.fillText('学習中…',lx,by+12+rh*2+2)}
-  ctx.fillStyle='#ff4fa8';ctx.fillText('的中率',bx+4,ry+(sm?10:11));ctx.font=`bold ${sm?7:8}px ${fn}`;ctx.textAlign='right';ctx.fillText(aiRate().toFixed(1)+'%',bx+bw-3,ry+(sm?10:11));ctx.textAlign='start';
+  if(!tot){ctx.fillStyle=Math.sin(T*6)>0?'#38e8ff':'#1c8fa0';ctx.fillText('学習中…',bx+4,ry+(sm?10:11))}else{ctx.fillStyle='#ff4fa8';ctx.fillText('的中率',bx+4,ry+(sm?10:11))}ctx.fillStyle='#ff4fa8';ctx.font=`bold ${sm?7:8}px ${fn}`;ctx.textAlign='right';ctx.fillText(aiRate().toFixed(1)+'%',bx+bw-3,ry+(sm?10:11));ctx.textAlign='start';
   if(!sm){ctx.font=`5px ${fn}`;ctx.fillStyle='#958cc0';ctx.fillText(`${AIB.hits}/${AIB.turns}`,bx+28,ry+11)}
   ctx.restore()}
+/* 核がむき出しの間：残り時間を出し、中央AIが画面の外なら右のはしに方向を出す（リクのそばでも分かるように） */
+function drawCoreArrow(t){const f=F.foes.find(f=>f.k==='ai');if(!f||T>=f.open)return;ctx.save();ctx.setTransform(2,0,0,2,0,2*OY);const sx=f.x-camX,left=Math.max(0,f.open-T);
+  const msg=`核がむき出し ${left.toFixed(1)}秒 ── 撃て`;ctx.font='bold 7px "M PLUS 1 Code",monospace';ctx.textAlign='center';const w=ctx.measureText(msg).width;ctx.fillStyle='rgba(7,6,13,.7)';ctx.fillRect(Math.round(W/2-w/2-3),GY-58,Math.round(w+6),10);ctx.fillStyle=Math.sin(t*12)>0?'#ffd34a':'#ff9ac8';ctx.fillText(msg,W/2,GY-50);
+  if(sx>W-6){const y=GY-78,b=Math.sin(t*10)>0;ctx.fillStyle=b?'#ffd34a':'#ff4fa8';for(let i=0;i<5;i++)ctx.fillRect(W-12+i,y-4+i,1,9-i*2);ctx.fillRect(W-22,y-1,10,2);ctx.font='6px "M PLUS 1 Code",monospace';ctx.textAlign='right';ctx.fillText('核',W-24,y+2)}
+  ctx.textAlign='start';ctx.restore()}
 /* 中央AIの長いセリフ：画面の下に字幕。少しずつ打ち出す */
 function drawAISay(e){const dur=2.6,k=T-e.t,a=Math.min(1,k/0.15,(dur-k)/0.35);if(a<=0)return;ctx.save();ctx.setTransform(2,0,0,2,0,0);ctx.globalAlpha=a;
   const fn='"M PLUS 1 Code",monospace';ctx.font=`7px ${fn}`;const mw=W-16,ls=[''];
@@ -1700,8 +1704,8 @@ let shakeT=0;/* 画面の揺れ（END2） */
 let PALLY=[];
 function makePartyAllies(){PALLY=(S.party||[]).map((id,i)=>({id,x:player.x-40-i*14,z:i%2?5:-5,ally:1,flip:false,mv:0,step:0,cd:1+i*0.4,hacked:false}))}
 /* 大規模AI：攻撃の前に、リクの動きを予測した印を出す。生身は、ときどき予測の外に動ける（「予測不能」→核がむき出し） */
-function topZone(){const st=STAGES.top;return{id:'top',top:1,x0:30,x1:st.ai+30,boss:TOPF.no!==3,end3:TOPF.no===3,waves:TOPF.no===3?[]:[[{k:'ai',x:st.ai}]]}}
-function startTopFight(){if(TOPF.no>=4&&!AIB.tab)aiBrainReset();TOPF.fight=true;TOPF.t0=T;TOPF.hacked=false;TOPF.spawnT=T+0.5;STAGES.top.endX=STAGES.top.ai-46;resetFight(true);makePartyAllies();placeAllies();ALLY.mina.x=player.x-26;
+function topZone(){const st=STAGES.top;return{id:'top',top:1,x0:TOPF.no>=4?st.ai-260:30,x1:st.ai+30,boss:TOPF.no!==3,end3:TOPF.no===3,waves:TOPF.no===3?[]:[[{k:'ai',x:st.ai}]]}}
+function startTopFight(){if(TOPF.no>=4&&!AIB.tab)aiBrainReset();if(TOPF.no>=4){player.x=STAGES.top.ai-230;player.vx=0}TOPF.fight=true;TOPF.t0=T;TOPF.hacked=false;TOPF.spawnT=T+0.5;STAGES.top.endX=STAGES.top.ai-46;resetFight(true);makePartyAllies();placeAllies();ALLY.mina.x=player.x-26;
   const z=topZone();F.zone=z;F.wave=0;F.waveT=0;sfx('lock');sfx('alarm');mood(z.end3?'fight':'boss');mode='play';hud()}
 function stopTopFight(keep){TOPF.fight=false;TOPF.show=!!keep;F.zone=null;if(!keep)F.foes=[];F.eshots=[];F.beams=[];F.shots=[];STAGES.top.endX=450}
 /* 1コマぶん（END3 の列と、ハッキング） */
@@ -1800,7 +1804,7 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;T=
   if(area()==='top'&&mode!=='panel')stepTop(dt);
   if(mode==='play'){const st=ST(),cm=CAMMAX_OF(area());stepPlayer(dt,st);
     /* 主人公の位置を先に丸めて、カメラと描く位置をそろえる（ぶれ防止） */
-    {const bs=F.zone&&F.zone.boss,w=bs&&F.foes.find(f=>FOE[f.k].boss);let cx=Math.round(player.x)-Math.round(W*(bs?0.22:0.42));if(w)cx=Math.min(Math.round(player.x)-14,Math.max(cx,Math.round(w.x)+28-W));camX=clamp(cx,0,cm)}
+    {const bs=F.zone&&F.zone.boss,w=bs&&F.foes.find(f=>FOE[f.k].boss);let cx=Math.round(player.x)-Math.round(W*(bs?0.22:0.42));if(w)cx=Math.min(Math.round(player.x)-(w.k==='ai'?Math.max(74,Math.round(W*0.42)):14),Math.max(cx,Math.round(w.x)+28-W));camX=clamp(cx,0,cm)}
     /* 右（ゲート）へ進むほど BGM が明るい */
     const pr=camX/Math.max(1,cm),br=Math.round((area()==='sky'?0.75+0.25*pr:area()==='top'?1:area()==='corp'?0.6+0.3*pr:area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='cut'){const fx=camT?camT.x:player.x,tx=clamp(Math.round(fx)-Math.round(W*(camT?0.5:0.42)),0,CAMMAX_OF(area()));camX=Math.round(camX+(tx-camX)*Math.min(1,dt*3))}
