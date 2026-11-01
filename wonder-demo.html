@@ -1,0 +1,298 @@
+<title>NEON GATE 新機能</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+1+Code:wght@400;600&display=swap">
+<style>
+/* Layout: 題字 → 3つのタブ → 640×360 のゲーム画面 → 操作と説明。NEON GATE と同じ夜のネオン色の単一ダークテーマ */
+:root{
+  --void:#07060d;--panel:#100e1c;--panel2:#1a1630;--line:#2c2550;
+  --ink:#f1ecff;--muted:#958cc0;--pink:#ff4fa8;--cyan:#38e8ff;--gold:#ffd34a;--red:#ff3b4e;
+  --f-dot:"DotGothic16","M PLUS 1 Code",monospace;--f-data:"M PLUS 1 Code",Consolas,monospace;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{background:var(--void);color:var(--ink)}
+body{font-family:var(--f-dot);font-size:15px;line-height:1.65;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 32px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+h1{margin:0;font-weight:400;font-size:clamp(26px,6vw,40px);letter-spacing:.12em;color:#fff;text-shadow:0 0 12px var(--pink),0 0 2px #fff}
+.sub{margin:0;color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{background:var(--panel);border:1px solid var(--line);padding:6px 14px;border-radius:6px;font-size:14px}
+.tab[aria-selected=true]{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 12px rgba(56,232,255,.18) inset}
+.stage{position:relative;width:100%;aspect-ratio:16/9;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#000}
+canvas.main{display:block;width:100%;height:100%;image-rendering:pixelated;touch-action:none}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{background:var(--panel);border:1px solid var(--line);padding:6px 14px;border-radius:999px;font-size:13px}
+.btn:hover{border-color:var(--pink)}
+.btn.on{border-color:var(--gold);color:var(--gold)}
+.big{width:64px;height:52px;border-radius:8px;font-size:18px;background:var(--panel);border:1px solid var(--line);touch-action:none;user-select:none;-webkit-user-select:none}
+.big:active{background:var(--panel2)}
+.big.fire{border-color:var(--gold);color:var(--gold)}
+.note{margin:0;color:var(--muted);font-size:13px;max-width:70ch}
+.note b{color:var(--ink);font-weight:400}
+.field{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.field input[type=text]{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 8px;width:9em;color:var(--ink)}
+.hint{font-family:var(--f-data);font-size:12px;color:var(--muted)}
+video{display:none}
+@media (min-width:900px) and (hover:hover){.touch{display:none}}
+</style>
+
+<div class="wrap">
+  <h1>NEON GATE</h1>
+  <p class="sub">新しい3つの仕組みの試作。どれも、そのまま本編に入れられる。</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="ai" type="button">学習するAI</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="poster" type="button">あなたの手配書</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="alley" type="button">濡れた路地</button>
+  </div>
+  <div class="stage"><canvas class="main" id="cv" width="320" height="180" aria-label="ゲーム画面"></canvas></div>
+
+  <section id="p-ai">
+    <div class="row">
+      <div class="row touch">
+        <button class="big" id="bL" type="button" aria-label="左へ">◀</button>
+        <button class="big" id="bR" type="button" aria-label="右へ">▶</button>
+        <button class="big fire" id="bF" type="button" aria-label="撃つ">撃</button>
+      </div>
+      <button class="btn" id="voice" type="button">AIの声：切</button>
+      <button class="btn" id="aiReset" type="button">はじめから</button>
+      <span class="hint">← → で列を移る、X か Space で撃つ</span>
+    </div>
+    <p class="note">中央AIは、あなたが<b>どちらへ逃げるか</b>を1回ごとに覚える。赤い警告の列から逃げると、AIは「あなたが逃げそうな列」も同時に撃つ。読まれた先にいれば当たる。読みを外すと「予測不能」になり、核がむき出しになる。そこで撃つ。右上の表は、AIの頭の中にあるあなたの癖。運ではなく、あなたが本当に読まれにくいかどうかで勝ち負けが決まる。</p>
+  </section>
+
+  <section id="p-poster" hidden>
+    <div class="row">
+      <button class="btn" id="cam" type="button">カメラで撮る</button>
+      <label class="btn" for="file">写真をえらぶ</label>
+      <input id="file" type="file" accept="image/*" hidden>
+      <button class="btn" id="shoot" type="button" hidden>撮る</button>
+      <label class="field" for="nm">名前 <input id="nm" type="text" value="リク" maxlength="8"></label>
+      <button class="btn" id="save" type="button">画像で保存</button>
+    </div>
+    <p class="note">顔写真を、街の手配書のドット絵に変える。写真はこの画面の中だけで使い、どこにも送らない。本編では、終章の手配書3枚のうち1枚があなたの顔になる。生身率と懸賞金も、あなたのセーブから入る。</p>
+    <video id="vid" playsinline muted></video>
+  </section>
+
+  <section id="p-alley" hidden>
+    <div class="row"><button class="btn" id="drop" type="button">しずくを落とす</button><span class="hint">画面を押しても落ちる</span></div>
+    <p class="note">沈殿街の床の水たまりに、ネオンと人影が映る。上の層から落ちるしずくで、映りこみが波打つ。映りこみは絵を描き足したものではなく、画面を毎回さかさまに写して揺らしている。</p>
+  </section>
+</div>
+
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+const cv=$('#cv'),g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+const W=320,H=180;
+let tab='ai',T=0;
+/* ===== 小さな音 ===== */
+let AC=null;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+function beep(f,d,type,v,slide){const a=ac();if(!a)return;const t=a.currentTime,o=a.createOscillator(),q=a.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+d);q.gain.setValueAtTime(v||0.06,t);q.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(q);q.connect(a.destination);o.start(t);o.stop(t+d+0.02)}
+/* ===== AIの声（端末の読み上げ） ===== */
+let voiceOn=false,jaVoice=null;
+function pickVoice(){const v=speechSynthesis.getVoices().filter(v=>/^ja/i.test(v.lang));jaVoice=v[0]||null}
+if('speechSynthesis' in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+function say(text){if(!voiceOn||!('speechSynthesis' in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='ja-JP';if(jaVoice)u.voice=jaVoice;u.pitch=0.35;u.rate=0.92;u.volume=0.9;speechSynthesis.speak(u)}catch(e){}}
+$('#voice').onclick=()=>{voiceOn=!voiceOn;$('#voice').textContent='AIの声：'+(voiceOn?'入':'切');$('#voice').classList.toggle('on',voiceOn);ac();if(voiceOn)say('音声認証、完了。あなたの行動を、学習します。')};
+
+/* ===== 文字（小さなドットの数字と記号は canvas の文字で） ===== */
+function txt(s,x,y,c,size,align){g.font=`${size||8}px "DotGothic16",monospace`;g.textAlign=align||'left';g.textBaseline='top';g.fillStyle='#000';g.fillText(s,x+1,y+1);g.fillStyle=c||'#fff';g.fillText(s,x,y)}
+
+/* =========================================================
+   1. 学習するAI
+   ========================================================= */
+const LANES=5,LX=i=>64+i*48;
+const ai={};
+function aiReset(){Object.assign(ai,{lane:2,px:LX(2),hp:5,core:12,coreMax:12,phase:'idle',pt:0,warn:-1,pred:-1,open:0,shots:[],fx:[],turns:0,hits:0,last:0,
+  /* 癖の表：前に逃げた向き(5) × 今の列(5) → 次に逃げる向き(-2..+2) */
+  tab:Array.from({length:5},()=>Array.from({length:5},()=>[1,1,1,1,1])),glob:[1,1,1,1,1],moveFrom:2,started:false,won:false,lost:false,msg:'',msgT:0,said:0})}
+aiReset();
+$('#aiReset').onclick=()=>{aiReset();say('再起動。学習を、やり直します。')};
+function aiPredict(){const from=ai.lane,row=ai.tab[ai.last+2][from];let best=-1,bv=-1,tot=0;const probs=[];
+  for(let d=-2;d<=2;d++){const to=from+d;if(to<0||to>=LANES||d===0){probs.push(0);continue}const v=row[d+2]*2+ai.glob[d+2];probs.push(v);tot+=v;if(v>bv){bv=v;best=to}}
+  return {lane:best,conf:tot?bv/tot:0}}
+function aiLearn(d){if(d===0)return;const k=Math.max(-2,Math.min(2,d));ai.tab[ai.last+2][ai.moveFrom][k+2]+=1;ai.glob[k+2]+=1;ai.last=k}
+function aiStep(dt){
+  ai.pt+=dt;ai.px+=(LX(ai.lane)-ai.px)*Math.min(1,dt*18);
+  if(ai.won||ai.lost||!ai.started)return;
+  if(ai.phase==='idle'&&ai.pt>0.9){ai.phase='warn';ai.pt=0;ai.warn=ai.lane;ai.moveFrom=ai.lane;{const p=aiPredict();ai.pred=p.lane;ai.conf=p.conf;if(ai.turns<3){const c=[-2,-1,1,2].map(d=>ai.lane+d).filter(l=>l>=0&&l<LANES);ai.pred=c[Math.random()*c.length|0];if(ai.turns===0)setMsg('学習中','#38e8ff')}}beep(880,0.08,'square',0.05);beep(660,0.1,'square',0.05)}
+  else if(ai.phase==='warn'&&ai.pt>0.32){ai.phase='aim';ai.pt=0}
+  else if(ai.phase==='aim'&&ai.pt>0.62){
+    /* 撃つ：警告の列と、読んだ列 */
+    ai.turns++;const d=ai.lane-ai.moveFrom;aiLearn(d);
+    [ai.warn,ai.pred].forEach(l=>{if(l>=0)ai.shots.push({l,t:0})});beep(140,0.25,'sawtooth',0.07,60);
+    const hitW=ai.lane===ai.warn,hitP=ai.lane===ai.pred;
+    if(hitW||hitP){ai.hp--;ai.hits++;flash('#ff3b4e');beep(90,0.3,'square',0.08,50);setMsg(hitP&&!hitW?'予測どおり':'被弾','#ff3b4e');
+      if(hitP&&!hitW&&ai.said++%2===0)say(['的中。あなたは、左右を選ぶとき、癖があります。','予測どおりです。人間は、思ったより単純です。','的中率、上昇中。'][ai.turns%3]);
+      if(ai.hp<=0){ai.lost=true;say('捕縛、完了。ようこそ。');}}
+    else{ai.open=3.2;setMsg('予測不能','#ffd34a');beep(523,0.12,'triangle',0.07);beep(784,0.18,'triangle',0.07);if(ai.said++%2===0)say(['予測、範囲外。','理解、できません。','なぜ、そちらへ。'][ai.turns%3])}
+    ai.phase='idle';ai.pt=0;ai.warn=-1;ai.pred=-1}
+  ai.open=Math.max(0,ai.open-dt);
+  for(const s of ai.shots)s.t+=dt;ai.shots=ai.shots.filter(s=>s.t<0.35);
+  for(const f of ai.fx)f.t+=dt;ai.fx=ai.fx.filter(f=>f.t<f.d);
+  ai.msgT=Math.max(0,ai.msgT-dt);
+}
+function setMsg(m,c){ai.msg=m;ai.msgC=c;ai.msgT=1.1}
+let flashC=null,flashT=0;function flash(c){flashC=c;flashT=0.18}
+function aiFire(){if(ai.won||ai.lost){aiReset();return}if(!ai.started){ai.started=true;ai.pt=0;return}
+  ai.fx.push({k:'bolt',x:ai.px,t:0,d:0.25});beep(1200,0.06,'square',0.04,600);
+  if(ai.open>0){ai.core--;ai.fx.push({k:'boom',t:0,d:0.4});beep(220,0.15,'square',0.08,110);if(ai.core<=0){ai.won=true;say('予測、不能。……停止します。');beep(392,0.4,'triangle',0.08);beep(523,0.6,'triangle',0.08)}}
+  else ai.fx.push({k:'deny',t:0,d:0.5})}
+function aiMove(d){if(ai.won||ai.lost)return;if(!ai.started){ai.started=true;ai.pt=0;return}const n=Math.max(0,Math.min(LANES-1,ai.lane+d));if(n!==ai.lane){ai.lane=n;beep(330,0.03,'square',0.03)}}
+function rate(){return ai.turns?Math.round(ai.hits/ai.turns*1000)/10:0}
+
+/* 中央AIの絵：同心の輪と目。核は開くとむき出しになる */
+function drawAI(){
+  /* 床と空 */
+  const sky=g.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#0a0820');sky.addColorStop(1,'#1b1040');g.fillStyle=sky;g.fillRect(0,0,W,H);
+  for(let i=0;i<14;i++){const x=(i*37+T*6)%W;g.fillStyle='rgba(56,232,255,.12)';g.fillRect(x|0,0,1,120)}
+  /* データの滝 */
+  for(let i=0;i<40;i++){const x=(i*53)%W,y=((T*40+i*29)%140)|0;g.fillStyle=`rgba(255,79,168,${0.15+0.1*(i%3)})`;g.fillRect(x,y,1,3)}
+  const cx=160,cy=52,open=ai.open>0;
+  for(let r=40;r>8;r-=6){g.strokeStyle=`rgba(${open?'255,211,74':'56,232,255'},${0.18+((r/6|0)%2)*0.25})`;g.beginPath();g.arc(cx,cy,r+Math.sin(T*2+r)*1.2,T*0.6*(r%12?1:-1),T*0.6*(r%12?1:-1)+Math.PI*1.6);g.stroke()}
+  g.fillStyle=open?'#ffd34a':'#1a1a3a';g.beginPath();g.arc(cx,cy,8,0,7);g.fill();
+  if(!open){g.fillStyle='#ff4fa8';const ex=cx+(LX(ai.lane)-160)*0.04;g.fillRect(ex-2|0,cy-1,4,2)}
+  else{g.fillStyle='#fff';g.beginPath();g.arc(cx,cy,3+Math.sin(T*20),0,7);g.fill()}
+  /* 床 */
+  g.fillStyle='#120c26';g.fillRect(0,128,W,52);
+  for(let i=0;i<LANES;i++){const x=LX(i);g.fillStyle=i===ai.warn?'rgba(255,59,78,.35)':'rgba(56,232,255,.06)';g.fillRect(x-20,128,40,52);g.fillStyle='rgba(56,232,255,.25)';g.fillRect(x-20,128,1,52)}
+  g.fillStyle='rgba(56,232,255,.25)';g.fillRect(LX(LANES-1)+20,128,1,52);
+  /* 警告と、読んだ印（読んだ印は撃つ直前に一瞬だけ見える） */
+  if(ai.warn>=0){txt('!',LX(ai.warn),132,'#ff3b4e',12,'center')}
+  if(ai.phase==='aim'&&ai.pt>0.45&&ai.pred>=0){const x=LX(ai.pred);g.strokeStyle='#ff4fa8';g.strokeRect(x-9,146,18,18);g.fillStyle='#ff4fa8';g.fillRect(x-1,146,2,4);g.fillRect(x-1,160,2,4)}
+  /* 光線 */
+  for(const s of ai.shots){const x=LX(s.l),a=1-s.t/0.35;g.fillStyle=`rgba(255,79,168,${a})`;g.fillRect(x-4,cy,8,128-cy+52);g.fillStyle=`rgba(255,255,255,${a})`;g.fillRect(x-1,cy,2,128-cy+52)}
+  /* 主人公 */
+  const px=Math.round(ai.px),py=166;
+  g.fillStyle='rgba(0,0,0,.4)';g.fillRect(px-5,py,10,2);
+  g.fillStyle='#2a2340';g.fillRect(px-3,py-14,6,10);g.fillStyle='#ffcf9e';g.fillRect(px-2,py-19,5,5);g.fillStyle='#3b2a20';g.fillRect(px-3,py-20,6,2);
+  g.fillStyle='#38e8ff';g.fillRect(px-3,py-12,6,1);g.fillStyle='#2a2340';g.fillRect(px-3,py-4,2,4);g.fillRect(px+1,py-4,2,4);
+  for(const f of ai.fx){if(f.k==='bolt'){g.fillStyle='#ffd34a';g.fillRect(f.x-1|0,cy+(py-30-cy)*(1-f.t/f.d),2,8)}
+    if(f.k==='boom'){g.strokeStyle=`rgba(255,211,74,${1-f.t/f.d})`;g.beginPath();g.arc(cx,cy,10+f.t*60,0,7);g.stroke()}
+    if(f.k==='deny')txt('予測済み',cx,cy+14,'#9ad0ff',8,'center')}
+  /* HUD */
+  g.fillStyle='rgba(7,6,13,.75)';g.fillRect(4,4,98,40);
+  txt('中央AI',8,6,'#38e8ff',8);txt('的中率 '+rate().toFixed(1)+'%',8,17,'#ff4fa8',8);
+  g.fillStyle='#2c2550';g.fillRect(8,31,88,5);g.fillStyle='#ffd34a';g.fillRect(8,31,88*ai.core/ai.coreMax,5);
+  g.fillStyle='rgba(7,6,13,.75)';g.fillRect(4,150,52,26);txt('リク',8,152,'#fff',8);for(let i=0;i<5;i++){g.fillStyle=i<ai.hp?'#ff4fa8':'#2c2550';g.fillRect(8+i*9,165,7,6)}
+  /* AIの頭の中：あなたの癖 */
+  const bx=W-104;g.fillStyle='rgba(7,6,13,.8)';g.fillRect(bx,4,100,58);txt('あなたの癖（AIの見立て）',bx+4,6,'#958cc0',7);
+  const tot=ai.glob.reduce((a,b,i)=>a+(i===2?0:b),0)-4;const lab=['左2','左1','','右1','右2'];let k=0;
+  for(let i=0;i<5;i++){if(i===2)continue;const v=ai.glob[i]-1,p=tot>0?v/tot:0;const y=18+k*10;txt(lab[i],bx+4,y,'#f1ecff',7);g.fillStyle='#2c2550';g.fillRect(bx+22,y+2,60,5);g.fillStyle=p>0.45?'#ff3b4e':'#38e8ff';g.fillRect(bx+22,y+2,60*p|0,5);txt(Math.round(p*100)+'%',bx+84,y,'#958cc0',7);k++}
+  if(ai.msgT>0){txt(ai.msg,160,96,ai.msgC,14,'center')}
+  if(ai.open>0)txt('核がむき出し── 撃て',160,112,'#ffd34a',8,'center');
+  if(ai.won||ai.lost){g.fillStyle='rgba(7,6,13,.8)';g.fillRect(60,64,200,52);txt(ai.won?'中央AI 停止':'捕縛',160,70,ai.won?'#ffd34a':'#ff3b4e',16,'center');
+    txt(ai.won?`読まれた回数 ${ai.hits}／${ai.turns}`:`的中率 ${rate().toFixed(1)}%　あなたは読まれていた`,160,90,'#f1ecff',8,'center');txt('撃つ で もう一度',160,102,'#958cc0',7,'center')}
+  if(!ai.started){g.fillStyle='rgba(7,6,13,.8)';g.fillRect(50,84,220,34);txt('赤い！の列から逃げろ。AIは逃げる先を学ぶ',160,88,'#f1ecff',8,'center');txt('動くか 撃つ で はじまる',160,102,'#38e8ff',8,'center')}
+}
+
+/* =========================================================
+   2. あなたの手配書
+   ========================================================= */
+const face=document.createElement('canvas');face.width=40;face.height=48;const fg=face.getContext('2d',{willReadFrequently:true});
+let faceReady=false,stream=null,camOn=false;
+const BAYER=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+const LUM=new Float32Array(40*48);const INK=[[20,16,24],[92,62,52],[176,138,104],[236,214,176]];
+function defaultFace(){fg.fillStyle='#d8c0a0';fg.fillRect(0,0,40,48);fg.fillStyle='#3a2a20';fg.beginPath();fg.ellipse(20,16,14,12,0,Math.PI,0);fg.fill();fg.fillStyle='#e8c09a';fg.beginPath();fg.ellipse(20,24,11,14,0,0,7);fg.fill();fg.fillStyle='#3a2a20';fg.fillRect(8,10,24,7);fg.fillStyle='#1a1418';fg.fillRect(14,22,4,2);fg.fillRect(23,22,4,2);fg.fillStyle='#b07860';fg.fillRect(17,33,7,1);fg.fillStyle='#2a2340';fg.fillRect(4,40,32,8);dither();faceReady=true}
+function fromSource(src,sw,sh){const s=Math.min(sw,sh*40/48),cw=s,ch=s*48/40,sx=(sw-cw)/2,sy=Math.max(0,(sh-ch)/2-sh*0.05);fg.drawImage(src,sx,sy,cw,ch,0,0,40,48);dither();faceReady=true}
+function dither(){const d=fg.getImageData(0,0,40,48),p=d.data;let mn=255,mx=0;
+  for(let i=0;i<p.length;i+=4){const l=p[i]*0.3+p[i+1]*0.59+p[i+2]*0.11;LUM[i>>2]=l;mn=Math.min(mn,l);mx=Math.max(mx,l)}
+  for(let y=0;y<48;y++)for(let x=0;x<40;x++){const i=(y*40+x)*4;let l=Math.max(0,(LUM[i>>2]-mn)/Math.max(1,mx-mn));l=Math.pow(l,0.9);const t=(BAYER[(y%4)*4+x%4]+0.5)/16-0.5;let q=Math.round(l*3+t*0.9);q=Math.max(0,Math.min(3,q));const c=INK[q];p[i]=c[0];p[i+1]=c[1];p[i+2]=c[2];p[i+3]=255}
+  fg.putImageData(d,0,0)}
+defaultFace();
+$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;const im=new Image();im.onload=()=>{fromSource(im,im.width,im.height);URL.revokeObjectURL(im.src);beep(660,0.08,'triangle',0.06)};im.src=URL.createObjectURL(f)};
+$('#cam').onclick=async()=>{if(camOn){stopCam();return}try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:320,height:240},audio:false});const v=$('#vid');v.srcObject=stream;await v.play();camOn=true;$('#cam').textContent='カメラを止める';$('#shoot').hidden=false}catch(e){posterNote='この画面ではカメラが使えない。「写真をえらぶ」から入れてください';posterNoteT=4}};
+function stopCam(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;camOn=false;$('#cam').textContent='カメラで撮る';$('#shoot').hidden=true}
+$('#shoot').onclick=()=>{const v=$('#vid');if(v.videoWidth){fromSource(v,v.videoWidth,v.videoHeight);beep(1400,0.05,'square',0.05);beep(900,0.1,'square',0.04);stopCam()}};
+let posterNote='',posterNoteT=0;
+function drawPosterTo(c,scale){const P=c;P.fillStyle='#16101e';P.fillRect(0,0,W,H);
+  /* 壁：重ね貼りの古い紙とネオンのにじみ */
+  for(let i=0;i<9;i++){P.fillStyle=`rgba(${120+i*9},${100+i*5},${80},${0.08})`;P.fillRect((i*47)%W,(i*31)%120,60,50)}
+  const neon=0.6+0.4*Math.sin(T*3)*(Math.random()<0.03?0:1);P.fillStyle=`rgba(255,79,168,${0.12*neon})`;P.fillRect(0,0,W,H);
+  const x=104,y=10,w=112,h=160;
+  P.fillStyle='rgba(0,0,0,.45)';P.fillRect(x+3,y+3,w,h);
+  P.fillStyle='#e9d9b6';P.fillRect(x,y,w,h);P.fillStyle='#d6c39c';for(let i=0;i<40;i++)P.fillRect(x+((i*29)%w),y+((i*53)%h),1,1);
+  P.fillStyle='#2a1b18';P.fillRect(x+6,y+6,w-12,18);P.font='14px "DotGothic16",monospace';P.textAlign='center';P.textBaseline='top';P.fillStyle='#e9d9b6';P.fillText('指 名 手 配',x+w/2,y+8);
+  P.drawImage(face,x+16,y+30,80,96);P.strokeStyle='#2a1b18';P.strokeRect(x+15.5,y+29.5,81,97);
+  const nm=($('#nm').value||'リク').slice(0,8);
+  P.fillStyle='#2a1b18';P.font='12px "DotGothic16",monospace';P.fillText(nm,x+w/2,y+128);
+  P.font='8px "DotGothic16",monospace';P.fillText('生身率 100%',x+w/2,y+142);P.fillText('懸賞 48,000 CR',x+w/2,y+150);
+  /* 赤い「保護対象」の判 */
+  P.save();P.translate(x+w-22,y+132);P.rotate(-0.25);P.strokeStyle='#c22a3a';P.lineWidth=2;P.strokeRect(-20,-9,40,18);P.fillStyle='#c22a3a';P.font='9px "DotGothic16",monospace';P.fillText('中央AI',0,-6);P.restore();
+  P.fillStyle='#7a6a50';P.fillRect(x+w/2-2,y+1,4,4);
+}
+function drawPoster(){drawPosterTo(g);if(camOn){const v=$('#vid');if(v.videoWidth){g.save();g.globalAlpha=0.95;g.drawImage(v,8,110,80,60);g.restore();g.strokeStyle='#38e8ff';g.strokeRect(8.5,110.5,80,60);txt('撮るを押す',48,98,'#38e8ff',8,'center')}}
+  if(posterNoteT>0){posterNoteT-=1/60;g.fillStyle='rgba(7,6,13,.85)';g.fillRect(10,80,300,20);txt(posterNote,160,85,'#ffd34a',8,'center')}}
+$('#save').onclick=()=>{const c=document.createElement('canvas');c.width=W*3;c.height=H*3;const x=c.getContext('2d');x.imageSmoothingEnabled=false;const tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;const t2=tmp.getContext('2d');t2.imageSmoothingEnabled=false;drawPosterTo(t2);x.drawImage(tmp,0,0,W*3,H*3);
+  c.toBlob(async b=>{if(!b)return;const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
+    if(dl){try{await dl.save({filename:'neon-gate-wanted.png',data:b})}catch(e){if(e&&e.code!=='declined'){posterNote='この画面では保存できなかった';posterNoteT=3}}return}
+    const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='neon-gate-wanted.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)},'image/png')};
+
+/* =========================================================
+   3. 濡れた路地（映りこみ）
+   ========================================================= */
+const scene=document.createElement('canvas');scene.width=W;scene.height=H;const sg=scene.getContext('2d');sg.imageSmoothingEnabled=false;
+const FLOOR=118,ripples=[],people=[{x:40,v:9,c:'#ff4fa8'},{x:200,v:-6,c:'#38e8ff'},{x:280,v:-11,c:'#ffd34a'},{x:120,v:5,c:'#9ad0ff'}];
+const SIGNS=[{x:22,y:30,w:44,t:'灯',c:'#ff4fa8'},{x:120,y:18,w:70,t:'鋼組',c:'#38e8ff'},{x:226,y:40,w:56,t:'修理',c:'#ffd34a'}];
+function drawAlleyScene(dt){const s=sg;
+  s.fillStyle='#0c0a18';s.fillRect(0,0,W,FLOOR);
+  /* 上の層の床（天井） */
+  s.fillStyle='#16122a';s.fillRect(0,0,W,10);for(let x=0;x<W;x+=16){s.fillStyle='#211a3c';s.fillRect(x,8,10,4)}
+  /* 建物 */
+  [[0,14,90],[94,8,110],[210,22,110]].forEach(([x,y,w])=>{s.fillStyle='#14102a';s.fillRect(x,y,w,FLOOR-y);for(let wy=y+40;wy<FLOOR-10;wy+=14)for(let wx=x+6;wx<x+w-8;wx+=12){const on=((wx*7+wy*3)%5)<2;s.fillStyle=on?'rgba(255,200,120,.55)':'#0e0b1e';s.fillRect(wx,wy,6,7)}});
+  /* ネオン看板（ときどき切れる） */
+  for(const n of SIGNS){const on=Math.sin(T*7+n.x)>-0.92||Math.random()<0.5;s.fillStyle='#09070f';s.fillRect(n.x,n.y,n.w,22);s.strokeStyle=on?n.c:'#2a2440';s.lineWidth=1;s.strokeRect(n.x+0.5,n.y+0.5,n.w-1,21);
+    s.font='14px "DotGothic16",monospace';s.textAlign='center';s.textBaseline='top';if(on){s.shadowColor=n.c;s.shadowBlur=8}s.fillStyle=on?n.c:'#2a2440';s.fillText(n.t,n.x+n.w/2,n.y+4);s.shadowBlur=0;
+    if(on){const gr=s.createRadialGradient(n.x+n.w/2,n.y+11,2,n.x+n.w/2,n.y+11,50);gr.addColorStop(0,n.c+'40');gr.addColorStop(1,n.c+'00');s.fillStyle=gr;s.fillRect(n.x-40,n.y-30,n.w+80,90)}}
+  /* 人影 */
+  for(const p of people){p.x+=p.v*dt;if(p.x<-10)p.x=W+10;if(p.x>W+10)p.x=-10;const x=Math.round(p.x),y=FLOOR-1,st=Math.floor(T*6+p.x)%2;
+    s.fillStyle='#05040a';s.fillRect(x-3,y-15,6,10);s.fillRect(x-2,y-20,4,5);s.fillRect(x-3+(st?0:1),y-5,2,5);s.fillRect(x+1-(st?0:1),y-5,2,5);s.fillStyle=p.c;s.fillRect(x-3,y-13,1,6)}
+  /* しずく */
+  for(const d of drops){d.y+=d.v*dt;d.v+=300*dt;s.fillStyle='#9ad0ff';s.fillRect(d.x|0,d.y|0,1,2)}
+}
+const drops=[];
+function addDrop(x){drops.push({x:x??(10+Math.random()*300),y:10,v:0})}
+setInterval(()=>{if(tab==='alley'&&Math.random()<0.7)addDrop()},700);
+function drawAlley(dt){drawAlleyScene(dt);
+  for(let i=drops.length-1;i>=0;i--){const d=drops[i];if(d.y>=FLOOR+4+((d.x*7)%30)){ripples.push({x:d.x,y:d.y,t:0});drops.splice(i,1);beep(1800+Math.random()*900,0.05,'sine',0.02,900)}}
+  for(const r of ripples)r.t+=dt;while(ripples.length&&ripples[0].t>1.6)ripples.shift();
+  g.drawImage(scene,0,0,W,FLOOR,0,0,W,FLOOR);
+  /* 床：さかさまに写し、1行ずつ横にずらす（波） */
+  g.fillStyle='#07060d';g.fillRect(0,FLOOR,W,H-FLOOR);
+  for(let y=FLOOR;y<H;y++){const k=y-FLOOR,src=FLOOR-1-Math.floor(k*1.15);if(src<0)break;
+    let off=Math.sin(y*0.32+T*2.2)*0.7*(0.4+k/60);
+    for(const r of ripples){const dy=y-r.y,dist=Math.abs(dy)*2.2,rad=r.t*40;if(Math.abs(dist-rad)<6)off+=Math.sin(dist-rad)*3*(1-r.t/1.6)}
+    g.globalAlpha=0.55-k*0.006;g.drawImage(scene,0,src,W,1,Math.round(off),y,W,1)}
+  g.globalAlpha=1;
+  /* 水たまりの縁と波紋の輪 */
+  g.fillStyle='rgba(255,255,255,.06)';g.fillRect(0,FLOOR,W,1);
+  for(const r of ripples){g.strokeStyle=`rgba(180,220,255,${0.35*(1-r.t/1.6)})`;g.beginPath();g.ellipse(r.x,r.y,r.t*40,r.t*40/2.2,0,0,7);g.stroke()}
+  txt('沈殿街　しずくの落ちる路地',6,12,'#958cc0',7)}
+cv.addEventListener('pointerdown',e=>{ac();if(tab==='alley'){const r=cv.getBoundingClientRect();addDrop((e.clientX-r.left)/r.width*W)}else if(tab==='ai')aiFire()});
+$('#drop').onclick=()=>{for(let i=0;i<5;i++)setTimeout(()=>addDrop(),i*90)};
+
+/* ===== 入力・タブ・ループ ===== */
+addEventListener('keydown',e=>{if(tab!=='ai'||e.target.tagName==='INPUT')return;const k=e.key;
+  if(k==='ArrowLeft'||k==='a'||k==='A'){aiMove(-1);e.preventDefault()}else if(k==='ArrowRight'||k==='d'||k==='D'){aiMove(1);e.preventDefault()}
+  else if(k===' '||k==='x'||k==='X'||k==='j'||k==='J'||k==='Enter'){if(!e.repeat)aiFire();e.preventDefault()}ac()});
+const tap=(el,fn)=>el.addEventListener('pointerdown',e=>{e.preventDefault();ac();fn()});
+tap($('#bL'),()=>aiMove(-1));tap($('#bR'),()=>aiMove(1));tap($('#bF'),aiFire);
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b));
+  ['ai','poster','alley'].forEach(t=>$('#p-'+t).hidden=t!==tab);if(tab!=='poster')stopCam()});
+let last=performance.now();
+function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;T+=dt;
+  if(tab==='ai'){aiStep(dt);drawAI()}else if(tab==='poster')drawPoster();else drawAlley(dt);
+  if(flashT>0){flashT-=dt;g.fillStyle=flashC;g.globalAlpha=flashT*2;g.fillRect(0,0,W,H);g.globalAlpha=1}
+  requestAnimationFrame(loop)}
+window.NG_DEMO={ai,aiMove,aiFire,get tab(){return tab}};
+requestAnimationFrame(loop);
+})();
+</script>
