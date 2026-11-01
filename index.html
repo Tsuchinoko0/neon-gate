@@ -371,7 +371,7 @@ function habit(){const h=S.habit;if(h&&h.tab&&h.glob&&h.drone&&h.fight&&h.choice
 /* 逃げた向き d（-2..+2）と、どこから逃げたか from（0..4）を覚える */
 function habitLearn(d,from,src){if(!d)return;const h=habit(),k=clamp(Math.round(d),-2,2);from=clamp(Math.round(from),0,4);
   h.tab[h.last+2][from][k+2]++;h.glob[k+2]++;h.last=k;if(h[src]){h[src].n++;h[src].g[k+2]++}}
-function habitChoice(i){const h=habit();h.choice.n++;if(i===0)h.choice.top++;if(i===h.choice.n-1)h.choice.last++}
+function habitChoice(i,len){const h=habit();h.choice.n++;if(i===0)h.choice.top++;if(len>1&&i===len-1)h.choice.last++}
 function habitRead(ms){if(!(ms>0&&ms<20000))return;const h=habit();h.read.n++;h.read.ms+=ms}
 /* いちばん多い逃げ方（例：「左へ1列」）と、その割合 */
 const HB_LAB=['左へ2列','左へ1列','','右へ1列','右へ2列'];
@@ -1355,10 +1355,10 @@ function stepAllies(dt){if(area()!=='sky'&&!TOPF.fight)return;const m=ALLY.mina,
 /* 戦いの絵 */
 function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
   for(const b of F.beams){const on=T>=b.on;if(b.k==='laser'){const x1=Math.round(b.x0-camX);ctx.fillStyle=`rgba(255,61,90,${on?0.45:0.2})`;ctx.fillRect(0,GY-7,x1,7);ctx.fillStyle='#ffd6de';ctx.fillRect(0,GY-4,x1,2)}
-    else{const x=Math.round(b.x-camX),hw=b.ai?AI_LANE/2:9;ctx.fillStyle=b.pred?'rgba(255,79,168,.4)':'rgba(120,220,255,.35)';ctx.fillRect(x-hw,-OY,hw*2,GY+OY);ctx.fillStyle=b.pred?'#ffe0f0':'#e8fbff';ctx.fillRect(x-3,-OY,6,GY+OY)}}
-  /* 予兆：番人の柱は、落ちる場所に印 */
-  for(const f of F.foes)if(f.st==='wind'&&f.k==='ai'){const x=Math.round(f.wx-camX),h=AI_LANE/2,b=Math.sin(t*20)>0;ctx.fillStyle='rgba(255,59,78,.3)';ctx.fillRect(x-h,GY-30,AI_LANE,30);ctx.fillStyle=b?'#ff3b4e':'#ffd0d6';ctx.font='bold 9px "M PLUS 1 Code",monospace';ctx.textAlign='center';ctx.fillText('！',x,GY-33);ctx.textAlign='start';
-    if(f.px!=null&&f.t>f.wind-0.22){const px=Math.round(f.px-camX);ctx.strokeStyle='#ff4fa8';ctx.lineWidth=1;ctx.strokeRect(px-9.5,GY-24.5,19,19);ctx.fillStyle='#ff4fa8';ctx.fillRect(px-1,GY-25,2,4);ctx.fillRect(px-1,GY-9,2,4)}}
+    else if(b.ai)drawAIBeam(b,t);
+    else{const x=Math.round(b.x-camX),hw=9;ctx.fillStyle='rgba(120,220,255,.35)';ctx.fillRect(x-hw,-OY,hw*2,GY+OY);ctx.fillStyle='#e8fbff';ctx.fillRect(x-3,-OY,6,GY+OY)}}
+  /* 予兆：中央AIは、いまの場所に赤い警告。撃つ直前だけ、読んだ先に桃色の照準 */
+  for(const f of F.foes)if(f.st==='wind'&&f.k==='ai'){drawAIWarn(f,t);if(f.px!=null&&f.t>f.wind-0.22)drawAIAim(f,t)}
   for(const f of F.foes)if(f.st==='wind'&&f.k==='warden'&&f.pat==='pillar'){const x=Math.round(f.tx-camX);ctx.fillStyle=`rgba(120,220,255,${0.25+0.25*Math.sin(t*30)})`;ctx.fillRect(x-9,GY-2,18,3)}
   for(const f of F.foes){const d=FOE[f.k],sx=Math.round(f.x-camX),fy=Math.round(f.y);if(sx<-40||sx>W+40)continue;drawFoe(f,sx,fy,t);
     /* GPU：弱点が光る */
@@ -1373,7 +1373,7 @@ function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
     if(e.k==='spark'){ctx.fillStyle=e.c;for(let i=0;i<5;i++){const a=i*1.3+e.t,r=k*40;ctx.fillRect(Math.round(x+Math.cos(a)*r),Math.round(y+Math.sin(a)*r),1,1)}}
     else if(e.k==='boom'){const r=Math.round(e.r*(0.4+k*1.6));ctx.fillStyle=`rgba(255,181,71,${0.7-k})`;ctx.fillRect(x-r,y-r,r*2,r*2);ctx.fillStyle=`rgba(255,255,230,${0.9-k*1.5})`;ctx.fillRect(x-r/2,y-r/2,r,r);
       ctx.fillStyle='#8a8aa0';for(let i=0;i<8;i++){const a=i*0.8,rr=k*60;ctx.fillRect(Math.round(x+Math.cos(a)*rr),Math.round(y+Math.sin(a)*rr+k*k*80),1,1)}}
-    else if(e.k==='txt'&&e.long){ctx.font='7px "M PLUS 1 Code",monospace';const w=ctx.measureText(e.s).width,lx=clamp(x-w/2,3,W-w-3);ctx.fillStyle='rgba(7,6,13,.72)';ctx.fillRect(Math.round(lx-2),y-8,Math.round(w+4),11);ctx.fillStyle=e.c;ctx.fillText(e.s,Math.round(lx),y)}
+    else if(e.k==='txt'&&e.long){/* 中央AIの長いセリフは、画面の下に字幕で（drawAISay） */}
     else if(e.k==='txt'){ctx.font='bold 8px "M PLUS 1 Code",monospace';ctx.textAlign='center';ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillText(e.s,x+1,y-Math.round(k*10)+1);ctx.fillStyle=e.c;ctx.fillText(e.s,x,y-Math.round(k*10));ctx.textAlign='start'}
     else if(e.k==='dust'){ctx.fillStyle=`rgba(200,210,230,${0.6-k*1.5})`;ctx.fillRect(x-8-k*20,y-2,4,2);ctx.fillRect(x+4+k*20,y-2,4,2)}
     else if(e.k==='ghost'){ctx.globalAlpha=0.35-k;drawAt(P_B,e.x,e.y,e.dir<0);ctx.globalAlpha=1}
@@ -1383,7 +1383,7 @@ function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
   for(const z of ST().zones||[]){const act=F.zone===z,closed=!zoneDone(z)&&!zoneNeed(z);if(!act&&!closed)continue;
     for(const x of act?[z.x0,z.x1]:[z.x0]){const sx=Math.round(x-camX);if(sx<-6||sx>W+6)continue;ctx.fillStyle='rgba(255,61,90,.18)';ctx.fillRect(sx-4,GY-70,8,70);ctx.fillStyle=`rgba(255,90,120,${0.55+0.25*Math.sin(t*9)})`;for(let y=GY-68;y<GY;y+=4)ctx.fillRect(sx-1,y,2,2);ctx.fillStyle='#3a3a50';ctx.fillRect(sx-3,GY-72,6,3)}}}
 /* 体力・弾・番人の体力（画面の上） */
-function drawFightHud(t){if(!armed())return;if(TOPF.fight&&TOPF.no>=4)drawAIBrain();ctx.setTransform(2,0,0,2,0,0);const c=cbt();ctx.fillStyle='rgba(8,10,28,.42)';ctx.fillRect(2,3,Math.max(78,c.hp*8+4),21);
+function drawFightHud(t){if(!armed())return;if(TOPF.fight&&TOPF.no>=4){drawAIBrain();const e=F.fx.filter(e=>e.long).pop();if(e)drawAISay(e)}ctx.setTransform(2,0,0,2,0,0);const c=cbt();ctx.fillStyle='rgba(8,10,28,.42)';ctx.fillRect(2,3,Math.max(78,c.hp*8+4),21);
   for(let i=0;i<c.hp;i++){const x=6+i*8,y=6,on=i<F.hp;ctx.fillStyle=on?'#ff3d6b':'rgba(255,255,255,.18)';ctx.fillRect(x,y,2,2);ctx.fillRect(x+3,y,2,2);ctx.fillRect(x-1,y+1,7,2);ctx.fillRect(x,y+3,5,1);ctx.fillRect(x+1,y+4,3,1);ctx.fillRect(x+2,y+5,1,1)}
   ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(5,15,50,4);ctx.fillStyle=F.ammo<=4?'#ffb547':'#3ef2e0';ctx.fillRect(6,16,Math.round(48*F.ammo/AMMO_MAX),2);
   ctx.font='7px "M PLUS 1 Code",monospace';ctx.fillStyle='rgba(10,12,30,.75)';ctx.fillText(`弾 ${F.ammo}`,59,21);ctx.fillStyle='#e8f0ff';ctx.fillText(`弾 ${F.ammo}`,58,20);
@@ -1614,15 +1614,82 @@ function aiFire(f){const d=clamp(Math.round((player.x-f.wx)/AI_LANE),-2,2);AIB.t
 let aiSayN=0;function aiSay(list){if(aiSayN++%2)return;const s=list[AIB.turns%list.length];F.fx.push({k:'txt',x:STAGES.top.ai-40,y:GY-112,t:T,s,c:'#9ad0ff',long:1})}
 const aiRate=()=>AIB.turns?Math.round(AIB.hits/AIB.turns*1000)/10:0;
 /* 右上：あなたの癖（AIの見立て）と的中率 */
-function drawAIBrain(){if(!AIB.glob)return;ctx.save();ctx.setTransform(2,0,0,2,0,0);const bw=Math.min(96,Math.round(W*0.5)),bx=W-bw-4,by=26;
-  ctx.fillStyle='rgba(7,6,13,.78)';ctx.fillRect(bx,by,bw,52);ctx.font='6px "M PLUS 1 Code",monospace';ctx.fillStyle='#b8b0d8';ctx.fillText('あなたの癖（AIの見立て）',bx+3,by+8);
-  const lab=['左2','左1','','右1','右2'],tot=AIB.glob.reduce((a,v,i)=>a+(i===2?0:v),0);let k=0;
-  for(let i=0;i<5;i++){if(i===2)continue;const p=tot?AIB.glob[i]/tot:0,y=by+12+k*8;ctx.fillStyle='#e8e4f4';ctx.fillText(lab[i],bx+3,y+5);ctx.fillStyle='#2c2550';ctx.fillRect(bx+18,y+1,bw-44,4);ctx.fillStyle=p>0.45?'#ff3b4e':'#38e8ff';ctx.fillRect(bx+18,y+1,Math.round((bw-44)*p),4);ctx.fillStyle='#958cc0';ctx.fillText(Math.round(p*100)+'%',bx+bw-24,y+5);k++}
-  ctx.fillStyle='#ff4fa8';ctx.fillText(`的中率 ${aiRate().toFixed(1)}%`,bx+3,by+49);ctx.restore()}
+function drawAIBrain(){if(!AIB.glob)return;ctx.save();ctx.setTransform(2,0,0,2,0,0);
+  /* スマホ（横176）では細く。上は体力バーと「中央AI」の名前の下から */
+  const sm=W<240,bw=sm?74:98,bx=W-bw-3,by=25,rh=sm?7:8,bh=13+rh*4+(sm?13:14),fn='"M PLUS 1 Code",monospace';
+  ctx.fillStyle='rgba(7,6,13,.8)';ctx.fillRect(bx,by,bw,bh);
+  ctx.fillStyle='rgba(56,232,255,.35)';ctx.fillRect(bx,by,bw,1);ctx.fillRect(bx,by+bh-1,bw,1);ctx.fillRect(bx,by,1,bh);ctx.fillRect(bx+bw-1,by,1,bh);
+  ctx.fillStyle='#38e8ff';for(const[cx,cy]of[[bx,by],[bx+bw-2,by],[bx,by+bh-2],[bx+bw-2,by+bh-2]])ctx.fillRect(cx,cy,2,2);
+  /* 目のしるし（見ている） */
+  const ex=bx+5,ey=by+5,bl=(T%3)<0.12;ctx.fillStyle='#ff4fa8';ctx.fillRect(ex-2,ey,5,1);if(!bl){ctx.fillRect(ex-1,ey-1,3,3);ctx.fillStyle='#fff';ctx.fillRect(ex,ey,1,1)}
+  ctx.font=`6px ${fn}`;ctx.fillStyle='#b8b0d8';ctx.fillText(sm?'あなたの癖':'あなたの癖（AIの見立て）',bx+10,by+8);
+  const lab=['左2','左1','','右1','右2'],ps=AIB.glob.map((v,i)=>i===2?0:Math.max(0,v-1)),tot=ps.reduce((a,v)=>a+v,0);
+  let best=-1,bv=0;ps.forEach((v,i)=>{if(v>bv){bv=v;best=i}});
+  const lx=bx+(sm?10:12),gx=bx+(sm?20:24),gw=bw-(sm?20:24)-(sm?17:20);let k=0;
+  for(let i=0;i<5;i++){if(i===2)continue;const p=tot?ps[i]/tot:0,y=by+12+k*rh,top=i===best&&tot>0;
+    if(top){ctx.fillStyle='rgba(255,59,78,.18)';ctx.fillRect(bx+2,y,bw-4,rh-1);ctx.fillStyle='#ff3b4e';ctx.fillRect(bx+3,y+2,1,3);ctx.fillRect(bx+4,y+3,1,1)}
+    /* 向きの矢印（ドット） */
+    const ax=bx+(sm?6:7),ay=y+3,dir=i<2?-1:1,n=i===0||i===4?2:1;ctx.fillStyle=top?'#ffd0d6':'#958cc0';
+    if(!sm)for(let m=0;m<n;m++){const px=ax+dir*m*3;ctx.fillRect(px,ay,1,1);ctx.fillRect(px-dir,ay-1,1,3)}
+    ctx.fillStyle=top?'#fff':'#e8e4f4';ctx.fillText(lab[i],lx,y+6);
+    ctx.fillStyle='#2c2550';ctx.fillRect(gx,y+2,gw,3);ctx.fillStyle=p>0.45?'#ff3b4e':'#38e8ff';ctx.fillRect(gx,y+2,Math.round(gw*p),3);
+    ctx.textAlign='right';ctx.fillStyle=top?'#ffd0d6':'#958cc0';ctx.fillText(Math.round(p*100)+'%',bx+bw-3,y+6);ctx.textAlign='start';k++}
+  const ry=by+13+rh*4;ctx.fillStyle='rgba(56,232,255,.2)';ctx.fillRect(bx+3,ry,bw-6,1);
+  if(!tot){ctx.fillStyle=Math.sin(T*6)>0?'#38e8ff':'#1c8fa0';ctx.fillText('学習中…',lx,by+12+rh*2+2)}
+  ctx.fillStyle='#ff4fa8';ctx.fillText('的中率',bx+4,ry+(sm?10:11));ctx.font=`bold ${sm?7:8}px ${fn}`;ctx.textAlign='right';ctx.fillText(aiRate().toFixed(1)+'%',bx+bw-3,ry+(sm?10:11));ctx.textAlign='start';
+  if(!sm){ctx.font=`5px ${fn}`;ctx.fillStyle='#958cc0';ctx.fillText(`${AIB.hits}/${AIB.turns}`,bx+28,ry+11)}
+  ctx.restore()}
+/* 中央AIの長いセリフ：画面の下に字幕。少しずつ打ち出す */
+function drawAISay(e){const dur=2.6,k=T-e.t,a=Math.min(1,k/0.15,(dur-k)/0.35);if(a<=0)return;ctx.save();ctx.setTransform(2,0,0,2,0,0);ctx.globalAlpha=a;
+  const fn='"M PLUS 1 Code",monospace';ctx.font=`7px ${fn}`;const mw=W-16,ls=[''];
+  for(const ch of e.s){const cur=ls[ls.length-1];if(ctx.measureText(cur+ch).width>mw&&!'。、）」'.includes(ch))ls.push(ch);else ls[ls.length-1]=cur+ch}
+  const bh=ls.length*9+5,by=H-bh-4,bx=4,w=W-8;
+  ctx.fillStyle='rgba(7,6,13,.93)';ctx.fillRect(bx,by,w,bh);ctx.fillStyle='#38e8ff';ctx.fillRect(bx,by,2,bh);ctx.fillStyle='rgba(56,232,255,.35)';ctx.fillRect(bx+2,by,w-2,1);
+  /* 名前の札 */
+  ctx.font=`6px ${fn}`;const nw=Math.round(ctx.measureText('中央AI').width)+6;ctx.fillStyle='#38e8ff';ctx.fillRect(bx,by-8,nw,8);ctx.fillStyle='#07060d';ctx.fillText('中央AI',bx+3,by-2);
+  ctx.font=`7px ${fn}`;let left=Math.floor(k*30);ctx.fillStyle='#dff0ff';
+  ls.forEach((s,i)=>{const n=clamp(left,0,s.length);left-=s.length;if(n>0)ctx.fillText(s.slice(0,n),bx+6,by+10+i*9)});
+  ctx.restore()}
+/* 警告：いまの場所の床に赤い帯（幅 AI_LANE）と、ドットの「！」。撃つ前ほど濃く、点滅が速くなる */
+function drawAIWarn(f,t){const x=Math.round(f.wx-camX),h=AI_LANE/2,k=clamp(f.t/f.wind,0,1),bl=Math.sin(t*(14+16*k))>0,x0=x-h;
+  ctx.fillStyle=`rgba(255,59,78,${0.06+0.1*k})`;ctx.fillRect(x0,-OY,AI_LANE,GY-34+OY);
+  ctx.fillStyle=`rgba(255,59,78,${0.3+0.25*k})`;ctx.fillRect(x0,GY-34,AI_LANE,34);
+  /* 縁：点線の柱 */
+  ctx.fillStyle=bl?'#ff3b4e':'#ff8a96';const o=Math.floor(t*16)%4;for(let y=GY-34+o;y<GY;y+=4){ctx.fillRect(x0,y,1,2);ctx.fillRect(x0+AI_LANE-1,y,1,2)}
+  /* 床の縞（流れる） */
+  const s=Math.floor(t*20)%8;for(let i=0;i<AI_LANE;i++){ctx.fillStyle=((i+s)>>2)%2?'#ff3b4e':'#2a0a14';ctx.fillRect(x0+i,GY-2,1,3)}
+  /* 角のかぎ */
+  ctx.fillStyle='#ff3b4e';ctx.fillRect(x0,GY-35,4,1);ctx.fillRect(x0+AI_LANE-4,GY-35,4,1);
+  /* ドットの警告マーク */
+  const ty=GY-50+(Math.sin(t*8)>0?0:1);for(let r=0;r<10;r++){const hw=Math.round(r*0.55);ctx.fillStyle='#2a0a14';ctx.fillRect(x-hw-1,ty+r,hw*2+3,1)}
+  ctx.fillStyle='#2a0a14';ctx.fillRect(x-6,ty+10,13,1);
+  for(let r=0;r<10;r++){const hw=Math.round(r*0.55);ctx.fillStyle=bl?'#ff3b4e':'#ffd0d6';ctx.fillRect(x-hw,ty+r,hw*2+1,1)}
+  ctx.fillStyle=bl?'#fff':'#ff3b4e';ctx.fillRect(x,ty+3,1,4);ctx.fillRect(x,ty+8,1,1)}
+/* 照準：読んだ先。かぎが寄って、ロックする */
+function drawAIAim(f,t){const px=Math.round(f.px-camX),a=clamp((f.wind-f.t)/0.22,0,1),s=Math.round(7+7*a),cy=GY-14;
+  ctx.fillStyle='rgba(255,79,168,.18)';ctx.fillRect(px-s,cy-s,s*2+1,s*2+1);
+  ctx.fillStyle='rgba(255,79,168,.55)';for(let y=-OY;y<cy-s-8;y+=3)ctx.fillRect(px,y,1,2);
+  const L=4;for(const[dx,dy]of[[-1,-1],[1,-1],[-1,1],[1,1]]){const cx=px+dx*s,cyy=cy+dy*s;ctx.fillStyle='#4a0a2a';ctx.fillRect(Math.min(cx,cx-dx*L)+1,cyy+1,L+1,1);ctx.fillRect(cx+1,Math.min(cyy,cyy-dy*L)+1,1,L+1);
+    ctx.fillStyle='#ff4fa8';ctx.fillRect(Math.min(cx,cx-dx*L),cyy,L+1,1);ctx.fillRect(cx,Math.min(cyy,cyy-dy*L),1,L+1)}
+  ctx.fillStyle='#ff4fa8';ctx.fillRect(px,cy-3,1,2);ctx.fillRect(px,cy+2,1,2);ctx.fillRect(px-3,cy,2,1);ctx.fillRect(px+2,cy,2,1);ctx.fillStyle='#fff';ctx.fillRect(px,cy,1,1);
+  ctx.font='6px "M PLUS 1 Code",monospace';ctx.textAlign='center';ctx.fillStyle='#4a0a2a';ctx.fillText('予測',px+1,cy-s-2);ctx.fillStyle='#ff4fa8';ctx.fillText('予測',px,cy-s-3);ctx.textAlign='start'}
+/* 中央AIの柱：上から落ちる光線。警告の場所は赤、読んだ先は桃色。幅は AI_LANE（当たりと同じ） */
+function drawAIBeam(b,t){if(T<b.on)return;const x=Math.round(b.x-camX),hw=AI_LANE/2,x0=x-hw,k=clamp((T-b.on)/(b.off-b.on),0,1),c=b.pred?'255,79,168':'255,59,78',
+  top=-OY,d=clamp((T-b.on)/0.06,0,1),yb=Math.round(top+(GY-top)*d),fa=1-clamp((k-0.55)/0.45,0,1);
+  ctx.fillStyle=`rgba(${c},${0.3*fa})`;ctx.fillRect(x0,top,AI_LANE,yb-top);
+  ctx.fillStyle=`rgba(${c},${0.9*fa})`;ctx.fillRect(x0,top,1,yb-top);ctx.fillRect(x0+AI_LANE-1,top,1,yb-top);
+  const cw=Math.max(2,Math.round((hw-4)*(1-k*0.7)));ctx.fillStyle=`rgba(${c},${0.75*fa})`;ctx.fillRect(x-cw,top,cw*2,yb-top);
+  const iw=Math.max(1,Math.round(cw/2));ctx.fillStyle=`rgba(255,${b.pred?235:240},${b.pred?245:240},${fa})`;ctx.fillRect(x-iw,top,iw*2,yb-top);
+  /* 光線の中を流れる走査線 */
+  ctx.fillStyle=`rgba(255,255,255,${0.35*fa})`;const o=Math.floor(T*240)%9;for(let y=top+o;y<yb;y+=9)ctx.fillRect(x0+1,y,AI_LANE-2,1);
+  if(d<1){ctx.fillStyle='#fff';ctx.fillRect(x-hw+2,yb-3,AI_LANE-4,3);return}
+  /* 床に当たったところ：白い閃光と、飛び散る粒 */
+  const sp=Math.round(hw+4+k*10);ctx.fillStyle=`rgba(255,255,255,${0.9*fa})`;ctx.fillRect(x-sp,GY-2,sp*2,2);ctx.fillStyle=`rgba(${c},${0.6*fa})`;ctx.fillRect(x-sp-3,GY-4,sp*2+6,2);
+  ctx.fillStyle=`rgba(255,240,245,${fa})`;for(let i=0;i<8;i++){const a=-Math.PI*(0.1+0.8*i/7),r=6+k*26;ctx.fillRect(Math.round(x+Math.cos(a)*r*(i%2?1:0.7)),Math.round(GY-2+Math.sin(a)*r*0.6+k*k*20),1,1)}}
 /* 戦いの始めに語る：記録をもとに、具体的に */
 function aiIntroLines(){const h=habit(),dr=habitTop(h.drone.g),ch=h.choice,rd=h.read,out=[];
   if(h.drone.n>=5)out.push(L('ai',AI_TALK.drone(h.drone.n,dr.pct,dr.lab)));
-  if(ch.n>=5)out.push(L('ai',AI_TALK.choice(Math.round(ch.top/ch.n*100))));
+  if(ch.n>=5)out.push(L('ai',AI_TALK.choice(Math.round(Math.max(ch.top,ch.last)/ch.n*100),ch.last>ch.top?'一番下':'一番上')));
   if(rd.n>=10)out.push(L('ai',AI_TALK.read(Math.round(rd.ms/rd.n))));
   const w=aiPrior();out.push(L('ai',w>=0.3?AI_TALK.prior(Math.round(w*100)):AI_TALK.blank));return out}
 /* ===== 中央区のエンディング 2〜5（END1 は endingSeq の今の終章） ===== */
@@ -1772,7 +1839,7 @@ function doneTyping(){clearInterval(typeT);D.typing=false;D.doneAt=performance.n
   if(L.choices){const sf=L.choices.findIndex(c=>/やめ|まだ|わかった|戻る/.test(c.label));D.sel=sf>=0?sf:L.choices.length-1;$('#dlgCh').innerHTML=L.choices.map((c,i)=>`<button class="nbtn ${i===D.sel?'sel':''}" type="button" data-i="${i}">${esc(c.label)}</button>`).join('');
     $('#dlgCh').querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();pick(+b.dataset.i)})}
   else $('#dlgMore').hidden=false}
-function pick(i){const c=D.lines[D.i].choices[i];habitChoice(i);sfx('ui');document.activeElement&&document.activeElement.blur();endDialog();c.fn&&c.fn()}
+function pick(i){const c=D.lines[D.i].choices[i];habitChoice(i,D.lines[D.i].choices.length);sfx('ui');document.activeElement&&document.activeElement.blur();endDialog();c.fn&&c.fn()}
 function advance(){if(!D)return;if(D.lines[D.i].honne&&performance.now()-D.at<700)return;if(D.typing)return doneTyping();if(D.lines[D.i].choices)return;habitRead(performance.now()-(D.doneAt||D.at));D.i++;if(D.i>=D.lines.length){const f=D.onEnd;endDialog();f&&f()}else show()}
 function endDialog(){clearInterval(typeT);$('#dlg').hidden=true;D=null;if(mode==='dialog')mode='play';hud()}
 function moveSel(d){if(!D||!D.lines[D.i].choices||D.typing)return;const n=D.lines[D.i].choices.length;D.sel=(D.sel+d+n)%n;
@@ -1963,7 +2030,7 @@ const END45_TEXT={
 /* ===== 学習する中央AIのセリフ（数字はセーブの記録から入る） ===== */
 const AI_TALK={
   drone:(n,pct,lab)=>`あなたは圏外で、ドローンから${n}回逃げました。そのうち${pct}%は、${lab}でした。`,
-  choice:pct=>`あなたは、選択肢の一番上を、${pct}%の確率で選びます。想定範囲です。`,
+  choice:(pct,pos)=>`あなたは、選択肢の${pos}を、${pct}%の確率で選びます。想定範囲です。`,
   read:ms=>`会話を送る間隔、平均${(ms/1000).toFixed(1)}秒。その速さから、あなたの性格を推定しました。`,
   prior:pct=>`あなたの体の回線から、動きの記録を${pct}%受信済み。あなたは、もう読まれています。`,
   blank:'あなたの体は、ほとんど回線につながっていません。……これから、学習します。'
