@@ -388,8 +388,8 @@ function aiVoiceStop(){try{voiceOK()&&speechSynthesis.cancel()}catch(e){}}
 function buzz(p){if(S.snd.vib===false)return;try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
 /* 設定画面の「AIの声」「振動」 */
 function extraHTML(){const o=S.snd;return `<div class="prow"><button class="nbtn ${o.voice?'pink':'ghost'}" type="button" data-voice aria-pressed="${!!o.voice}">AIの声：${o.voice?'入':'切'}</button>${'vibrate' in navigator?`<button class="nbtn ${o.vib===false?'ghost':'pink'}" type="button" data-vib aria-pressed="${o.vib!==false}">振動：${o.vib===false?'切':'入'}</button>`:''}</div>
-  <p class="note">AIの声は、端末の読み上げで中央AIと SENTRY のセリフを読みます${voiceOK()?'':'（この端末では使えません）'}。声は端末の中で作るだけで、外へは送りません。使わなくても最後まで遊べます。</p>`}
-function bindExtra(root){const v=root.querySelector('[data-voice]');if(v)v.onclick=()=>{S.snd={...S.snd,voice:!S.snd.voice};save();if(S.snd.voice){if(!voiceOK())toast('この端末では、読み上げが使えません',3000);else{toast('AIの声：入（端末の読み上げ。声は外へ送りません）',3600);aiVoice('音声認証、完了。あなたの行動を、学習します。')}}else aiVoiceStop();v.textContent='AIの声：'+(S.snd.voice?'入':'切');v.classList.toggle('pink',!!S.snd.voice);v.classList.toggle('ghost',!S.snd.voice);v.setAttribute('aria-pressed',!!S.snd.voice)};
+  <p class="note" data-vnote>AIの声は、端末の読み上げで中央AIと SENTRY のセリフを読みます${voiceOK()?'':'（この端末では使えません）'}。声は端末の中で作るだけで、外へは送りません。使わなくても最後まで遊べます。</p>`}
+function bindExtra(root){const v=root.querySelector('[data-voice]');if(v)v.onclick=()=>{S.snd={...S.snd,voice:!S.snd.voice};save();if(S.snd.voice){if(!voiceOK())toast('この端末では、読み上げが使えません',3000);else{const m='AIの声：入（端末の読み上げ。声は外へ送りません）';if(root.id==='sndPop'){const n=root.querySelector('[data-vnote]');if(n){n.textContent=m;n.style.color='var(--amber)'}}else toast(m,3600);aiVoice('音声認証、完了。あなたの行動を、学習します。')}}else aiVoiceStop();v.textContent='AIの声：'+(S.snd.voice?'入':'切');v.classList.toggle('pink',!!S.snd.voice);v.classList.toggle('ghost',!S.snd.voice);v.setAttribute('aria-pressed',!!S.snd.voice)};
   const b=root.querySelector('[data-vib]');if(b)b.onclick=()=>{S.snd={...S.snd,vib:S.snd.vib===false};save();if(S.snd.vib!==false)buzz(40);b.textContent='振動：'+(S.snd.vib===false?'切':'入');b.classList.toggle('pink',S.snd.vib!==false);b.classList.toggle('ghost',S.snd.vib===false);b.setAttribute('aria-pressed',S.snd.vib!==false)}}
 /* ===== ハッキングがゲームの外へ（END2・END3 の演出だけ。生身率で画面の見え方は変えない、という決まりとは別） ===== */
 /* タブの題名とアイコンが変わり、上のバーのボタンの文字が一瞬「従う」に化け、対応している端末は震える。タイトルに戻ると元に戻す */
@@ -400,7 +400,7 @@ function setIcon(href){let l=document.querySelector('link[rel="icon"]');if(!href
 function hackStart(){if(HACK.on)return;HACK.on=true;HACK.title=document.title;document.title='同期中……';try{setIcon(hackIcon())}catch(e){}buzz([60,40,60,40,160]);
   const btns=['#goalBtn','#itemBtn','#setBtn','#sndBtn'].map(s=>$(s)).filter(Boolean);
   clearInterval(HACK.timer);HACK.timer=setInterval(()=>{if(!HACK.on)return;const b=btns[Math.floor(Math.random()*btns.length)];if(!b||b.dataset.hk)return;b.dataset.hk=b.textContent;b.textContent='従う';setTimeout(()=>{if(b.dataset.hk!=null){b.textContent=b.dataset.hk;delete b.dataset.hk}},450)},900)}
-function hackDone(){if(!HACK.on)return;document.title='保護済み'}
+function hackDone(){if(!HACK.on)return;document.title='保護済み';clearInterval(HACK.timer);HACK.timer=0}
 function hackReset(){clearInterval(HACK.timer);HACK.timer=0;document.querySelectorAll('[data-hk]').forEach(b=>{b.textContent=b.dataset.hk;delete b.dataset.hk});if(!HACK.on)return;HACK.on=false;document.title=HACK.title||'NEON GATE';try{setIcon(null)}catch(e){}sndBtnUp()}
 /* 「従う」に化けたボタンは、押しても何も起きない */
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-hk]');if(b){e.preventDefault();e.stopImmediatePropagation()}},true);
