@@ -252,7 +252,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.29 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.30 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -295,7 +295,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.29"></script>
+<script src="sound.js?v=0.30"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -376,6 +376,36 @@ function habitRead(ms){if(!(ms>0&&ms<20000))return;const h=habit();h.read.n++;h.
 /* いちばん多い逃げ方（例：「左へ1列」）と、その割合 */
 const HB_LAB=['左へ2列','左へ1列','','右へ1列','右へ2列'];
 function habitTop(g){let bi=-1,bv=0,tot=0;g.forEach((v,i)=>{if(i===2)return;tot+=v;if(v>bv){bv=v;bi=i}});return{lab:bi<0?'':HB_LAB[bi],pct:tot?Math.round(bv/tot*100):0,n:tot}}
+/* ===== AIの声（端末の読み上げ）と、振動 ===== */
+/* 中央AIと SENTRY のセリフを、端末の読み上げ（speechSynthesis）でも読む。最初は切。ミュートのときは読まない。声は端末の中で作るだけで、外へは送らない */
+let jaVoice=null;
+function pickVoice(){try{const v=speechSynthesis.getVoices().filter(v=>/^ja/i.test(v.lang));jaVoice=v[0]||null}catch(e){}}
+if('speechSynthesis' in window){pickVoice();try{speechSynthesis.onvoiceschanged=pickVoice}catch(e){}}
+const voiceOK=()=>'speechSynthesis' in window;
+function aiVoice(text){if(!S.snd.voice||S.snd.muted||!voiceOK())return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text).replace(/[「」『』]/g,''));u.lang='ja-JP';if(jaVoice)u.voice=jaVoice;u.pitch=0.35;u.rate=0.92;u.volume=Math.min(1,(S.snd.se??0.8)+0.2);speechSynthesis.speak(u)}catch(e){}}
+function aiVoiceStop(){try{voiceOK()&&speechSynthesis.cancel()}catch(e){}}
+/* 振動（対応している端末だけ。設定で切れる） */
+function buzz(p){if(S.snd.vib===false)return;try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+/* 設定画面の「AIの声」「振動」 */
+function extraHTML(){const o=S.snd;return `<div class="prow"><button class="nbtn ${o.voice?'pink':'ghost'}" type="button" data-voice aria-pressed="${!!o.voice}">AIの声：${o.voice?'入':'切'}</button>${'vibrate' in navigator?`<button class="nbtn ${o.vib===false?'ghost':'pink'}" type="button" data-vib aria-pressed="${o.vib!==false}">振動：${o.vib===false?'切':'入'}</button>`:''}</div>
+  <p class="note">AIの声は、端末の読み上げで中央AIと SENTRY のセリフを読みます${voiceOK()?'':'（この端末では使えません）'}。声は端末の中で作るだけで、外へは送りません。使わなくても最後まで遊べます。</p>`}
+function bindExtra(root){const v=root.querySelector('[data-voice]');if(v)v.onclick=()=>{S.snd={...S.snd,voice:!S.snd.voice};save();if(S.snd.voice){if(!voiceOK())toast('この端末では、読み上げが使えません',3000);else{toast('AIの声：入（端末の読み上げ。声は外へ送りません）',3600);aiVoice('音声認証、完了。あなたの行動を、学習します。')}}else aiVoiceStop();v.textContent='AIの声：'+(S.snd.voice?'入':'切');v.classList.toggle('pink',!!S.snd.voice);v.classList.toggle('ghost',!S.snd.voice);v.setAttribute('aria-pressed',!!S.snd.voice)};
+  const b=root.querySelector('[data-vib]');if(b)b.onclick=()=>{S.snd={...S.snd,vib:S.snd.vib===false};save();if(S.snd.vib!==false)buzz(40);b.textContent='振動：'+(S.snd.vib===false?'切':'入');b.classList.toggle('pink',S.snd.vib!==false);b.classList.toggle('ghost',S.snd.vib===false);b.setAttribute('aria-pressed',S.snd.vib!==false)}}
+/* ===== ハッキングがゲームの外へ（END2・END3 の演出だけ。生身率で画面の見え方は変えない、という決まりとは別） ===== */
+/* タブの題名とアイコンが変わり、上のバーのボタンの文字が一瞬「従う」に化け、対応している端末は震える。タイトルに戻ると元に戻す */
+const HACK={on:false,title:document.title,icon:null,timer:0};
+function hackIcon(){const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d');g.imageSmoothingEnabled=false;drawAIEyeIcon(g);return c.toDataURL('image/png')}
+function setIcon(href){let l=document.querySelector('link[rel="icon"]');if(!href){if(l)l.remove();if(HACK.icon)document.head.appendChild(HACK.icon);return}
+  if(l&&!HACK.saved){HACK.icon=l.cloneNode();HACK.saved=1}if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l)}l.type='image/png';l.href=href}
+function hackStart(){if(HACK.on)return;HACK.on=true;HACK.title=document.title;document.title='同期中……';try{setIcon(hackIcon())}catch(e){}buzz([60,40,60,40,160]);
+  const btns=['#goalBtn','#itemBtn','#setBtn','#sndBtn'].map(s=>$(s)).filter(Boolean);
+  clearInterval(HACK.timer);HACK.timer=setInterval(()=>{if(!HACK.on)return;const b=btns[Math.floor(Math.random()*btns.length)];if(!b||b.dataset.hk)return;b.dataset.hk=b.textContent;b.textContent='従う';setTimeout(()=>{if(b.dataset.hk!=null){b.textContent=b.dataset.hk;delete b.dataset.hk}},450)},900)}
+function hackDone(){if(!HACK.on)return;document.title='保護済み'}
+function hackReset(){clearInterval(HACK.timer);HACK.timer=0;document.querySelectorAll('[data-hk]').forEach(b=>{b.textContent=b.dataset.hk;delete b.dataset.hk});if(!HACK.on)return;HACK.on=false;document.title=HACK.title||'NEON GATE';try{setIcon(null)}catch(e){}sndBtnUp()}
+/* 「従う」に化けたボタンは、押しても何も起きない */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-hk]');if(b){e.preventDefault();e.stopImmediatePropagation()}},true);
+/* タブのアイコンになる、AIの目（32×32）。ドット絵係が整える */
+function drawAIEyeIcon(g){g.fillStyle='#07060d';g.fillRect(0,0,32,32);g.fillStyle='#3a1020';g.fillRect(4,10,24,12);g.fillStyle='#ff3b4e';g.fillRect(6,12,20,8);g.fillStyle='#ff9ac8';g.fillRect(12,13,8,6);g.fillStyle='#fff0f4';g.fillRect(14,14,4,4);g.fillStyle='#38e8ff';g.fillRect(2,15,2,2);g.fillRect(28,15,2,2)}
 /* ===== 音（sound.js） ===== */
 const SND=window.NGSound||null;
 const sfx=n=>{try{SND&&SND.se(n)}catch(e){}};
@@ -1260,7 +1290,7 @@ const foeHurt=(f,n,weak)=>{if(f.k==='ai'&&T>=f.open){if(T>(f.blk||0)){f.blk=T+0.
   if(f.hp<=0){f.dead=1;F.fx.push({k:'boom',x:f.x,y:f.y-FOE[f.k].h/2,t:T,r:FOE[f.k].boss?26:10});sfx('boom')}};
 const weakAt=f=>{const d=FOE[f.k];return{x:f.x+d.weak[0]*f.dir,y:f.y+d.weak[1]}};
 /* プレイヤーの当たり（足もと y から上に 15） */
-function hurtPlayer(n,from){if(T<F.inv||T<F.dodgeT||mode!=='play')return;const c=cbt();F.hp-=Math.max(1,Math.round(n*c.dmg));F.inv=T+1.0;F.kb=T+0.18;F.flash=T+0.15;
+function hurtPlayer(n,from){if(T<F.inv||T<F.dodgeT||mode!=='play')return;const c=cbt();buzz(70);F.hp-=Math.max(1,Math.round(n*c.dmg));F.inv=T+1.0;F.kb=T+0.18;F.flash=T+0.15;
   player.vx=(player.x<from?-1:1)*110;player.vy=-120;sfx('hurt');if(F.hp<=0){F.hp=0;fallen()}}
 function playerHit(x,y,r=2){return Math.abs(x-player.x)<4+r&&y>player.y-16-r&&y<player.y+r}
 /* 倒れたら、ミナが助け起こす。区画の手前からやり直し（敵も元に戻る） */
@@ -1427,7 +1457,7 @@ async function endingSeq(){const ai=STAGES.top.ai;inEnding=true;topReset();mode=
   await sayP(END_TEXT.d);mode='cut';await waitP(600);
   $('#fade').classList.add('on');await waitP(1200);endWalk=false;endPanel();$('#fade').classList.remove('on')}
 /* 7：最後の絵と手配書。END1・2＝手配書3枚に赤いバツ（END2 はソウに「保護済み」）。END3＝施術室の前の列。END4＝焚き火、手配書が風で飛ぶ。END5＝焚き火に仲間、手配書をくべる */
-function endPanel(no=1){inEnding=false;TOPF.show=false;F.foes=[];const happy=no>=4;endQuiet=!happy;S.st={...S.st,top:1,end:1};S.endings={...(S.endings||{}),[no]:1};S.area='sky';player.x=1840;S.pos={...(S.pos||{}),sky:{sx:1840}};save();
+function endPanel(no=1){inEnding=false;aiVoiceStop();if(no===2||no===3)hackDone();TOPF.show=false;F.foes=[];const happy=no>=4;endQuiet=!happy;S.st={...S.st,top:1,end:1};S.endings={...(S.endings||{}),[no]:1};S.area='sky';player.x=1840;S.pos={...(S.pos||{}),sky:{sx:1840}};save();
   try{if(happy)mood('out');else SND&&SND.stop()}catch(e){}
   const CW=360,CH=200,P=[['riku','リク'],['mina','ミナ'],['sou','ソウ']],party=[...(S.party||[])];
   openPanel(`<div class="endwrap"><canvas class="endcv" id="ecv" width="${CW}" height="${CH}" role="img" aria-label="${esc(END_ALT[no])}"></canvas>
@@ -1611,7 +1641,7 @@ function aiFire(f){const d=clamp(Math.round((player.x-f.wx)/AI_LANE),-2,2);AIB.t
   const inW=Math.abs(player.x-f.wx)<AI_LANE/2,inP=f.px!=null&&Math.abs(player.x-f.px)<AI_LANE/2;
   if(inP&&!inW){AIB.hits++;aiSay(AI_HIT)}
   else if(!inW&&!inP){AIB.lastU=T;f.open=T+4;F.fx.push({k:'txt',x:player.x,y:player.y-26,t:T,s:'予測不能',c:'#ffd34a'},{k:'txt',x:f.x,y:f.y-FOE.ai.h-16,t:T,s:'核がむき出しになった',c:'#ff9ac8'});sfx('unlock');aiSay(AI_MISS)}}
-let aiSayN=0;function aiSay(list){if(aiSayN++%2)return;const s=list[AIB.turns%list.length];F.fx.push({k:'txt',x:STAGES.top.ai-40,y:GY-112,t:T,s,c:'#9ad0ff',long:1})}
+let aiSayN=0;function aiSay(list){if(aiSayN++%2)return;const s=list[AIB.turns%list.length];aiVoice(s);F.fx.push({k:'txt',x:STAGES.top.ai-40,y:GY-112,t:T,s,c:'#9ad0ff',long:1})}
 const aiRate=()=>AIB.turns?Math.round(AIB.hits/AIB.turns*1000)/10:0;
 /* 右上：あなたの癖（AIの見立て）と的中率 */
 function drawAIBrain(){if(!AIB.glob)return;ctx.save();ctx.setTransform(2,0,0,2,0,0);
@@ -1713,7 +1743,7 @@ function stepTop2(dt){if(!TOPF.fight||mode!=='play')return;const z=F.zone;if(!z)
   if(z.end3){
     if(T>=TOPF.spawnT&&F.foes.length<14){const side=Math.random()<0.5,x=side?Math.max(z.x0+6,camX-8):Math.min(z.x1-6,camX+W+8);spawnFoe('seeker',x);TOPF.spawnT=T+Math.max(0.35,0.9-(T-TOPF.t0)*0.02)}
     /* 少しすると、体の七割以上が機械の者がハッキングされる */
-    if(!TOPF.hacked&&T-TOPF.t0>5){TOPF.hacked=true;const me=rikCy()>=HACK_AT;F.hacked=me;for(const a of PALLY)if(PARTY[a.id].cy>=HACK_AT)a.hacked=true;sfx('warn');
+    if(!TOPF.hacked&&T-TOPF.t0>5){TOPF.hacked=true;hackStart();const me=rikCy()>=HACK_AT;F.hacked=me;for(const a of PALLY)if(PARTY[a.id].cy>=HACK_AT)a.hacked=true;sfx('warn');
       talk([...END3_TEXT.hack,...(me?END3_TEXT.me:[])])}
     if(T-TOPF.t0>26)return end3Capture()}}
 /* 中央区で倒れたとき：END3 は捕まる。END4・5 はボス戦の始めからやり直し */
@@ -1737,7 +1767,7 @@ async function endingStart(){const no=S.st.endNo||1;TOPF.no=no;TOPF.dim=0;inEndi
 async function end2Seq(){const ai=STAGES.top.ai;TOP.list=[...TOP.list,TOP.sou,TOP.mina];TOP.sou.x=62;TOP.mina.x=24;
   await waitP(500);await sayP(END2_TEXT.a);mode='cut';
   camT=TOP.sou;sfx('dash');await moveP(TOP.sou,ai-200,170);await waitP(400);
-  await sayP(END2_TEXT.b);mode='cut';TOP.sou.d=-1;shakeT=T+2.4;sfx('warn');await waitP(900);
+  hackStart();await sayP(END2_TEXT.b);mode='cut';TOP.sou.d=-1;shakeT=T+2.4;sfx('warn');await waitP(900);
   await sayP(END2_TEXT.c);mode='cut';shakeT=T+1.2;await waitP(1200);
   camT=null;await moveP(TOP.sou,player.x+14,110);TOP.mina.goal=null;await moveP(TOP.mina,player.x+24,140);
   await sayP(END2_TEXT.d);mode='cut';await waitP(600);$('#fade').classList.add('on');await waitP(1200);endPanel(2);$('#fade').classList.remove('on')}
@@ -1837,7 +1867,7 @@ const pickText=x=>typeof x==='string'?x:(docMood()>=2&&x.m)?x.m:(clarityLv()>=1&
 function talk(lines,onEnd){mode='dialog';D={lines,i:0,onEnd,typing:false,full:''};show()}
 function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who+(L.honne?' honne':'')+(box.parentNode===$('#frame')?(area()==='top'||(area()==='sky'&&player.x>1640)?' top':''):' out');D.at=performance.now();if(L.se)sfx(L.se);
   $('#dlgWho').textContent=whoName(L.who);$('#dlgCh').innerHTML='';$('#dlgMore').hidden=true;
-  D.full=pickText(L.text);D.n=0;D.typing=true;clearInterval(typeT);const el=$('#dlgTxt');el.textContent='';
+  D.full=pickText(L.text);if(L.who==='ai'||L.who==='gate')aiVoice(D.full);D.n=0;D.typing=true;clearInterval(typeT);const el=$('#dlgTxt');el.textContent='';
   typeT=setInterval(()=>{D.n+=1;el.textContent=D.full.slice(0,D.n);if(D.n%2===0&&/[^\s…・。、]/.test(D.full[D.n-1]||''))sfx('text');if(D.n>=D.full.length)doneTyping()},L.honne?48:26)}
 function doneTyping(){clearInterval(typeT);D.typing=false;D.doneAt=performance.now();$('#dlgTxt').textContent=D.full;const L=D.lines[D.i];
   if(L.choices){const sf=L.choices.findIndex(c=>/やめ|まだ|わかった|戻る/.test(c.label));D.sel=sf>=0?sf:L.choices.length-1;$('#dlgCh').innerHTML=L.choices.map((c,i)=>`<button class="nbtn ${i===D.sel?'sel':''}" type="button" data-i="${i}">${esc(c.label)}</button>`).join('');
@@ -2203,7 +2233,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">天穹区は次の版で</p>
-  <p class="muted">試作版 v0.29 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
+  <p class="muted">試作版 v0.30 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">企業区に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -2399,11 +2429,12 @@ function settingsPanel(){if(mode==='title')return;const was=mode;const o=overall
   ${rec?`<div><p>脳スペック診断の記録</p><p class="note">診断サイトの記録が見つかりました。ゲームのスキャン結果として読み込めます。</p></div><div class="prow"><button class="nbtn pink" id="imp" type="button">記録を読み込む</button></div>`:''}
   <div><p>音</p><p class="note">BGM と効果音の音量。設定はセーブに保存されます。</p></div>
   ${volHTML()}
+  ${extraHTML()}
   <div><p>セーブデータ</p><p class="note">スキャン結果と進み具合を、このブラウザに保存しています。</p></div>
   <div class="prow" id="rsRow"><button class="nbtn ghost" id="rs" type="button">最初からやり直す</button></div>
   <div class="prow"><button class="nbtn" id="cl" type="button">閉じる</button></div>`);
   $('#panel').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{S.diff=b.dataset.k;save();hud();settingsPanel()});
-  bindVol($('#panel'));
+  bindVol($('#panel'));bindExtra($('#panel'));
   const imp=$('#imp');if(imp)imp.onclick=()=>{applyScan(rec);toast('診断サイトの記録を読み込みました');settingsPanel()};
   $('#rs').onclick=()=>{$('#rsRow').innerHTML='<span class="note">スキャン結果も消えます。</span><button class="nbtn pink" id="rsy" type="button">消して最初から</button><button class="nbtn ghost" id="rsn" type="button">やめる</button>';
     $('#rsy').onclick=()=>{S={...fresh(),snd:S.snd,endings:S.endings};save();sndApply();player.dir=1;closePanel();$('#title').hidden=false;mode='title';titleButtons();hud()};$('#rsn').onclick=settingsPanel};
@@ -2416,13 +2447,13 @@ function volHTML(){const o=S.snd;
   <span class="prow"><button class="nbtn ${o.muted?'pink':'ghost'}" type="button" data-mute aria-pressed="${!!o.muted}">${o.muted?'ミュート中':'ミュート'}</button><button class="nbtn ghost" type="button" data-test data-se="">テスト音</button></span></div>
   <p class="note" data-st>状態：${esc(sndStatus())}</p>`}
 function bindVol(root){const st=()=>{const el=root.querySelector('[data-st]');if(el)el.textContent='状態：'+sndStatus();sndBtnUp()};
-  const setSnd=(k,v)=>{S.snd={...S.snd,[k]:v};save();sndStart();sndApply();st()};
+  const setSnd=(k,v)=>{S.snd={...S.snd,[k]:v};save();sndStart();sndApply();if(S.snd.muted)aiVoiceStop();st()};
   root.querySelectorAll('[data-v]').forEach(r=>{r.oninput=()=>{r.nextElementSibling.textContent=r.value+'%';setSnd(r.dataset.v,r.value/100)};if(r.dataset.v==='se')r.onchange=()=>sfx('credit')});
   root.querySelector('[data-mute]').onclick=e=>{setSnd('muted',!S.snd.muted);const b=e.currentTarget;b.textContent=S.snd.muted?'ミュート中':'ミュート';b.classList.toggle('pink',S.snd.muted);b.classList.toggle('ghost',!S.snd.muted);b.setAttribute('aria-pressed',S.snd.muted)};
   root.querySelector('[data-test]').onclick=()=>{sndStart();sfx('allow');setTimeout(st,300)}}
 function sndBtnUp(){const b=$('#sndBtn');b.textContent=S.snd.muted?'ミュート':`音量 · ${pct(S.snd.bgm??0.6)}%`}
 function sndPop(open){const pop=$('#sndPop'),b=$('#sndBtn');open=open??pop.hidden;pop.hidden=!open;b.setAttribute('aria-expanded',open);
-  if(open){sndStart();pop.innerHTML=`<div class="eyebrow">SOUND · 音量</div>${volHTML()}<p class="note">設定画面からも変えられます。</p>`;bindVol(pop);pop.querySelector('input').focus()}}
+  if(open){sndStart();pop.innerHTML=`<div class="eyebrow">SOUND · 音量</div>${volHTML()}${extraHTML()}<p class="note">設定画面からも変えられます。</p>`;bindVol(pop);bindExtra(pop);pop.querySelector('input').focus()}}
 $('#sndBtn').onclick=()=>sndPop();
 document.addEventListener('pointerdown',e=>{if(!$('#sndPop').hidden&&!e.target.closest('#sndPop,#sndBtn'))sndPop(false)});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sndPop').hidden){sndPop(false);$('#sndBtn').focus()}});
@@ -2966,7 +2997,7 @@ $('#kA').addEventListener('click',()=>{if(mode==='play')interact();else if(mode=
 cv.addEventListener('pointerdown',()=>{if(mode==='dialog')advance()});
 
 /* ===== タイトル ===== */
-function titleButtons(){const has=S.started,en=S.endings||{};$('#endRec').innerHTML=Object.keys(en).length?`エンディング ${Object.keys(en).length}/5<br>${[1,2,3,4,5].map(i=>en[i]?`END${i} ${END_NAMES[i]}`:'？？？').join('　')}`:'';$('#titleBtns').innerHTML=(has?'<button class="nbtn" id="cont" type="button">つづきから</button><button class="nbtn ghost" id="newg" type="button">はじめから</button>':'<button class="nbtn" id="newg" type="button">はじめる</button>');
+function titleButtons(){hackReset();const has=S.started,en=S.endings||{};$('#endRec').innerHTML=Object.keys(en).length?`エンディング ${Object.keys(en).length}/5<br>${[1,2,3,4,5].map(i=>en[i]?`END${i} ${END_NAMES[i]}`:'？？？').join('　')}`:'';$('#titleBtns').innerHTML=(has?'<button class="nbtn" id="cont" type="button">つづきから</button><button class="nbtn ghost" id="newg" type="button">はじめから</button>':'<button class="nbtn" id="newg" type="button">はじめる</button>');
   const c=$('#cont');if(c)c.onclick=startGame;$('#newg').onclick=()=>{if(has){S={...fresh(),snd:S.snd,endings:S.endings};save();hud()}startGame()};($('#cont')||$('#newg')).focus({preventScroll:true})}
 function startGame(){sndStart();if(!SND)toast('音のファイル（sound.js）を読み込めなかったため、音なしで動いています',6000);document.activeElement&&document.activeElement.blur();$('#title').hidden=true;mode='play';placePlayer();
   if(!S.started){S.started=true;save();talk([L('me','……東京の光が、今夜もあんなに遠い。'),L('me','子どものころ、あの光の中を見てみたいと思った。……今も、思ってる。'),L('me','村の畑と、ランタンの灯り。ここには、電気もほとんど来ない。'),L('me','あの光の中に入るには、脳のスペックがいる。……まずは、誰かに話を聞こう。')])}}
