@@ -1357,6 +1357,7 @@ const FOE={drone:{hp:3,w:14,h:9,fly:1,sp:44,weak:[0,-5],range:150,cd:2.3},
 /* 第二形態は攻撃の間を短く（stepFight の cd に掛ける） */
 const cdMul=f=>f.k==='ai'&&f.p2?0.7:1;
 function spawnFoe(k,x){const d=FOE[k],c=cbt(),max=Math.round(d.hp*c.foeHp),hp=d.boss&&F.wardenLeft?Math.min(max,F.wardenLeft):max;
+  if(k==='ai'&&TOPF.p2Start){TOPF.p2Start=false;const m=Math.round(max*0.6);F.foes.push({k,x,y:GY,vy:0,hp:m,max:m,dir:-1,st:'in',t:0,cd:1.2,hit:0,ph:0,burst:0,born:T,lastU:T,open:0,p2:1});return}
   F.foes.push({k,x,y:d.fly?-14:(d.boss||k==='seeker'?GY:-20),vy:0,hp,max,spr:k==='seeker'?SEEK_SPR[Math.floor(Math.random()*SEEK_SPR.length)]:null,born:T,lastU:T,open:0,dir:-1,st:'in',t:0,cd:0.6+Math.random()*0.8,hit:0,ph:Math.random()*6,burst:0})}
 const foeHurt=(f,n,weak)=>{if(f.k==='ai'&&f.morph&&T<f.morph)return;if(f.k==='ai'&&T>=f.open){if(T>(f.blk||0)){f.blk=T+0.5;F.fx.push({k:'txt',x:f.x,y:f.y-FOE.ai.h-4,t:T,s:'予測済み',c:'#9ad0ff'});sfx('ehit')}return}f.hp-=n;f.hit=T+0.1;F.fx.push({k:'spark',x:f.x,y:f.y-(FOE[f.k].h/2),t:T,c:weak?'#ffd34a':'#ffffff'});if(weak)F.fx.push({k:'txt',x:f.x,y:f.y-FOE[f.k].h-4,t:T,s:'WEAK',c:'#ffd34a'});sfx(weak?'weak':'ehit');
   if(f.hp<=0&&f.k==='ai'&&!f.p2)return aiPhase2(f);
@@ -1462,7 +1463,7 @@ function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
     else if(b.ai)drawAIBeam(b,t);
     else{const x=Math.round(b.x-camX),hw=9;ctx.fillStyle='rgba(120,220,255,.35)';ctx.fillRect(x-hw,-OY,hw*2,GY+OY);ctx.fillStyle='#e8fbff';ctx.fillRect(x-3,-OY,6,GY+OY)}}
   /* 予兆：中央AIは、いまの場所に赤い警告。撃つ直前だけ、読んだ先に桃色の照準 */
-  for(const f of F.foes)if(f.st==='wind'&&f.k==='ai'){drawAIWarn(f,t);if(f.px!=null&&f.t>f.wind-0.22)drawAIAim(f,t);if(f.px2!=null&&f.t>f.wind-0.22)drawAIAim({...f,px:f.px2},t)}
+  for(const f of F.foes)if(f.st==='wind'&&f.k==='ai'){drawAIWarn(f,t);const aw=f.p2?0.35:0.22;if(f.px!=null&&f.t>f.wind-aw)drawAIAim(f,t);if(f.px2!=null&&f.t>f.wind-aw)drawAIAim({...f,px:f.px2},t)}
   for(const f of F.foes)if(f.st==='wind'&&f.k==='warden'&&f.pat==='pillar'){const x=Math.round(f.tx-camX);ctx.fillStyle=`rgba(120,220,255,${0.25+0.25*Math.sin(t*30)})`;ctx.fillRect(x-9,GY-2,18,3)}
   for(const f of F.foes){const d=FOE[f.k],sx=Math.round(f.x-camX),fy=Math.round(f.y);if(sx<-40||sx>W+40)continue;drawFoe(f,sx,fy,t);
     /* GPU：弱点が光る */
@@ -1706,13 +1707,13 @@ function aiPredict(from){const row=AIB.tab[AIB.last+2][from];let best=1,bv=-1,to
   return{d:best-2,d2:sec-2,conf:tot?bv/tot:0}}
 function aiLearnMove(d,from){if(!d)return;const k=clamp(d,-2,2);AIB.tab[AIB.last+2][from][k+2]++;AIB.glob[k+2]++;AIB.last=k;habitLearn(d,from,'fight')}
 /* 必ず予測不能を起こす間隔（EASY 25秒、NORMAL 35秒、HARD は保証なし） */
-const aiGuarantee=()=>({easy:25,normal:35,hard:0})[diffNow()];
+const aiGuarantee=()=>{const p2=F.foes.some(f=>f.k==='ai'&&f.p2);return({easy:p2?18:25,normal:p2?25:35,hard:0})[diffNow()]};
 /* 攻撃の始め（警告）：警告の位置と、読んだ先を決める */
 function aiWind(f){f.wx=player.x;f.from=aiRegion(player.x);const g=aiGuarantee(),force=g&&T-AIB.lastU>=g-2;
-  const p=aiPredict(f.from),cl=x=>clamp(x,F.zone.x0+8,STAGES.top.ai-50);f.pd=force?null:p.d;f.px=f.pd==null?null:cl(player.x+f.pd*AI_LANE);f.px2=f.p2&&!force?cl(player.x+p.d2*AI_LANE):null;f.force=force;if(f.p2)f.wind=0.85+0.15*cbt().tell}
+  const p=aiPredict(f.from),cl=x=>clamp(x,F.zone.x0+8,STAGES.top.ai-50);f.pd=force?null:p.d;f.px=f.pd==null?null:cl(player.x+f.pd*AI_LANE);f.px2=f.p2&&!force?cl(player.x+p.d2*AI_LANE):null;if(f.px2!=null&&f.px!=null&&Math.abs(f.px2-f.px)<AI_LANE/2)f.px2=cl(f.px+(f.px<STAGES.top.ai-100?AI_LANE:-AI_LANE));f.force=force;if(f.p2)f.wind=0.85+0.15*cbt().tell}
 /* 第二形態：あなたの癖を理解した姿。読みを2つ撃ち、攻撃の間が短くなる。体力は7割から */
-function aiPhase2(f){f.p2=1;f.max=Math.round(f.max*0.7);f.hp=f.max;f.open=0;f.morph=T+2.2;f.st='move';f.cd=2.4;F.beams=[];F.eshots=[];shakeT=T+1.6;sfx('warden');sfx('boom');buzz([80,40,160]);
-  mood('boss');setTimeout(()=>{if(TOPF.fight&&mode==='play')talk(AI_P2.map(t=>L('ai',t)))},2300)}/* 変身が見えるように、セリフは変わり終えてから */
+function aiPhase2(f){f.p2=1;f.max=Math.round(f.max*0.6);f.hp=f.max;f.open=0;f.morph=T+2.2;f.st='move';f.cd=2.4;F.beams=[];F.eshots=[];shakeT=T+1.6;sfx('warden');sfx('boom');buzz([80,40,160]);
+  mood('boss');setTimeout(()=>{if(TOPF.fight&&mode==='play'){TOPF.lowDlg=true;talk(AI_P2.map(t=>L('ai',t)),()=>{TOPF.lowDlg=false})}},2300)}/* 変身が見えるように、セリフは変わり終えてから */
 /* 撃つ：警告の位置と、読んだ先。動いた向きを学ぶ */
 function aiFire(f){const d=clamp(Math.round((player.x-f.wx)/AI_LANE),-2,2);AIB.turns++;aiLearnMove(d,f.from);
   F.beams.push({k:'pillar',x:f.wx,on:T,off:T+0.45,ai:1});if(f.px!=null)F.beams.push({k:'pillar',x:f.px,on:T,off:T+0.45,ai:1,pred:1});if(f.px2!=null)F.beams.push({k:'pillar',x:f.px2,on:T,off:T+0.45,ai:1,pred:1});sfx('laser');
@@ -1825,7 +1826,7 @@ function stepTop2(dt){if(!TOPF.fight||mode!=='play')return;const z=F.zone;if(!z)
       talk([...END3_TEXT.hack,...(me?END3_TEXT.me:[])])}
     if(T-TOPF.t0>26)return end3Capture()}}
 /* 中央区で倒れたとき：END3 は捕まる。END4・5 はボス戦の始めからやり直し */
-function topFallen(){if(TOPF.no===3)return end3Capture();AIB.lastU=T;
+function topFallen(){if(TOPF.no===3)return end3Capture();AIB.lastU=T;{const a=F.foes.find(f=>f.k==='ai');TOPF.p2Start=!!(a&&a.p2)&&diffNow()!=='hard'}
   mode='fade';$('#fade').classList.add('on');setTimeout(()=>{player.x=70;player.y=GY;player.vx=player.vy=0;player.dir=1;F.wardenLeft=null;startTopFight();camX=0;
     $('#fade').classList.remove('on');setTimeout(()=>{talk(pick3('fallen',FALLEN).map(([w,t])=>L(w,t)))},380)},600)}
 async function end3Capture(){if(!TOPF.fight)return;stopTopFight(true);mode='cut';keys.l=keys.r=keys.fire=false;F.hacked=false;
@@ -1912,7 +1913,7 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;T=
   if(area()==='top'&&mode!=='panel')stepTop(dt);
   if(mode==='play'){const st=ST(),cm=CAMMAX_OF(area());stepPlayer(dt,st);
     /* 主人公の位置を先に丸めて、カメラと描く位置をそろえる（ぶれ防止） */
-    {const bs=F.zone&&F.zone.boss,w=bs&&F.foes.find(f=>FOE[f.k].boss);let cx=Math.round(player.x)-Math.round(W*(bs?0.22:0.42));if(w)cx=Math.min(Math.round(player.x)-(w.k==='ai'?74:14),Math.max(cx,Math.round(w.x)+28-W));camX=clamp(cx,0,cm)}
+    {const bs=F.zone&&F.zone.boss,w=bs&&F.foes.find(f=>FOE[f.k].boss);let cx=Math.round(player.x)-Math.round(W*(bs?0.22:0.42));if(w)cx=w.k==='ai'&&W>=300?Math.round(w.x)+40-W:Math.min(Math.round(player.x)-(w.k==='ai'?74:14),Math.max(cx,Math.round(w.x)+28-W));camX=clamp(cx,0,cm)}
     /* 右（ゲート）へ進むほど BGM が明るい */
     const pr=camX/Math.max(1,cm),br=Math.round((area()==='sky'?0.75+0.25*pr:area()==='top'?1:area()==='corp'?0.6+0.3*pr:area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='cut'){const fx=camT?camT.x:player.x,tx=clamp(Math.round(fx)-Math.round(W*(camT?0.5:0.42)),0,CAMMAX_OF(area()));camX=Math.round(camX+(tx-camX)*Math.min(1,dt*3))}
@@ -1943,7 +1944,7 @@ function whoName(id){return WHO[id]}
 /* 文章の出し分け：{n:ふつう, c:澄み, m:機械} */
 const pickText=x=>typeof x==='string'?x:(docMood()>=2&&x.m)?x.m:(clarityLv()>=1&&x.c)?x.c:x.n;
 function talk(lines,onEnd){mode='dialog';D={lines,i:0,onEnd,typing:false,full:''};show()}
-function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who+(L.honne?' honne':'')+(box.parentNode===$('#frame')?(area()==='top'||(area()==='sky'&&player.x>1640)?' top':''):' out');D.at=performance.now();if(L.se)sfx(L.se);
+function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who+(L.honne?' honne':'')+(box.parentNode===$('#frame')?((area()==='top'&&!TOPF.lowDlg)||(area()==='sky'&&player.x>1640)?' top':''):' out');D.at=performance.now();if(L.se)sfx(L.se);
   $('#dlgWho').textContent=whoName(L.who);$('#dlgCh').innerHTML='';$('#dlgMore').hidden=true;
   D.full=pickText(L.text);if(L.who==='ai'||L.who==='gate')aiVoice(D.full);D.n=0;D.typing=true;clearInterval(typeT);const el=$('#dlgTxt');el.textContent='';
   typeT=setInterval(()=>{D.n+=1;el.textContent=D.full.slice(0,D.n);if(D.n%2===0&&/[^\s…・。、]/.test(D.full[D.n-1]||''))sfx('text');if(D.n>=D.full.length)doneTyping()},L.honne?48:26)}
