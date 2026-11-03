@@ -252,7 +252,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.31 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.32 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -295,7 +295,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.31"></script>
+<script src="sound.js?v=0.32"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -953,19 +953,19 @@ function drawFoe(f,sx,fy,t){const fl=f.dir<0,wh=T<f.hit;
     if(f.st==='atk'&&f.k==='cyborg'){ctx.fillStyle='rgba(255,74,92,.35)';ctx.fillRect(sx-(fl?-6:12),fy-12,6,8);ctx.fillStyle='rgba(255,176,188,.3)';ctx.fillRect(sx-(fl?-12:18),fy-10,6,4)}}
   if(wh){ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,255,255,.55)';const d=FOE[f.k];ctx.fillRect(sx-d.w/2,fy-d.h,d.w,d.h);ctx.globalCompositeOperation='source-over'}}
 /* 大規模AIの核：ふだんは盾（予測の網）に守られ、「予測不能」のあいだだけむき出しになる */
-let AI_NET=null;/* 予測の網（六角の網を球に巻いた形）。半ピクセルの細かさで一度だけ作る */
-function aiNet(){if(AI_NET)return AI_NET;const R=27,c=document.createElement('canvas');c.width=c.height=(R*2+4)*2;const g=c.getContext('2d'),o=R+2,a=6,Rp=R*2/Math.PI;
+const AI_NET={};/* 予測の網（六角の網を球に巻いた形）。半ピクセルの細かさで一度だけ作る。red は第二形態の赤い網 */
+function aiNet(red){const key=red?'r':'b';if(AI_NET[key])return AI_NET[key];const C=red?['rgba(230,30,70,.9)','#ffd0d8','rgba(255,70,100,.9)','#c0102e','rgba(255,190,200,.9)']:['rgba(60,140,240,.85)','#ffffff','rgba(90,170,255,.9)','#3a8aff','rgba(200,235,255,.9)'];const R=27,c=document.createElement('canvas');c.width=c.height=(R*2+4)*2;const g=c.getContext('2d'),o=R+2,a=6,Rp=R*2/Math.PI;
   const map=(x,y)=>{const r=Math.hypot(x,y);if(r>=Rp*Math.PI/2)return null;const k=r?R*Math.sin(r/Rp)/r:1;return[x*k,y*k]},dot=(x,y,col)=>{g.fillStyle=col;g.fillRect(Math.round((o+x)*2),Math.round((o+y)*2),1,1)};
   const vs=[];for(let q=-8;q<=8;q++)for(let r=-8;r<=8;r++){const cx=a*1.5*q,cy=a*Math.sqrt(3)*(r+q/2);for(let k=0;k<6;k++){const b1=k*Math.PI/3,b2=(k+1)*Math.PI/3,p1=[cx+a*Math.cos(b1),cy+a*Math.sin(b1)],p2=[cx+a*Math.cos(b2),cy+a*Math.sin(b2)];
-    for(let i=0;i<=10;i++){const m=map(p1[0]+(p2[0]-p1[0])*i/10,p1[1]+(p2[1]-p1[1])*i/10);if(m)dot(m[0],m[1],'rgba(60,140,240,.85)')}const m=map(p1[0],p1[1]);if(m)vs.push(m)}}
-  for(const [x,y] of vs){dot(x,y,'#ffffff');dot(x+0.5,y,'rgba(90,170,255,.9)')}
-  for(let i=0;i<360;i++){const b=i*Math.PI/180;dot(Math.cos(b)*R,Math.sin(b)*R,'#3a8aff');dot(Math.cos(b)*(R-0.5),Math.sin(b)*(R-0.5),'rgba(200,235,255,.9)')}
-  AI_NET=c;return c}
-function drawAIShield(f,sx,fy,t){const cy=fy-78,R=27,left=f.open-T,open=left>0,net=aiNet();
+    for(let i=0;i<=10;i++){const m=map(p1[0]+(p2[0]-p1[0])*i/10,p1[1]+(p2[1]-p1[1])*i/10);if(m)dot(m[0],m[1],C[0])}const m=map(p1[0],p1[1]);if(m)vs.push(m)}}
+  for(const [x,y] of vs){dot(x,y,C[1]);dot(x+0.5,y,C[2])}
+  for(let i=0;i<360;i++){const b=i*Math.PI/180;dot(Math.cos(b)*R,Math.sin(b)*R,C[3]);dot(Math.cos(b)*(R-0.5),Math.sin(b)*(R-0.5),C[4])}
+  AI_NET[key]=c;return c}
+function drawAIShield(f,sx,fy,t){if(f.p2)drawAIForm2(f,sx,fy,t);const cy=fy-78,R=27,left=f.open-T,open=left>0,net=aiNet(f.p2),N=f.p2?'255,50,80':'110,180,255';
   if(!open){/* 盾：薄い膜、網、上から下へなぞる予測の線、網の上を回る光 */
-    for(let dy=-R;dy<=R;dy++){const hw=Math.round(Math.sqrt(R*R-dy*dy));ctx.fillStyle=`rgba(110,180,255,${0.16+0.06*Math.sin(t*2+dy*0.2)})`;ctx.fillRect(sx-hw,cy+dy,hw*2,1)}
+    for(let dy=-R;dy<=R;dy++){const hw=Math.round(Math.sqrt(R*R-dy*dy));ctx.fillStyle=`rgba(${N},${(f.p2?0.1:0.16)+0.06*Math.sin(t*2+dy*0.2)})`;ctx.fillRect(sx-hw,cy+dy,hw*2,1)}
     ctx.globalAlpha=0.8+0.2*Math.sin(t*3);ctx.drawImage(net,sx-R-2,cy-R-2,R*2+4,R*2+4);ctx.globalAlpha=1;
-    const sy=Math.round(((t*26)%(R*2))-R),hw=Math.round(Math.sqrt(Math.max(0,R*R-sy*sy)));ctx.fillStyle='rgba(255,255,255,.95)';ctx.fillRect(sx-hw,cy+sy,hw*2,1);ctx.fillStyle='rgba(90,170,255,.4)';ctx.fillRect(sx-hw,cy+sy-2,hw*2,2);
+    const sy=Math.round(((t*26)%(R*2))-R),hw=Math.round(Math.sqrt(Math.max(0,R*R-sy*sy)));ctx.fillStyle='rgba(255,255,255,.95)';ctx.fillRect(sx-hw,cy+sy,hw*2,1);ctx.fillStyle=f.p2?'rgba(255,50,80,.4)':'rgba(90,170,255,.4)';ctx.fillRect(sx-hw,cy+sy-2,hw*2,2);
     for(let k=0;k<3;k++){const b=t*1.6+k*2.1;ctx.fillStyle='#ffffff';ctx.fillRect(Math.round(sx+Math.cos(b)*R)-1,Math.round(cy+Math.sin(b)*R*0.35)-1,2,2)}
     return}
   const e=3.5-left;
@@ -984,6 +984,37 @@ function drawAIShield(f,sx,fy,t){const cy=fy-78,R=27,left=f.open-T,open=left>0,n
   for(const [dx,dy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){const x=sx+dx*o-(dx>0?1:0),y=cy+dy*o-(dy>0?1:0);ctx.fillRect(dx<0?x:x-3,y,4,1);ctx.fillRect(x,dy<0?y:y-3,1,4)}
   /* 閉じる直前：網がまた張られていく */
   if(left<0.8){ctx.globalAlpha=(1-left/0.8)*(Math.floor(t*14)%2?0.7:0.3);ctx.drawImage(net,sx-R-2,cy-R-2,R*2+4,R*2+4);ctx.globalAlpha=1}}
+/* 第二形態：癖を理解したAI。白い殻が割れて赤黒い棘になり、核から触手のケーブルが伸び、たくさんの目がリクを見る。
+   m は変わる途中（0→1）。白い殻のかけらが飛び、棘とケーブルが育ち、目が一つずつ開く。核の位置（足もとから78上）は変えない */
+function drawAIForm2(f,sx,fy,t){const cy=fy-78,m=f.morph&&T<f.morph?clamp(1-(f.morph-T)/2.2,0,1):1,e=m*m*(3-2*m),
+  hb=t%1.1,beat=Math.max(0,1-hb/0.16)+0.6*Math.max(0,1-Math.abs(hb-0.3)/0.14),D='#12030a',
+  P=(c,x,y,w,h)=>{ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w||1,h||1)},
+  tx=player.x-camX,ty=player.y-12;ctx.save();
+  /* 脈打つ赤い気配（心臓のように2回ずつ） */
+  for(let dy=-50;dy<=50;dy+=2){const hw=Math.round(Math.sqrt(2500-dy*dy)*e);ctx.fillStyle=`rgba(170,0,30,${(0.08+0.1*beat)*e})`;ctx.fillRect(sx-hw,cy+dy,hw*2,2)}
+  /* 触手のケーブル：核から上下左右へ。うねり、床に着いたら床をはう */
+  const TN=[[Math.PI+0.2,70,-0.5],[Math.PI-0.6,60,0.9],[Math.PI+0.95,58,-0.9],[-Math.PI/2-0.3,52,-0.8],[-Math.PI/2+0.3,52,0.8],[-0.2,70,0.5],[-0.6,60,-0.9],[0.95,58,0.9]];
+  const paths=TN.map(([a0,L,cu],k)=>{const pts=[],n=Math.round(L*e);let x=sx+Math.cos(a0)*14,y=cy+Math.sin(a0)*14,a=a0;
+    for(let i=0;i<n;i++){const u=i/L;a=a0+cu*u*u+Math.sin(t*1.6+k*1.3+u*5)*0.28*u;x+=Math.cos(a);y+=Math.sin(a);if(y>fy-2)y=fy-2;if(y<16-OY)y=16-OY;pts.push([x,y,u<0.35?4:u<0.7?3:2])}return pts});
+  for(const pts of paths)for(const [x,y,w] of pts)P(D,x-w/2-1,y-w/2-1,w+2,w+2);
+  paths.forEach((pts,k)=>{pts.forEach(([x,y,w],i)=>{P(i%7===3?'#2a0610':'#4a0c18',x-w/2,y-w/2,w,w);if(w>2)P('#8a1a2c',x-w/2,y-w/2,1,1)});
+    /* 核へ吸い上げる光（先から根もとへ） */
+    if(pts.length>4)for(let q=0;q<2;q++){const i=Math.floor((1-((t*0.7+k*0.29+q*0.5)%1))*(pts.length-1)),[x,y,w]=pts[i];P('#ff3b4e',x-w/2,y-w/2,w,w);P('#ffb0bc',x-0.5,y-0.5,1,1)}});
+  /* 割れた殻：赤黒い棘が核を囲む。まん中に赤く光るひび */
+  const SH=11,sh=[];for(let i=0;i<SH;i++){const a=i*Math.PI*2/SH-Math.PI/2+(hsh(i,3)-0.5)*0.32,r0=21,r1=r0+(9+hsh(i,5)*15)*e+beat*1.5,bw=3.5+hsh(i,9)*2.5;sh.push([a,r0,r1,bw])}
+  const spike=(a,r0,r1,bw,o,col)=>{const ca=Math.cos(a),sa=Math.sin(a);for(let d=r0;d<=r1+o;d+=0.5){const hw=(bw+o)*(1-(d-r0)/(r1+o-r0));for(let w=-hw;w<=hw;w+=0.5){const c=col(d,w,hw);P(c,sx+ca*d-sa*w,cy+sa*d+ca*w,1,1)}}};
+  for(const [a,r0,r1,bw] of sh)spike(a,r0,r1,bw,1.2,()=>D);
+  for(const [a,r0,r1,bw] of sh)spike(a,r0,r1,bw,0,(d,w)=>Math.abs(w)<0.6&&d<r1-3?`rgba(255,${40+80*beat|0},70,${0.7+0.3*beat})`:w<0?'#5e1424':'#2c0710');
+  /* たくさんの目：リクのいる方を見る。ときどき別々にまばたき */
+  const eye=(x,y,i,big)=>{if(m<0.35+(i%12)*0.05)return;const ox=Math.abs(tx-x)>6?Math.sign(tx-x):0,oy=ty<y-14?-1:0,bl=(t*0.55+hsh(i,1)*7)%3.3<0.13,S='#ffe0e6';
+    if(big){P(D,x-4,y-1,9,3);P(D,x-3,y-2,7,5);if(bl){P('#ff3b4e',x-3,y,7,1);return}P(S,x-3,y,7,1);P(S,x-2,y-1,5,3);P(beat>0.5?'#ff5068':'#e01030',x-1+ox,y-1,3,3);P(D,x+ox,y-1+(oy<0?0:1),1,oy<0?2:1);P('#ffffff',x-1+ox,y-1,1,1)}
+    else{P(D,x-3,y-1,7,3);P(D,x-2,y-2,5,5);if(bl){P('#ff3b4e',x-2,y,5,1);return}P(S,x-2,y,5,1);P(S,x-1,y-1,3,3);P('#e01030',x+ox,y+(oy<0?-1:0),1,1)}};
+  sh.forEach(([a,r0,r1],i)=>{if(r1-r0>13)eye(sx+Math.cos(a)*(r0+10),cy+Math.sin(a)*(r0+10),i,i%3===0)});/* 網（半径27）の外に出す */
+  paths.forEach((pts,k)=>{if(k===3||k===4||pts.length<10)return;const [x,y]=pts[pts.length-1];P(D,x-4,y-3,9,7);P('#4a0c18',x-3,y-2,7,5);eye(x,y,k+11,1)});
+  /* 変わる途中：白い殻のかけらが飛び散り、赤いひびと乱れた線が走る */
+  if(m<1){const a=1-m;for(let i=0;i<16;i++){const b=i*0.393+hsh(i,2),d=20+m*44*(0.6+hsh(i,4)*0.6),x=sx+Math.cos(b)*d,y=cy+Math.sin(b)*d+m*m*30;ctx.globalAlpha=a;P('#c8b898',x,y+1,4,2);P('#fffaf0',x,y,4,1);P('#f4ecdc',x+1,y+1,2,1);ctx.globalAlpha=1}
+    for(let k=0;k<5;k++){const y=cy-34+Math.floor(hsh(k,Math.floor(t*18))*68),w=14+Math.floor(hsh(k+5,Math.floor(t*18))*40);P(k%2?`rgba(255,59,78,${0.7*a})`:`rgba(255,255,255,${0.8*a})`,sx-w/2+(hsh(k,9)-0.5)*20,y,w,1)}}
+  ctx.restore()}
 /* 中央区ゲートの番人：脚の長い白い警備機。胸の赤い核が弱点 */
 function drawWarden(f,sx,fy,t){const x=sx,y=fy,w=f.st==='wind',p=f.pat,R=(c,a,b,ww,hh)=>{ctx.fillStyle=c;ctx.fillRect(x+a,y+b,ww,hh)},O='#4a5470',D='#8a94aa',M='#c4cad8',L='#eef2f8',G='#e0b85a';
   R('rgba(40,50,80,.25)',-22,-1,44,2);
@@ -1076,18 +1107,27 @@ function drawTopBG(t){const ax=Math.round(STAGES.top.ai-camX);
     for(let r=0;r<8;r++){const y=GY-26-h+r*7;ctx.fillStyle='#e4d8c0';ctx.fillRect(x+6,y,13,5);for(let k=0;k<3;k++){const on=hsh(i*9+r,Math.floor(t*4)+k)>0.5;ctx.fillStyle=on?(k===2?'#ff6a90':'#ffb050'):'#cbbd9e';ctx.fillRect(x+8+k*4,y+2,2,1)}}}}
   ctx.fillStyle='#efe6d4';ctx.fillRect(0,GY-30,W,30);ctx.fillStyle='#e2d6be';ctx.fillRect(0,GY-30,W,1);
   /* 大規模AIの核（手前、ai の位置）：台座、まわる光の輪、桃色の目。床へ広がる太いケーブル */
-  ctx.fillStyle='rgba(255,220,160,.3)';ctx.fillRect(ax-50,-OY,100,GY+OY);ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillRect(ax-3,-OY,6,GY-100+OY);
-  for(const s of [-1,1])for(let k=0;k<3;k++){const x0=ax+s*28,ex=ax+s*(62+k*40),y0=GY-8,ey=GY+2+k*4,ph=(t*0.6+k*0.33+(s>0?0.5:0))%1;for(let i=0;i<=24;i++){const f=i/24,x=Math.round(x0+(ex-x0)*f),y=Math.round(y0+(ey-y0)*Math.sin(f*Math.PI/2));ctx.fillStyle='#b8a888';ctx.fillRect(x,y,3,2);ctx.fillStyle='#ece2cc';ctx.fillRect(x,y,3,1)}
-    const px=Math.round(x0+(ex-x0)*(1-ph)),py=Math.round(y0+(ey-y0)*Math.sin((1-ph)*Math.PI/2));ctx.fillStyle='rgba(255,110,160,.9)';ctx.fillRect(px,py,3,1)}
+  /* 第二形態（p2）では赤黒く変わる。変わる途中は白と赤がちらつく */
+  const af=F.foes.find(f=>f.k==='ai'),mm=af&&af.morph&&T<af.morph?clamp(1-(af.morph-T)/2.2,0,1):1,p2=!!(af&&af.p2)&&(mm>=1||hsh(Math.floor(t*14),7)<mm*0.85+0.1);
+  const C=p2?{glow:'rgba(200,20,50,.2)',beam:'rgba(255,60,90,.6)',cab:'#2a0810',cabH:'#6a1424',pul:'rgba(255,40,70,.95)',col:'#3a0c16',colH:'#6a1a26',colD:'#14040a',post:'#2a0810',postH:'#5a1420',r1:'rgba(255,40,70,.95)',r2:'rgba(120,10,30,.6)',drip:'rgba(255,40,70,.85)'}
+    :{glow:'rgba(255,220,160,.3)',beam:'rgba(255,255,255,.7)',cab:'#b8a888',cabH:'#ece2cc',pul:'rgba(255,110,160,.9)',col:'#d6c8a8',colH:'#f4ecdc',colD:'#b8a888',post:'#c8b898',postH:'#e8dcc4',r1:'rgba(255,120,170,.95)',r2:'rgba(255,190,110,.5)',drip:'rgba(255,120,170,.75)'};
+  ctx.fillStyle=C.glow;ctx.fillRect(ax-50,-OY,100,GY+OY);ctx.fillStyle=C.beam;ctx.fillRect(ax-3,-OY,6,GY-100+OY);
+  for(const s of [-1,1])for(let k=0;k<3;k++){const x0=ax+s*28,ex=ax+s*(62+k*40),y0=GY-8,ey=GY+2+k*4,ph=(t*0.6+k*0.33+(s>0?0.5:0))%1;for(let i=0;i<=24;i++){const f=i/24,x=Math.round(x0+(ex-x0)*f),y=Math.round(y0+(ey-y0)*Math.sin(f*Math.PI/2));ctx.fillStyle=C.cab;ctx.fillRect(x,y,3,2);ctx.fillStyle=C.cabH;ctx.fillRect(x,y,3,1)}
+    const px=Math.round(x0+(ex-x0)*(1-ph)),py=Math.round(y0+(ey-y0)*Math.sin((1-ph)*Math.PI/2));ctx.fillStyle=C.pul;ctx.fillRect(px,py,3,1)}
   ctx.fillStyle='#b8a888';ctx.fillRect(ax-40,GY-14,80,14);ctx.fillStyle='#e8dcc4';ctx.fillRect(ax-38,GY-14,76,3);ctx.fillStyle='#d6c8a8';ctx.fillRect(ax-30,GY-24,60,10);ctx.fillStyle='#f4ecdc';ctx.fillRect(ax-30,GY-24,60,2);
-  ctx.fillStyle='#d6c8a8';ctx.fillRect(ax-8,GY-100,16,78);ctx.fillStyle='#f4ecdc';ctx.fillRect(ax-8,GY-100,5,78);ctx.fillStyle='#b8a888';ctx.fillRect(ax+5,GY-100,3,78);
-  for(const s of [-1,1]){ctx.fillStyle='#c8b898';ctx.fillRect(ax+s*20-(s<0?6:0),GY-80,6,58);ctx.fillStyle='#e8dcc4';ctx.fillRect(ax+s*20-(s<0?6:0),GY-80,2,58);ctx.fillRect(ax+s*8-(s<0?14:0),GY-82,14,3)}
+  ctx.fillStyle=C.col;ctx.fillRect(ax-8,GY-100,16,78);ctx.fillStyle=C.colH;ctx.fillRect(ax-8,GY-100,5,78);ctx.fillStyle=C.colD;ctx.fillRect(ax+5,GY-100,3,78);
+  for(const s of [-1,1]){ctx.fillStyle=C.post;ctx.fillRect(ax+s*20-(s<0?6:0),GY-80,6,58);ctx.fillStyle=C.postH;ctx.fillRect(ax+s*20-(s<0?6:0),GY-80,2,58);ctx.fillRect(ax+s*8-(s<0?14:0),GY-82,14,3)}
   {const cy=GY-78,eye=0.6+0.4*Math.sin(t*1.3);
+    if(p2){/* 割れた殻：黒い卵に赤く光るひび */
+      for(let dy=-22;dy<=22;dy++){const hw=Math.round(Math.sqrt(22*22-dy*dy));ctx.fillStyle=dy<-14?'#4a1020':dy<8?'#2a0812':'#160409';ctx.fillRect(ax-hw,cy+dy,hw*2,1)}
+      for(let k=0;k<7;k++){let b=k*0.9+0.4,x=ax+Math.cos(b)*7,y=cy+Math.sin(b)*7;for(let i=0;i<16;i++){b+=(hsh(k,i)-0.5)*0.9;x+=Math.cos(b);y+=Math.sin(b);if(Math.hypot(x-ax,y-cy)>21)break;ctx.fillStyle='#ff3b4e';ctx.fillRect(Math.round(x),Math.round(y),1,1);ctx.fillStyle='rgba(255,60,90,.35)';ctx.fillRect(Math.round(x)+1,Math.round(y),1,1)}}
+      ctx.fillStyle=`rgba(255,30,60,${0.35*eye})`;ctx.fillRect(ax-12,cy-12,24,24);ctx.fillStyle='#12030a';ctx.fillRect(ax-9,cy-9,18,18);ctx.fillStyle=`rgba(255,40,70,${0.6+0.4*eye})`;ctx.fillRect(ax-7,cy-7,14,14);ctx.fillStyle='#ff9aa8';ctx.fillRect(ax-4,cy-4,8,8);ctx.fillStyle='#fff0f4';ctx.fillRect(ax-2,cy-2,4,4)}
+    else{
     for(let dy=-22;dy<=22;dy++){const hw=Math.round(Math.sqrt(22*22-dy*dy));ctx.fillStyle=dy<-14?'#fffaf0':dy<8?'#f4ecdc':'#ddd0b4';ctx.fillRect(ax-hw,cy+dy,hw*2,1)}
     ctx.fillStyle='#c8b898';ctx.fillRect(ax-22,cy-1,44,2);ctx.fillRect(ax-1,cy-22,2,44);
-    ctx.fillStyle=`rgba(255,80,120,${0.3*eye})`;ctx.fillRect(ax-12,cy-12,24,24);ctx.fillStyle='#5a3a48';ctx.fillRect(ax-9,cy-9,18,18);ctx.fillStyle=`rgba(255,90,130,${0.55+0.4*eye})`;ctx.fillRect(ax-7,cy-7,14,14);ctx.fillStyle='#ff9ab8';ctx.fillRect(ax-4,cy-4,8,8);ctx.fillStyle='#fff0f4';ctx.fillRect(ax-2,cy-2,4,4);
-    for(let k=0;k<2;k++){const a=t*(0.6+k*0.25)+k*2,rx=32+k*12,yy=cy+6-k*20;for(let i=0;i<64;i++){const b=a+i*Math.PI/32,x=Math.round(ax+Math.cos(b)*rx),y=Math.round(yy+Math.sin(b)*rx*0.16);if(Math.sin(b)<0&&Math.abs(x-ax)<22&&Math.abs(y-cy)<22)continue;ctx.fillStyle=Math.sin(b)>0?'rgba(255,120,170,.95)':'rgba(255,190,110,.5)';ctx.fillRect(x,y,1,1)}}}
-  for(let i=0;i<10;i++){const y=Math.round(((t*40+i*37)%(GY-100+OY))-OY);ctx.fillStyle='rgba(255,120,170,.75)';ctx.fillRect(ax-2+(i%3)*2,y,1,4)}
+    ctx.fillStyle=`rgba(255,80,120,${0.3*eye})`;ctx.fillRect(ax-12,cy-12,24,24);ctx.fillStyle='#5a3a48';ctx.fillRect(ax-9,cy-9,18,18);ctx.fillStyle=`rgba(255,90,130,${0.55+0.4*eye})`;ctx.fillRect(ax-7,cy-7,14,14);ctx.fillStyle='#ff9ab8';ctx.fillRect(ax-4,cy-4,8,8);ctx.fillStyle='#fff0f4';ctx.fillRect(ax-2,cy-2,4,4);}
+    for(let k=0;k<2;k++){const a=t*(0.6+k*0.25)+k*2,rx=32+k*12,yy=cy+6-k*20;for(let i=0;i<64;i++){const b=a+i*Math.PI/32,x=Math.round(ax+Math.cos(b)*rx),y=Math.round(yy+Math.sin(b)*rx*0.16);if(Math.sin(b)<0&&Math.abs(x-ax)<22&&Math.abs(y-cy)<22)continue;ctx.fillStyle=Math.sin(b)>0?C.r1:C.r2;ctx.fillRect(x,y,1,1)}}}
+  for(let i=0;i<10;i++){const y=Math.round(((t*40+i*37)%(GY-100+OY))-OY);ctx.fillStyle=C.drip;ctx.fillRect(ax-2+(i%3)*2,y,1,4)}
   /* 床：光る石の床。格子と、AIへ向かって流れる光 */
   ctx.fillStyle='#f4efe4';ctx.fillRect(0,GY,W,182-GY);ctx.fillStyle='#fffaf2';ctx.fillRect(0,GY+2,W,5);ctx.fillStyle='rgba(255,180,120,.45)';for(let x=-(camX%16);x<W;x+=16)ctx.fillRect(Math.round(x),GY,1,180-GY);ctx.fillRect(0,GY+12,W,1);ctx.fillRect(0,GY+24,W,1);
   ctx.fillStyle='#ffd8a0';ctx.fillRect(0,GY,W,1);ctx.fillStyle='rgba(255,120,170,.6)';for(let x=-((camX-Math.floor(t*40))%24+24)%24;x<W;x+=24)ctx.fillRect(Math.round(x),GY+18,5,1)}
@@ -1314,9 +1354,13 @@ const FOE={drone:{hp:3,w:14,h:9,fly:1,sp:44,weak:[0,-5],range:150,cd:2.3},
   warden:{hp:70,w:40,h:54,sp:0,weak:[0,-32],range:400,cd:2.2,boss:1},
   seeker:{hp:2,w:10,h:16,sp:40,weak:[0,-14],range:0,cd:9},
   ai:{hp:60,w:44,h:100,sp:0,weak:[0,-78],range:999,cd:1.0,boss:1}};
+/* 第二形態は攻撃の間を短く（stepFight の cd に掛ける） */
+const cdMul=f=>f.k==='ai'&&f.p2?0.7:1;
 function spawnFoe(k,x){const d=FOE[k],c=cbt(),max=Math.round(d.hp*c.foeHp),hp=d.boss&&F.wardenLeft?Math.min(max,F.wardenLeft):max;
+  if(k==='ai'&&TOPF.p2Start){TOPF.p2Start=false;const m=Math.round(max*0.6);F.foes.push({k,x,y:GY,vy:0,hp:m,max:m,dir:-1,st:'in',t:0,cd:1.2,hit:0,ph:0,burst:0,born:T,lastU:T,open:0,p2:1});return}
   F.foes.push({k,x,y:d.fly?-14:(d.boss||k==='seeker'?GY:-20),vy:0,hp,max,spr:k==='seeker'?SEEK_SPR[Math.floor(Math.random()*SEEK_SPR.length)]:null,born:T,lastU:T,open:0,dir:-1,st:'in',t:0,cd:0.6+Math.random()*0.8,hit:0,ph:Math.random()*6,burst:0})}
-const foeHurt=(f,n,weak)=>{if(f.k==='ai'&&T>=f.open){if(T>(f.blk||0)){f.blk=T+0.5;F.fx.push({k:'txt',x:f.x,y:f.y-FOE.ai.h-4,t:T,s:'予測済み',c:'#9ad0ff'});sfx('ehit')}return}f.hp-=n;f.hit=T+0.1;F.fx.push({k:'spark',x:f.x,y:f.y-(FOE[f.k].h/2),t:T,c:weak?'#ffd34a':'#ffffff'});if(weak)F.fx.push({k:'txt',x:f.x,y:f.y-FOE[f.k].h-4,t:T,s:'WEAK',c:'#ffd34a'});sfx(weak?'weak':'ehit');
+const foeHurt=(f,n,weak)=>{if(f.k==='ai'&&f.morph&&T<f.morph)return;if(f.k==='ai'&&T>=f.open){if(T>(f.blk||0)){f.blk=T+0.5;F.fx.push({k:'txt',x:f.x,y:f.y-FOE.ai.h-4,t:T,s:'予測済み',c:'#9ad0ff'});sfx('ehit')}return}f.hp-=n;f.hit=T+0.1;F.fx.push({k:'spark',x:f.x,y:f.y-(FOE[f.k].h/2),t:T,c:weak?'#ffd34a':'#ffffff'});if(weak)F.fx.push({k:'txt',x:f.x,y:f.y-FOE[f.k].h-4,t:T,s:'WEAK',c:'#ffd34a'});sfx(weak?'weak':'ehit');
+  if(f.hp<=0&&f.k==='ai'&&!f.p2)return aiPhase2(f);
   if(f.hp<=0){f.dead=1;F.fx.push({k:'boom',x:f.x,y:f.y-FOE[f.k].h/2,t:T,r:FOE[f.k].boss?26:10});sfx('boom')}};
 const weakAt=f=>{const d=FOE[f.k];return{x:f.x+d.weak[0]*f.dir,y:f.y+d.weak[1]}};
 /* プレイヤーの当たり（足もと y から上に 15） */
@@ -1354,6 +1398,7 @@ function stepFight(dt){const st=ST(),c=cbt();
   for(const f of F.foes){const d=FOE[f.k],dx=player.x-f.x,dist=Math.abs(dx);f.t+=dt;
     if(f.st==='in'){if(d.fly){f.y+=60*dt;if(f.y>=GY-46){f.st='move'}}else{f.vy+=PHYS.grav*dt;f.y+=f.vy*dt;if(f.y>=GY){f.y=GY;f.vy=0;f.st='move';F.fx.push({k:'dust',x:f.x,y:GY,t:T})}}continue}
     if(mode!=='play')continue;
+    if(f.morph&&T<f.morph)continue;/* 第二形態に変わる間は攻撃しない */
     if(f.st!=='atk'&&f.k!=='warden')f.dir=dx<0?-1:1;
     if(f.k==='drone'){const tx=player.x+(f.x<player.x?-70:70);f.x+=clamp(tx-f.x,-d.sp*dt,d.sp*dt);f.y=GY-46+Math.round(Math.sin(T*2+f.ph)*5)}
     else if(f.k==='trooper'&&f.st==='move'){const want=dist>100?1:dist<60?-0.6:0;f.x+=Math.sign(dx)*want*d.sp*dt}
@@ -1366,7 +1411,7 @@ function stepFight(dt){const st=ST(),c=cbt();
         if(c.tell)sfx('warn')}}
     else if(f.st==='wind'){if(f.t>=f.wind){f.st='atk';f.t=0;foeAttack(f)}}
     else if(f.st==='atk'){if(f.k==='cyborg'){f.x+=f.dir*170*dt;if(f.t>0.35){f.st='move';f.cd=d.cd}}else if(f.k==='trooper'){if(f.t>=0.13*f.n&&f.n<3){f.n++;F.eshots.push({x:f.x+f.dir*7,y:GY-10,vx:f.dir*150,vy:0,life:2.4,dmg:1});sfx('eshot')}if(f.t>0.45){f.st='move';f.cd=d.cd*(0.8+Math.random()*0.5)}}
-      else{if(f.t>0.5){f.st='move';f.cd=d.cd*(0.8+Math.random()*0.4)}}}
+      else{if(f.t>0.5){f.st='move';f.cd=d.cd*cdMul(f)*(0.8+Math.random()*0.4)}}}
     /* 体当たり */
     if((f.k==='cyborg'&&f.st==='atk')&&dist<9&&Math.abs(player.y-f.y)<14)hurtPlayer(2,f.x);
     if(f.k==='warden'&&dist<22)hurtPlayer(1,f.x)}
@@ -1418,7 +1463,7 @@ function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
     else if(b.ai)drawAIBeam(b,t);
     else{const x=Math.round(b.x-camX),hw=9;ctx.fillStyle='rgba(120,220,255,.35)';ctx.fillRect(x-hw,-OY,hw*2,GY+OY);ctx.fillStyle='#e8fbff';ctx.fillRect(x-3,-OY,6,GY+OY)}}
   /* 予兆：中央AIは、いまの場所に赤い警告。撃つ直前だけ、読んだ先に桃色の照準 */
-  for(const f of F.foes)if(f.st==='wind'&&f.k==='ai'){drawAIWarn(f,t);if(f.px!=null&&f.t>f.wind-0.22)drawAIAim(f,t)}
+  for(const f of F.foes)if(f.st==='wind'&&f.k==='ai'){drawAIWarn(f,t);const aw=f.p2?0.35:0.22;if(f.px!=null&&f.t>f.wind-aw)drawAIAim(f,t);if(f.px2!=null&&f.t>f.wind-aw)drawAIAim({...f,px:f.px2},t)}
   for(const f of F.foes)if(f.st==='wind'&&f.k==='warden'&&f.pat==='pillar'){const x=Math.round(f.tx-camX);ctx.fillStyle=`rgba(120,220,255,${0.25+0.25*Math.sin(t*30)})`;ctx.fillRect(x-9,GY-2,18,3)}
   for(const f of F.foes){const d=FOE[f.k],sx=Math.round(f.x-camX),fy=Math.round(f.y);if(sx<-40||sx>W+40)continue;drawFoe(f,sx,fy,t);
     /* GPU：弱点が光る */
@@ -1500,7 +1545,7 @@ function endPanel(no=1){inEnding=false;aiVoiceStop();if(no===2||no===3)hackDone(
   const frame=()=>{if(!$('#ecv'))return;const now=performance.now(),t=now/1000,k=clamp((now-t0)/3000,0,1);
     g.setTransform(1,0,0,1,0,0);g.fillStyle='#07060d';g.fillRect(0,0,CW,CH);if(!big)drawEndScene(g,no,t,party);
     P.forEach(([w,nm],i)=>{let [x,y]=pos(i),rot=0,a=1;
-      if(no===4&&now>t0){x+=k*(140+i*40);y-=k*(90+i*30)+Math.sin(t*3+i)*4;rot=k*(1.5+i)}/* 風で飛んでいく */
+      if(no===4&&now>t0){x+=k*(260+i*50);y-=k*(230+i*30)+Math.sin(t*3+i)*4;rot=k*(1.5+i)}/* 風で飛んでいく */
       if(no===5&&now>t0){const fx=CW/2-30;x+=(fx-x)*k;y+=(150-y)*k;a=1-clamp((k-0.6)/0.4,0,1)}/* 焚き火にくべる */
       g.save();g.globalAlpha=a;g.translate(x+5*sc,y+6.5*sc);g.rotate(rot);g.setTransform(sc*Math.cos(rot),sc*Math.sin(rot),-sc*Math.sin(rot),sc*Math.cos(rot),x+5*sc,y+6.5*sc);drawPosterG(g,-5,-6.5,{who:w});g.restore();
       if(big){g.fillStyle='#c8c4d8';g.font='15px "M PLUS 1 Code",monospace';g.textAlign='center';g.fillText(nm,60+i*120,150);g.textAlign='start'}});
@@ -1658,26 +1703,30 @@ function aiPredict(from){const row=AIB.tab[AIB.last+2][from];let best=1,bv=-1,to
   for(let k=0;k<5;k++){if(k===2)continue;const v=row[k]*2+AIB.glob[k];tot+=v;if(v>bv){bv=v;best=k}}
   const thin=TOPF.no===5?0.15*PALLY.filter(a=>PARTY[a.id].cy<HACK_AT).length:0;
   if((AIB.turns<3&&AIB.prior<0.3)||Math.random()<thin){const c=[0,1,3,4];best=c[Math.floor(Math.random()*4)]}
-  return{d:best-2,conf:tot?bv/tot:0}}
+  let sec=-1,sv=-1;for(let k=0;k<5;k++){if(k===2||k===best)continue;const v=row[k]*2+AIB.glob[k];if(v>sv){sv=v;sec=k}}
+  return{d:best-2,d2:sec-2,conf:tot?bv/tot:0}}
 function aiLearnMove(d,from){if(!d)return;const k=clamp(d,-2,2);AIB.tab[AIB.last+2][from][k+2]++;AIB.glob[k+2]++;AIB.last=k;habitLearn(d,from,'fight')}
 /* 必ず予測不能を起こす間隔（EASY 25秒、NORMAL 35秒、HARD は保証なし） */
-const aiGuarantee=()=>({easy:25,normal:35,hard:0})[diffNow()];
+const aiGuarantee=()=>{const p2=F.foes.some(f=>f.k==='ai'&&f.p2);return({easy:p2?18:25,normal:p2?25:35,hard:0})[diffNow()]};
 /* 攻撃の始め（警告）：警告の位置と、読んだ先を決める */
 function aiWind(f){f.wx=player.x;f.from=aiRegion(player.x);const g=aiGuarantee(),force=g&&T-AIB.lastU>=g-2;
-  const p=aiPredict(f.from);f.pd=force?null:p.d;f.px=f.pd==null?null:clamp(player.x+f.pd*AI_LANE,F.zone.x0+8,STAGES.top.ai-50);f.force=force}
+  const p=aiPredict(f.from),cl=x=>clamp(x,F.zone.x0+8,STAGES.top.ai-50);f.pd=force?null:p.d;f.px=f.pd==null?null:cl(player.x+f.pd*AI_LANE);f.px2=f.p2&&!force?cl(player.x+p.d2*AI_LANE):null;if(f.px2!=null&&f.px!=null&&Math.abs(f.px2-f.px)<AI_LANE/2)f.px2=cl(f.px+(f.px<STAGES.top.ai-100?AI_LANE:-AI_LANE));f.force=force;if(f.p2)f.wind=0.85+0.15*cbt().tell}
+/* 第二形態：あなたの癖を理解した姿。読みを2つ撃ち、攻撃の間が短くなる。体力は7割から */
+function aiPhase2(f){f.p2=1;f.max=Math.round(f.max*0.6);f.hp=f.max;f.open=0;f.morph=T+2.2;f.st='move';f.cd=2.4;F.beams=[];F.eshots=[];shakeT=T+1.6;sfx('warden');sfx('boom');buzz([80,40,160]);
+  mood('boss');setTimeout(()=>{if(TOPF.fight&&mode==='play'){TOPF.lowDlg=true;talk(AI_P2.map(t=>L('ai',t)),()=>{TOPF.lowDlg=false})}},2300)}/* 変身が見えるように、セリフは変わり終えてから */
 /* 撃つ：警告の位置と、読んだ先。動いた向きを学ぶ */
 function aiFire(f){const d=clamp(Math.round((player.x-f.wx)/AI_LANE),-2,2);AIB.turns++;aiLearnMove(d,f.from);
-  F.beams.push({k:'pillar',x:f.wx,on:T,off:T+0.45,ai:1});if(f.px!=null)F.beams.push({k:'pillar',x:f.px,on:T,off:T+0.45,ai:1,pred:1});sfx('laser');
-  const inW=Math.abs(player.x-f.wx)<AI_LANE/2,inP=f.px!=null&&Math.abs(player.x-f.px)<AI_LANE/2;
+  F.beams.push({k:'pillar',x:f.wx,on:T,off:T+0.45,ai:1});if(f.px!=null)F.beams.push({k:'pillar',x:f.px,on:T,off:T+0.45,ai:1,pred:1});if(f.px2!=null)F.beams.push({k:'pillar',x:f.px2,on:T,off:T+0.45,ai:1,pred:1});sfx('laser');
+  const inW=Math.abs(player.x-f.wx)<AI_LANE/2,inP=(f.px!=null&&Math.abs(player.x-f.px)<AI_LANE/2)||(f.px2!=null&&Math.abs(player.x-f.px2)<AI_LANE/2);
   if(inP&&!inW){AIB.hits++;aiSay(AI_HIT)}
   else if(!inW&&!inP){AIB.lastU=T;f.open=T+4;F.fx.push({k:'txt',x:player.x,y:player.y-26,t:T,s:'予測不能',c:'#ffd34a'},{k:'txt',x:f.x,y:f.y-FOE.ai.h-16,t:T,s:'核がむき出しになった',c:'#ff9ac8'});sfx('unlock');aiSay(AI_MISS)}}
 let aiSayN=0;function aiSay(list){if(aiSayN++%2)return;const s=list[AIB.turns%list.length];aiVoice(s);F.fx.push({k:'txt',x:STAGES.top.ai-40,y:GY-112,t:T,s,c:'#9ad0ff',long:1})}
 const aiRate=()=>AIB.turns?Math.round(AIB.hits/AIB.turns*1000)/10:0;
 /* 右上：あなたの癖（AIの見立て）と的中率 */
 function drawAIBrain(){if(!AIB.glob)return;ctx.save();ctx.setTransform(2,0,0,2,0,0);
-  /* スマホ（横176）では細く。上は体力バーと「中央AI」の名前の下から */
-  const sm=W<240,bw=sm?74:98,bx=W-bw-3,by=25,rh=sm?7:8,bh=13+rh*4+(sm?13:14),fn='"M PLUS 1 Code",monospace';
-  ctx.fillStyle='rgba(7,6,13,.8)';ctx.fillRect(bx,by,bw,bh);
+  /* 小さく、左上（体力と弾の下）に出す。右の中央AIを隠さない */
+  const sm=true,bw=W<240?60:66,bx=3,by=26,rh=6,bh=13+rh*4+13,fn='"M PLUS 1 Code",monospace';
+  ctx.fillStyle='rgba(7,6,13,.84)';ctx.fillRect(bx,by,bw,bh);
   ctx.fillStyle='rgba(56,232,255,.35)';ctx.fillRect(bx,by,bw,1);ctx.fillRect(bx,by+bh-1,bw,1);ctx.fillRect(bx,by,1,bh);ctx.fillRect(bx+bw-1,by,1,bh);
   ctx.fillStyle='#38e8ff';for(const[cx,cy]of[[bx,by],[bx+bw-2,by],[bx,by+bh-2],[bx+bw-2,by+bh-2]])ctx.fillRect(cx,cy,2,2);
   /* 目のしるし（見ている） */
@@ -1685,17 +1734,17 @@ function drawAIBrain(){if(!AIB.glob)return;ctx.save();ctx.setTransform(2,0,0,2,0
   ctx.font=`6px ${fn}`;ctx.fillStyle='#b8b0d8';ctx.fillText(sm?'あなたの癖':'あなたの癖（AIの見立て）',bx+10,by+8);
   const lab=['左2','左1','','右1','右2'],ps=AIB.glob.map((v,i)=>i===2?0:Math.max(0,v-1)),tot=ps.reduce((a,v)=>a+v,0);
   let best=-1,bv=0;ps.forEach((v,i)=>{if(v>bv){bv=v;best=i}});
-  const lx=bx+(sm?10:12),gx=bx+(sm?20:24),gw=bw-(sm?20:24)-(sm?17:20);let k=0;
+  const lx=bx+(sm?7:12),gx=bx+(sm?20:24),gw=bw-(sm?20:24)-(sm?17:20);let k=0;
   for(let i=0;i<5;i++){if(i===2)continue;const p=tot?ps[i]/tot:0,y=by+12+k*rh,top=i===best&&tot>0;
     if(top){ctx.fillStyle='rgba(255,59,78,.18)';ctx.fillRect(bx+2,y,bw-4,rh-1);ctx.fillStyle='#ff3b4e';ctx.fillRect(bx+3,y+2,1,3);ctx.fillRect(bx+4,y+3,1,1)}
     /* 向きの矢印（ドット） */
     const ax=bx+(sm?6:7),ay=y+3,dir=i<2?-1:1,n=i===0||i===4?2:1;ctx.fillStyle=top?'#ffd0d6':'#958cc0';
     if(!sm)for(let m=0;m<n;m++){const px=ax+dir*m*3;ctx.fillRect(px,ay,1,1);ctx.fillRect(px-dir,ay-1,1,3)}
     ctx.fillStyle=top?'#fff':'#e8e4f4';ctx.fillText(lab[i],lx,y+6);
-    ctx.fillStyle='#2c2550';ctx.fillRect(gx,y+2,gw,3);ctx.fillStyle=p>0.45?'#ff3b4e':'#38e8ff';ctx.fillRect(gx,y+2,Math.round(gw*p),3);
+    ctx.fillStyle='#3a3270';ctx.fillRect(gx,y+2,gw,3);ctx.fillStyle=p>0.45?'#ff3b4e':'#38e8ff';ctx.fillRect(gx,y+2,Math.round(gw*p),3);
     ctx.textAlign='right';ctx.fillStyle=top?'#ffd0d6':'#958cc0';ctx.fillText(Math.round(p*100)+'%',bx+bw-3,y+6);ctx.textAlign='start';k++}
   const ry=by+13+rh*4;ctx.fillStyle='rgba(56,232,255,.2)';ctx.fillRect(bx+3,ry,bw-6,1);
-  if(!tot){ctx.fillStyle=Math.sin(T*6)>0?'#38e8ff':'#1c8fa0';ctx.fillText('学習中…',bx+4,ry+(sm?10:11))}else{ctx.fillStyle='#ff4fa8';ctx.fillText('的中率',bx+4,ry+(sm?10:11))}ctx.fillStyle='#ff4fa8';ctx.font=`bold ${sm?7:8}px ${fn}`;ctx.textAlign='right';ctx.fillText(aiRate().toFixed(1)+'%',bx+bw-3,ry+(sm?10:11));ctx.textAlign='start';
+  if(!tot){ctx.fillStyle=Math.sin(T*6)>0?'#38e8ff':'#1c8fa0';ctx.fillText('学習中',bx+4,ry+(sm?10:11));const dx=bx+4+Math.ceil(ctx.measureText('学習中').width)+1;for(let i=0;i<3;i++)if(Math.floor(T*3)%4>i)ctx.fillRect(dx+i*2,ry+(sm?9:10),1,1)}/* 三点は文字だと潰れるので点で描く */else{ctx.fillStyle='#ff4fa8';ctx.fillText('的中率',bx+4,ry+(sm?10:11))}ctx.fillStyle='#ff4fa8';ctx.font=`bold ${sm?7:8}px ${fn}`;ctx.textAlign='right';ctx.fillText(aiRate().toFixed(1)+'%',bx+bw-3,ry+(sm?10:11));ctx.textAlign='start';
   if(!sm){ctx.font=`5px ${fn}`;ctx.fillStyle='#958cc0';ctx.fillText(`${AIB.hits}/${AIB.turns}`,bx+28,ry+11)}
   ctx.restore()}
 /* 核がむき出しの間：残り時間を出し、中央AIが画面の外なら右のはしに方向を出す（リクのそばでも分かるように） */
@@ -1777,7 +1826,7 @@ function stepTop2(dt){if(!TOPF.fight||mode!=='play')return;const z=F.zone;if(!z)
       talk([...END3_TEXT.hack,...(me?END3_TEXT.me:[])])}
     if(T-TOPF.t0>26)return end3Capture()}}
 /* 中央区で倒れたとき：END3 は捕まる。END4・5 はボス戦の始めからやり直し */
-function topFallen(){if(TOPF.no===3)return end3Capture();AIB.lastU=T;
+function topFallen(){if(TOPF.no===3)return end3Capture();AIB.lastU=T;{const a=F.foes.find(f=>f.k==='ai');TOPF.p2Start=!!(a&&a.p2)&&diffNow()!=='hard'}
   mode='fade';$('#fade').classList.add('on');setTimeout(()=>{player.x=70;player.y=GY;player.vx=player.vy=0;player.dir=1;F.wardenLeft=null;startTopFight();camX=0;
     $('#fade').classList.remove('on');setTimeout(()=>{talk(pick3('fallen',FALLEN).map(([w,t])=>L(w,t)))},380)},600)}
 async function end3Capture(){if(!TOPF.fight)return;stopTopFight(true);mode='cut';keys.l=keys.r=keys.fire=false;F.hacked=false;
@@ -1864,7 +1913,7 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;T=
   if(area()==='top'&&mode!=='panel')stepTop(dt);
   if(mode==='play'){const st=ST(),cm=CAMMAX_OF(area());stepPlayer(dt,st);
     /* 主人公の位置を先に丸めて、カメラと描く位置をそろえる（ぶれ防止） */
-    {const bs=F.zone&&F.zone.boss,w=bs&&F.foes.find(f=>FOE[f.k].boss);let cx=Math.round(player.x)-Math.round(W*(bs?0.22:0.42));if(w)cx=Math.min(Math.round(player.x)-(w.k==='ai'?Math.max(74,Math.round(W*0.42)):14),Math.max(cx,Math.round(w.x)+28-W));camX=clamp(cx,0,cm)}
+    {const bs=F.zone&&F.zone.boss,w=bs&&F.foes.find(f=>FOE[f.k].boss);let cx=Math.round(player.x)-Math.round(W*(bs?0.22:0.42));if(w)cx=w.k==='ai'&&W>=300?Math.round(w.x)+40-W:Math.min(Math.round(player.x)-(w.k==='ai'?74:14),Math.max(cx,Math.round(w.x)+28-W));camX=clamp(cx,0,cm)}
     /* 右（ゲート）へ進むほど BGM が明るい */
     const pr=camX/Math.max(1,cm),br=Math.round((area()==='sky'?0.75+0.25*pr:area()==='top'?1:area()==='corp'?0.6+0.3*pr:area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='cut'){const fx=camT?camT.x:player.x,tx=clamp(Math.round(fx)-Math.round(W*(camT?0.5:0.42)),0,CAMMAX_OF(area()));camX=Math.round(camX+(tx-camX)*Math.min(1,dt*3))}
@@ -1895,12 +1944,12 @@ function whoName(id){return WHO[id]}
 /* 文章の出し分け：{n:ふつう, c:澄み, m:機械} */
 const pickText=x=>typeof x==='string'?x:(docMood()>=2&&x.m)?x.m:(clarityLv()>=1&&x.c)?x.c:x.n;
 function talk(lines,onEnd){mode='dialog';D={lines,i:0,onEnd,typing:false,full:''};show()}
-function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who+(L.honne?' honne':'')+(box.parentNode===$('#frame')?(area()==='top'||(area()==='sky'&&player.x>1640)?' top':''):' out');D.at=performance.now();if(L.se)sfx(L.se);
+function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.className='dlg npc-'+L.who+(L.honne?' honne':'')+(box.parentNode===$('#frame')?((area()==='top'&&!TOPF.lowDlg)||(area()==='sky'&&player.x>1640)?' top':''):' out');D.at=performance.now();if(L.se)sfx(L.se);
   $('#dlgWho').textContent=whoName(L.who);$('#dlgCh').innerHTML='';$('#dlgMore').hidden=true;
   D.full=pickText(L.text);if(L.who==='ai'||L.who==='gate')aiVoice(D.full);D.n=0;D.typing=true;clearInterval(typeT);const el=$('#dlgTxt');el.textContent='';
   typeT=setInterval(()=>{D.n+=1;el.textContent=D.full.slice(0,D.n);if(D.n%2===0&&/[^\s…・。、]/.test(D.full[D.n-1]||''))sfx('text');if(D.n>=D.full.length)doneTyping()},L.honne?48:26)}
 function doneTyping(){clearInterval(typeT);D.typing=false;D.doneAt=performance.now();$('#dlgTxt').textContent=D.full;const L=D.lines[D.i];
-  if(L.choices){const sf=L.choices.findIndex(c=>/やめ|まだ|わかった|戻る/.test(c.label));D.sel=sf>=0?sf:L.choices.length-1;$('#dlgCh').innerHTML=L.choices.map((c,i)=>`<button class="nbtn ${i===D.sel?'sel':''}" type="button" data-i="${i}">${esc(c.label)}</button>`).join('');
+  if(L.choices){D.chAt=performance.now();const sf=L.choices.findIndex(c=>/やめ|まだ|わかった|戻る/.test(c.label));D.sel=sf>=0?sf:L.choices.length-1;$('#dlgCh').innerHTML=L.choices.map((c,i)=>`<button class="nbtn ${i===D.sel?'sel':''}" type="button" data-i="${i}">${esc(c.label)}</button>`).join('');
     $('#dlgCh').querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();pick(+b.dataset.i)})}
   else $('#dlgMore').hidden=false}
 function pick(i){const c=D.lines[D.i].choices[i];habitChoice(i,D.lines[D.i].choices.length);sfx('ui');document.activeElement&&document.activeElement.blur();endDialog();c.fn&&c.fn()}
@@ -2092,6 +2141,8 @@ const END45_TEXT={
   mono:[LH('me','生身のまま、ここにいたのは、ほんの一握りだった。'),LH('me','……でも、AIに読めなかったのは、その生身だった。'),LH('me','人間の進化の先は、これじゃない。……少なくとも、今日は。')]
 };
 /* ===== 学習する中央AIのセリフ（数字はセーブの記録から入る） ===== */
+/* 第二形態に変わるとき */
+const AI_P2=['照合完了。あなたの癖は、100%理解しました。','あなたが逃げる先は、もう2つまで絞れています。','両方、撃ちます。'];
 const AI_TALK={
   drone:(n,pct,lab)=>`あなたは圏外で、ドローンから${n}回逃げました。そのうち${pct}%は、${lab}でした。`,
   choice:(pct,pos)=>`あなたは、選択肢の${pos}を、${pct}%の確率で選びます。想定範囲です。`,
@@ -2263,7 +2314,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">天穹区は次の版で</p>
-  <p class="muted">試作版 v0.31 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
+  <p class="muted">試作版 v0.32 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">企業区に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -3016,7 +3067,7 @@ addEventListener('keydown',e=>{if(e.key==='Shift')keys.run=true;if(inField(e))re
     else if((k==='f'||k==='F')&&!e.repeat){setLight(!S.light)}
     else if(k===' '||k==='Enter'||k==='z'||k==='Z'){if(e.target.tagName==='BUTTON'&&e.target.id!=='kA')return;e.preventDefault();if(!e.repeat)interact()}}
   else if(mode==='dialog'){if(k==='ArrowLeft'||k==='ArrowUp'){e.preventDefault();moveSel(-1)}else if(k==='ArrowRight'||k==='ArrowDown'){e.preventDefault();moveSel(1)}
-    else if(k===' '||k==='Enter'||k==='z'||k==='Z'){e.preventDefault();if(e.repeat)return;if(D&&!D.typing&&D.lines[D.i].choices)pick(D.sel);else advance()}}
+    else if(k===' '||k==='Enter'||k==='z'||k==='Z'){e.preventDefault();if(e.repeat)return;if(D&&!D.typing&&D.lines[D.i].choices){if(performance.now()-(D.chAt||0)>=700)pick(D.sel)}else advance()}}
   else if(mode==='title'&&(k==='Enter'||k===' ')&&e.target.tagName!=='BUTTON'){e.preventDefault();startGame()}});
 addEventListener('keyup',e=>{const k=e.key;if(k==='Shift')keys.run=false;if(k==='x'||k==='X'||k==='j'||k==='J')keys.fire=false;if(k==='ArrowLeft'||k==='a'||k==='A')keys.l=false;if(k==='ArrowRight'||k==='d'||k==='D')keys.r=false});
 addEventListener('blur',()=>{keys.l=keys.r=keys.run=keys.fire=false});
@@ -3024,7 +3075,7 @@ function hold(el,key){const on=e=>{e.preventDefault();keys[key]=true},off=()=>ke
 hold($('#kL'),'l');hold($('#kR'),'r');hold($('#kF'),'fire');
 $('#kJ').addEventListener('pointerdown',e=>{e.preventDefault();jump()});$('#kDg').addEventListener('pointerdown',e=>{e.preventDefault();dodge()});
 $('#kRun').addEventListener('click',e=>{keys.runT=!keys.runT;e.currentTarget.setAttribute('aria-pressed',keys.runT)});
-$('#kA').addEventListener('click',()=>{if(mode==='play')interact();else if(mode==='dialog'){if(D&&!D.typing&&D.lines[D.i].choices)pick(D.sel);else advance()}});
+$('#kA').addEventListener('click',()=>{if(mode==='play')interact();else if(mode==='dialog'){if(D&&!D.typing&&D.lines[D.i].choices){if(performance.now()-(D.chAt||0)>=700)pick(D.sel)}else advance()}});
 cv.addEventListener('pointerdown',()=>{if(mode==='dialog')advance()});
 
 /* ===== タイトル ===== */
