@@ -1700,7 +1700,7 @@ function souRecall(){S.st={...S.st,souPlan:'with'};save();placeAllies();talk(SOU
 function endingNo(){const ps=(S.party||[]).map(id=>PARTY[id].cy),hi=ps.some(c=>c>=HACK_AT),lo=ps.filter(c=>c<HACK_AT).length,r=rikCy()>=HACK_AT;
   if(!souEvac())return r?1:2;if(r||hi)return 3;return lo>=2?5:4}
 /* 目的画面に出す、まだ見ていないエンディングのヒント（条件をそのまま書かない。物語係） */
-const END_HINTS={1:'インプラントで体を換え、ソウと一緒にてっぺんへ。',2:'生身のまま、ソウと一緒にてっぺんへ行くと……。',3:'ソウを村へ帰しても、機械の多い体で行けば……。',4:'ソウを村へ帰し、生身のまま、AIに読まれない動きを。',5:'ソウを村へ帰し、生身に近い仲間を何人か連れて。'};
+const END_HINTS={1:'体を機械に換えて、ソウと並んでてっぺんへ。',2:'生身のまま、ソウの手を引いて上ると……。',3:'ソウを逃がしても、機械の体が一つでもあれば……。',4:'ソウは電波の届かない場所へ。生身のまま、いつもと違う動きで。',5:'ソウは電波の届かない場所へ。生身に近い仲間たちと。'};
 const END_NAMES={1:'捕縛',2:'ごめん',3:'終わらない列',4:'予測の外',5:'共に'};
 /* ===== 学習する中央AI（END4・5 のボス戦） ===== */
 /* 床を幅 AI_LANE の「列」に分けて考える。AIは攻撃の前に、いまの位置に赤い警告を出し、同時に表から「逃げそうな先」を選んで、そこも撃つ。
@@ -2029,8 +2029,8 @@ function talkMinaCorp(){const ls=[];
 /* 企業区の RAY：武器を渡す */
 function talkRayCorp(){if(!S.st.weapon){S.st={...S.st,weapon:1};save();
     return talk([L('ray','……来たか。ミナから話は聞いた。'),L('ray','ソウを上に送ったのは、俺だ。換えれば上に行けるって、あいつに教えた。'),
-      L('ray','だから、これを持っていけ。鋼組の裏ルートで回ってきた、保安機体用のパルスガンだ。'),L('ray','今度は、引きずり下ろさねえように使え。'),L('me','……ミナは？ 天穹区のゲートは 78 だ。生身じゃ通れない。'),L('ray','ミナは配送の荷として上げる。……鋼組の裏ルートなら、ゲートは見ねえ。'),L('me','……ありがとう、RAY。')],
-      ()=>toast('持ち物に「パルスガン」が入った',5200))}
+      L('ray','だから、これを持っていけ。鋼組の裏ルートで回ってきた、保安機体用のパルスガンだ。'),L('ray','今度は、引きずり下ろさねえように使え。'),L('ray','それと、これだ。携帯用の防壁。何発かは、代わりに受けてくれる。'),L('ray','盾があっても、突っ込むんじゃねえ。……ソウみてえにな。'),L('me','……ミナは？ 天穹区のゲートは 78 だ。生身じゃ通れない。'),L('ray','ミナは配送の荷として上げる。……鋼組の裏ルートなら、ゲートは見ねえ。'),L('me','……ありがとう、RAY。')],
+      ()=>toast('持ち物に「パルスガン」と「シールド」が入った',5200))}
   talk([L('ray',pick3('ray_corp',['使い方は、撃つ前に考えることだ。……ソウは、それを忘れた。','天穹区は、空まで作り物だ。足もとを見失うなよ。','俺はまた配送に戻る。……生きて、会いに来い。']))])}
 /* 正規クリニック：サエキ（企業の正規品。値段は高いが、性能もいい） */
 function talkSaeki(){const first=!S.st.saeki;if(first){S.st={...S.st,saeki:1};save()}
@@ -3113,7 +3113,7 @@ function setLight(on,quiet){S.light=!!on;save();sfx('ui');if(!quiet)toast(on?'�
 function itemsPanel(){openPanel(`<div class="eyebrow">ITEMS · 持ち物</div><h3>持ち物</h3>
   <div class="goal"><b>ライト（懐中電灯）</b><p class="note" style="margin-top:4px">向いている方を照らす。暗い圏外では手放せない。沈殿街は明るいので、ふだんはしまっておく。</p>
     <p style="margin:6px 0 0">いま：<span id="ltNow">${S.light?'ついている':'しまってある'}</span></p></div>
-  ${S.st&&S.st.weapon?`<div class="goal"><b>パルスガン（鋼組の裏ルート品）</b><p class="note" style="margin-top:4px">保安機体用の銃。RAY から受け取った。「今度は、引きずり下ろさねえように使え」。使うのは、天穹区から。</p></div><div class="goal"><b>シールド（携帯用の防壁）</b><p class="note" style="margin-top:4px">銃と一緒に RAY から受け取った。攻撃を受けると、体力より先にシールドが減る（${shMax()}つまで）。しばらく攻撃を受けなければ戻る。</p></div>`:''}
+  ${S.st&&S.st.weapon?`<div class="goal"><b>パルスガン（鋼組の裏ルート品）</b><p class="note" style="margin-top:4px">保安機体用の銃。RAY から受け取った。「今度は、引きずり下ろさねえように使え」。使うのは、天穹区から。</p></div><div class="goal"><b>シールド（携帯用の防壁）</b><p class="note" style="margin-top:4px">銃と一緒に RAY から受け取った。「盾があっても、突っ込むんじゃねえ」。攻撃を受けると、体力より先にシールドが減る（${shMax()}つ分）。しばらく攻撃を受けなければ、また戻る。</p></div>`:''}
   ${S.st&&S.st.sou?`<div class="goal"><b>仲間（サイボーグ化率）</b><p class="note" style="margin-top:4px">リク ${rikCy()}%／ミナ 0%（生身）／ソウ ${SOU_CY}%（${souEvac()?'圏外の村に避難':'一緒に行く'}）${(S.party||[]).map(id=>`／${WHO[id]} ${PARTY[id].cy}%`).join('')}</p><p class="note">仲間は、天穹区・企業区・沈殿街の何人かに頼める。中央区ゲートの前で待っている。</p></div>`:''}
   <p class="note">キーボードの F キーでも、ライトをつけたり消したりできる。</p>
   <div class="prow"><button class="nbtn" id="lt" type="button">${S.light?'消す':'つける'}</button><button class="nbtn ghost" id="cl" type="button">閉じる</button></div>`);
