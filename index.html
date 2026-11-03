@@ -1296,6 +1296,8 @@ function drawPeopleAndProps(t){const s=ST(),ents=[],m=docMood();
   for(const p of s.props)if(p.k!=='hang')ents.push({y:GY+(p.z||0),draw:()=>drawProp(p,t)});
   for(const f of s.fires)ents.push({y:f.y+13.5,draw:()=>drawFire(f,t)});
   ents.push({y:Math.min(player.y,GY),draw:()=>{if(armed()&&T<F.inv&&Math.floor(T*16)%2)return;const spr=(!player.onGround&&actArea())||(player.moving&&Math.floor(player.step*8)%2)?P_B:P_A;drawAt(spr,Math.round(player.x),Math.round(player.y),player.dir<0);
+    /* シールドの膜（残っている間、ときどき光る） */
+    if(armed()&&hasShield()&&F.sh>0)drawShieldAura(Math.round(player.x-camX),Math.round(player.y));
     /* パルスガン（天穹区から） */
     if(armed()){const gx=Math.round(player.x-camX)+(player.dir>0?3:-7),gy=Math.round(player.y)-9;ctx.fillStyle='#3a3e50';ctx.fillRect(gx,gy,5,2);ctx.fillStyle='#3ef2e0';ctx.fillRect(player.dir>0?gx+4:gx,gy,1,1);
       if(T<F.muzzle){ctx.fillStyle='#e8fffc';ctx.fillRect(player.dir>0?gx+5:gx-3,gy-1,3,3)}}
@@ -1495,10 +1497,36 @@ function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
   /* 封鎖の壁 */
   for(const z of ST().zones||[]){const act=F.zone===z,closed=!zoneDone(z)&&!zoneNeed(z);if(!act&&!closed)continue;
     for(const x of act?[z.x0,z.x1]:[z.x0]){const sx=Math.round(x-camX);if(sx<-6||sx>W+6)continue;ctx.fillStyle='rgba(255,61,90,.18)';ctx.fillRect(sx-4,GY-70,8,70);ctx.fillStyle=`rgba(255,90,120,${0.55+0.25*Math.sin(t*9)})`;for(let y=GY-68;y<GY;y+=4)ctx.fillRect(sx-1,y,2,2);ctx.fillStyle='#3a3a50';ctx.fillRect(sx-3,GY-72,6,3)}}}
-/* シールドで防いだときの光（ドット絵係が整える） */
-function drawShieldHit(e,x,y,k){const a=Math.max(0,0.8-k*2);ctx.strokeStyle=`rgba(127,208,255,${a})`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-8,10+k*14,0,Math.PI*2);ctx.stroke()}
-/* HUD のシールドの印（ドット絵係が整える） */
-function drawShieldPip(x,y,on){ctx.fillStyle=on?'#7fd0ff':'rgba(255,255,255,.18)';ctx.fillRect(x,y,5,4);ctx.fillRect(x+1,y+4,3,1);ctx.fillRect(x+2,y+5,1,1);if(on){ctx.fillStyle='#e8f8ff';ctx.fillRect(x+1,y+1,1,2)}}
+/* シールドの六角形の膜（とがった頂点が上下。点で描く） */
+function hexV(cx,cy,r){const v=[];for(let i=0;i<6;i++){const a=-Math.PI/2+i*Math.PI/3;v.push([cx+Math.cos(a)*r*0.9,cy+Math.sin(a)*r])}return v}
+function pxLine(x0,y0,x1,y1,step=1){const n=Math.max(1,Math.round(Math.max(Math.abs(x1-x0),Math.abs(y1-y0))));for(let i=0;i<=n;i+=step)ctx.fillRect(Math.round(x0+(x1-x0)*i/n),Math.round(y0+(y1-y0)*i/n),1,1)}
+/* 体のまわりの膜：ふだんはごく薄く、ときどき上から下へ光が走る */
+function drawShieldAura(x,y){const cx=x,cy=y-8,v=hexV(cx,cy,12),p=(T%3.2)/0.55;
+  ctx.fillStyle='rgba(127,208,255,.10)';for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6];pxLine(a[0],a[1],b[0],b[1],2)}
+  if(p<1){const band=cy-13+p*28;for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6],n=Math.round(Math.max(Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1])));
+      for(let j=0;j<=n;j++){const px=Math.round(a[0]+(b[0]-a[0])*j/n),py=Math.round(a[1]+(b[1]-a[1])*j/n),d=Math.abs(py-band);if(d>4)continue;ctx.fillStyle=d<1.5?'rgba(220,245,255,.75)':'rgba(127,208,255,.4)';ctx.fillRect(px,py,1,1)}}
+    /* 光の帯が通る高さに、膜の目（ハニカムの点）が少し見える */
+    const by=Math.round(band);for(let xx=-9;xx<=9;xx+=3){const h=12-Math.abs(xx)*0.577;if(Math.abs(by-cy)<h-1)ctx.fillStyle='rgba(160,225,255,.28)',ctx.fillRect(cx+xx+((by>>1)&1),by,1,1)}}}
+/* シールドで防いだときの光：膜が白く光り、6枚に割れて飛び散る（約0.4秒） */
+function drawShieldHit(e,x,y,k){if(k>0.42)return;const cx=x,cy=y-8,r=12;
+  if(k<0.1){const f=1-k/0.1,v=hexV(cx,cy,r+1);
+    /* 膜の内側（市松の点） */
+    ctx.fillStyle=`rgba(127,208,255,${0.45*f})`;for(let yy=-r;yy<=r;yy++){const h=(r-Math.abs(yy))/0.577*0.9,w=Math.min(r*0.78,h);for(let xx=-Math.floor(w);xx<=w;xx++)if(((xx+yy)&1)===0)ctx.fillRect(cx+xx,cy+yy,1,1)}
+    ctx.fillStyle=`rgba(240,252,255,${0.95*f+0.05})`;for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6];pxLine(a[0],a[1],b[0],b[1])}
+    ctx.fillStyle=`rgba(255,255,255,${f})`;ctx.fillRect(cx-1,cy-1,3,3);return}
+  const q=(k-0.1)/0.32,al=Math.max(0,1-q),v=hexV(cx,cy,r);
+  for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=(mx-cx)/r,dy=(my-cy)/r,
+      ox=dx*q*18,oy=dy*q*14+q*q*16,sh=0.5-q*0.35;
+    const x0=mx+(a[0]-mx)*sh*2+ox,y0=my+(a[1]-my)*sh*2+oy,x1=mx+(b[0]-mx)*sh*2+ox,y1=my+(b[1]-my)*sh*2+oy;
+    ctx.fillStyle=`rgba(${i%2?'190,236,255':'89,195,255'},${al})`;pxLine(x0,y0,x1,y1);
+    ctx.fillStyle=`rgba(240,252,255,${al})`;ctx.fillRect(Math.round(mx+ox),Math.round(my+oy),1,1)}
+  /* 細かいかけら */
+  ctx.fillStyle=`rgba(200,240,255,${al})`;for(let i=0;i<8;i++){const a=i*0.785+0.4,rr=r+q*26;ctx.fillRect(Math.round(cx+Math.cos(a)*rr*0.9),Math.round(cy+Math.sin(a)*rr+q*q*20),1,1)}}
+/* HUD のシールドの印：小さな青い盾（中に六角形の目）。なくなると割れた輪郭だけ */
+function drawShieldPip(x,y,on){const M=on?['.oooo.','oLHHHo','oHhhHo','oHhhHo','.oHHo.','..oo..']:['.oo.o.','o....o','.....o','o...o.','.o..o.','..oo..'];
+  const C=on?{o:'#2f86d8',H:'#6fd0ff',h:'#3aa6f0',L:'#f0fbff'}:{o:'rgba(160,190,230,.32)'};
+  for(let r=0;r<6;r++)for(let c=0;c<6;c++){const ch=M[r][c];if(ch==='.')continue;ctx.fillStyle=C[ch];ctx.fillRect(x+c,y+r,1,1)}
+  if(on&&(T%2.4)<0.18){ctx.fillStyle='rgba(255,255,255,.8)';ctx.fillRect(x+1+Math.floor((T%2.4)/0.18*4),y+1,1,1)}}
 /* 体力・弾・番人の体力（画面の上） */
 function drawFightHud(t){if(!armed())return;if(TOPF.fight&&TOPF.no>=4){drawAIBrain();drawCoreArrow(t);const e=F.fx.filter(e=>e.long).pop();if(e)drawAISay(e)}ctx.setTransform(2,0,0,2,0,0);const c=cbt();ctx.fillStyle='rgba(8,10,28,.42)';ctx.fillRect(2,3,Math.max(78,c.hp*8+4+shMax()*7+4),21);for(let i=0;i<shMax();i++)drawShieldPip(6+c.hp*8+4+i*7,6,i<(F.sh??shMax()));
   for(let i=0;i<c.hp;i++){const x=6+i*8,y=6,on=i<F.hp;ctx.fillStyle=on?'#ff3d6b':'rgba(255,255,255,.18)';ctx.fillRect(x,y,2,2);ctx.fillRect(x+3,y,2,2);ctx.fillRect(x-1,y+1,7,2);ctx.fillRect(x,y+3,5,1);ctx.fillRect(x+1,y+4,3,1);ctx.fillRect(x+2,y+5,1,1)}
