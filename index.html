@@ -1502,26 +1502,28 @@ function hexV(cx,cy,r){const v=[];for(let i=0;i<6;i++){const a=-Math.PI/2+i*Math
 function pxLine(x0,y0,x1,y1,step=1){const n=Math.max(1,Math.round(Math.max(Math.abs(x1-x0),Math.abs(y1-y0))));for(let i=0;i<=n;i+=step)ctx.fillRect(Math.round(x0+(x1-x0)*i/n),Math.round(y0+(y1-y0)*i/n),1,1)}
 /* 体のまわりの膜：ふだんはごく薄く、ときどき上から下へ光が走る */
 function drawShieldAura(x,y){const cx=x,cy=y-8,v=hexV(cx,cy,12),p=(T%3.2)/0.55;
-  ctx.fillStyle='rgba(127,208,255,.10)';for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6];pxLine(a[0],a[1],b[0],b[1],2)}
+  ctx.fillStyle='rgba(90,180,255,.13)';for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6];pxLine(a[0],a[1],b[0],b[1],2)}
   if(p<1){const band=cy-13+p*28;for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6],n=Math.round(Math.max(Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1])));
-      for(let j=0;j<=n;j++){const px=Math.round(a[0]+(b[0]-a[0])*j/n),py=Math.round(a[1]+(b[1]-a[1])*j/n),d=Math.abs(py-band);if(d>4)continue;ctx.fillStyle=d<1.5?'rgba(220,245,255,.75)':'rgba(127,208,255,.4)';ctx.fillRect(px,py,1,1)}}
+      for(let j=0;j<=n;j++){const px=Math.round(a[0]+(b[0]-a[0])*j/n),py=Math.round(a[1]+(b[1]-a[1])*j/n),d=Math.abs(py-band);if(d>4)continue;ctx.fillStyle=d<1.5?'rgba(58,166,240,.6)':'rgba(127,208,255,.35)';ctx.fillRect(px,py,1,1)}}
     /* 光の帯が通る高さに、膜の目（ハニカムの点）が少し見える */
     const by=Math.round(band);for(let xx=-9;xx<=9;xx+=3){const h=12-Math.abs(xx)*0.577;if(Math.abs(by-cy)<h-1)ctx.fillStyle='rgba(160,225,255,.28)',ctx.fillRect(cx+xx+((by>>1)&1),by,1,1)}}}
-/* シールドで防いだときの光：膜が白く光り、6枚に割れて飛び散る（約0.4秒） */
+/* シールドで防いだときの光：膜が光り、6枚に割れて飛び散る（約0.4秒）。明るい天穹区でも見えるよう、濃い青の縁と明るい芯の2色で描く */
 function drawShieldHit(e,x,y,k){if(k>0.42)return;const cx=x,cy=y-8,r=12;
-  if(k<0.1){const f=1-k/0.1,v=hexV(cx,cy,r+1);
+  if(k<0.1){const f=1-k/0.1,vo=hexV(cx,cy,r+1),vi=hexV(cx,cy,r);
     /* 膜の内側（市松の点） */
-    ctx.fillStyle=`rgba(127,208,255,${0.45*f})`;for(let yy=-r;yy<=r;yy++){const h=(r-Math.abs(yy))/0.577*0.9,w=Math.min(r*0.78,h);for(let xx=-Math.floor(w);xx<=w;xx++)if(((xx+yy)&1)===0)ctx.fillRect(cx+xx,cy+yy,1,1)}
-    ctx.fillStyle=`rgba(240,252,255,${0.95*f+0.05})`;for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6];pxLine(a[0],a[1],b[0],b[1])}
-    ctx.fillStyle=`rgba(255,255,255,${f})`;ctx.fillRect(cx-1,cy-1,3,3);return}
-  const q=(k-0.1)/0.32,al=Math.max(0,1-q),v=hexV(cx,cy,r);
+    ctx.fillStyle=`rgba(89,195,255,${0.4*f+0.1})`;for(let yy=-r+1;yy<r;yy++){const w=Math.min(r*0.9-1,(r-Math.abs(yy))/0.577*0.9-1);for(let xx=-Math.floor(w);xx<=w;xx++)if(((xx+yy)&1)===0)ctx.fillRect(cx+xx,cy+yy,1,1)}
+    ctx.fillStyle=`rgba(36,110,200,${0.9*f+0.1})`;for(let i=0;i<6;i++){const a=vo[i],b=vo[(i+1)%6];pxLine(a[0],a[1],b[0],b[1])}
+    ctx.fillStyle=`rgba(235,250,255,${0.9*f+0.1})`;for(let i=0;i<6;i++){const a=vi[i],b=vi[(i+1)%6];pxLine(a[0],a[1],b[0],b[1])}
+    /* 受けた点の光（頂点に小さな十字） */
+    ctx.fillStyle=`rgba(255,255,255,${f})`;for(const q of [vo[0],vo[2],vo[4]]){const qx=Math.round(q[0]),qy=Math.round(q[1]);ctx.fillRect(qx-1,qy,3,1);ctx.fillRect(qx,qy-1,1,3)}return}
+  const q=(k-0.1)/0.32,al=Math.max(0,1-q*q),v=hexV(cx,cy,r);
   for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=(mx-cx)/r,dy=(my-cy)/r,
-      ox=dx*q*18,oy=dy*q*14+q*q*16,sh=0.5-q*0.35;
-    const x0=mx+(a[0]-mx)*sh*2+ox,y0=my+(a[1]-my)*sh*2+oy,x1=mx+(b[0]-mx)*sh*2+ox,y1=my+(b[1]-my)*sh*2+oy;
-    ctx.fillStyle=`rgba(${i%2?'190,236,255':'89,195,255'},${al})`;pxLine(x0,y0,x1,y1);
-    ctx.fillStyle=`rgba(240,252,255,${al})`;ctx.fillRect(Math.round(mx+ox),Math.round(my+oy),1,1)}
+      ox=dx*q*16,oy=dy*q*12+q*q*16,sh=0.5-q*0.3,tw=(i%2?1:-1)*q*2;
+    const x0=mx+(a[0]-mx)*sh*2+ox,y0=my+(a[1]-my)*sh*2+oy+tw,x1=mx+(b[0]-mx)*sh*2+ox,y1=my+(b[1]-my)*sh*2+oy-tw;
+    ctx.fillStyle=`rgba(36,110,200,${al})`;pxLine(x0+dx,y0+dy+1,x1+dx,y1+dy+1);
+    ctx.fillStyle=`rgba(${i%2?'200,240,255':'120,210,255'},${al})`;pxLine(x0,y0,x1,y1)}
   /* 細かいかけら */
-  ctx.fillStyle=`rgba(200,240,255,${al})`;for(let i=0;i<8;i++){const a=i*0.785+0.4,rr=r+q*26;ctx.fillRect(Math.round(cx+Math.cos(a)*rr*0.9),Math.round(cy+Math.sin(a)*rr+q*q*20),1,1)}}
+  for(let i=0;i<8;i++){const a=i*0.785+0.4,rr=r+2+q*22;ctx.fillStyle=i%2?`rgba(36,110,200,${al})`:`rgba(220,246,255,${al})`;ctx.fillRect(Math.round(cx+Math.cos(a)*rr*0.9),Math.round(cy+Math.sin(a)*rr+q*q*20),1,1)}}
 /* HUD のシールドの印：小さな青い盾（中に六角形の目）。なくなると割れた輪郭だけ */
 function drawShieldPip(x,y,on){const M=on?['.oooo.','oLHHHo','oHhhHo','oHhhHo','.oHHo.','..oo..']:['.oo.o.','o....o','.....o','o...o.','.o..o.','..oo..'];
   const C=on?{o:'#2f86d8',H:'#6fd0ff',h:'#3aa6f0',L:'#f0fbff'}:{o:'rgba(160,190,230,.32)'};
