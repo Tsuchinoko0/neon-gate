@@ -252,7 +252,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.30 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.31 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -295,7 +295,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.30"></script>
+<script src="sound.js?v=0.31"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -418,6 +418,24 @@ function drawAIEyeIcon(g){g.clearRect(0,0,32,32);
   g.fillStyle='#c8b898';g.fillRect(15,2,2,4);g.fillRect(15,26,2,4);g.fillRect(2,15,4,2);g.fillRect(26,15,4,2);
   g.fillStyle='#ffd0dc';g.fillRect(9,10,3,1);g.fillRect(9,11,1,2);
   g.fillStyle='#ffffff';g.fillRect(15,15,2,2)}
+/* ===== 管理者用（作者が試すためのもの） ===== */
+/* URL に ?admin を付けて開くと、設定画面に「管理者」の欄が出る（?admin=0 で消す）。ブラウザの開発者ツールからは ngAdmin.max() などでも使える */
+const ADMIN_KEY='neongate_admin';
+try{const q=new URLSearchParams(location.search);if(q.has('admin')){q.get('admin')==='0'?localStorage.removeItem(ADMIN_KEY):localStorage.setItem(ADMIN_KEY,'1')}}catch(e){}
+const isAdmin=()=>{try{return localStorage.getItem(ADMIN_KEY)==='1'}catch(e){return false}};
+/* スキャン値を最大（4つとも 100 点）にする */
+function adminMax(){S.cur={cpu:180,ram:10,gpu:30,alu:30};if(!S.base)S.base={...S.cur};S.scans=(S.scans||0)+1;S.started=true;save();hud();toast('管理者：スキャン値を最大にした（4つとも 100 点）',3600)}
+/* 全部のゲートを通れるようにする（物語の条件をそろえ、天穹区まで行けるようにする。中央区ゲートの番人も倒した扱い） */
+function adminGates(){if(!overall(S.cur)||effective()<gateReq('corp'))adminMax();if(F.zone&&area()==='sky')resetFight(true);S.passed=1;S.started=true;S.reached=[...new Set([...(S.reached||[]),'out','lower','corp','sky'])];
+  S.st={...S.st,poster:1,join:1,arrive:1,genji:1,ray:1,done:1,corp:1,corpArrive:1,news:1,resolve:1,weapon:1,tenkyu:1,skyArrive:1,z_z1:1,zs_z1:1,sou:1,z_z2:1,zs_z2:1,z_z3:1,zs_z3:1};
+  save();hud();toast('管理者：全部のゲートを通れるようにした（昇降機で天穹区まで行ける）',4200)}
+function adminAll(){adminMax();adminGates()}
+window.ngAdmin={max:adminMax,gates:adminGates,all:adminAll,go:to=>{if(AREAS[to]&&to!=='top'){if(!S.reached.includes(to))S.reached=[...S.reached,to];travel(to,'lift')}}};
+function adminHTML(){return isAdmin()?`<div><p>管理者</p><p class="note">作者が試すためのもの。URL に ?admin を付けて開くと、このブラウザでは出たままになります（?admin=0 を付けて開くと消える）。</p></div>
+  <div class="prow"><button class="nbtn pink" type="button" data-ad="max">スキャン値を最大に</button><button class="nbtn pink" type="button" data-ad="gates">全部のゲートを通れるように</button><button class="nbtn pink" type="button" data-ad="all">両方</button></div>
+  <div class="prow">${['out','lower','corp','sky'].map(a=>`<button class="nbtn ghost" type="button" data-go="${a}">${AREAS[a].nm.split(' · ')[0]}へ</button>`).join('')}</div>`:''}
+function bindAdmin(root){root.querySelectorAll('[data-ad]').forEach(b=>b.onclick=()=>closePanel(()=>({max:adminMax,gates:adminGates,all:adminAll})[b.dataset.ad]()));
+  root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const to=b.dataset.go;if(!S.reached.includes(to))S.reached=[...S.reached,to];closePanel(()=>travel(to,'lift'))})}
 /* ===== 音（sound.js） ===== */
 const SND=window.NGSound||null;
 const sfx=n=>{try{SND&&SND.se(n)}catch(e){}};
@@ -2245,7 +2263,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">天穹区は次の版で</p>
-  <p class="muted">試作版 v0.30 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
+  <p class="muted">試作版 v0.31 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">企業区に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -2443,10 +2461,11 @@ function settingsPanel(){if(mode==='title')return;const was=mode;const o=overall
   ${volHTML()}
   ${extraHTML()}
   <div><p>セーブデータ</p><p class="note">スキャン結果と進み具合を、このブラウザに保存しています。</p></div>
+  ${adminHTML()}
   <div class="prow" id="rsRow"><button class="nbtn ghost" id="rs" type="button">最初からやり直す</button></div>
   <div class="prow"><button class="nbtn" id="cl" type="button">閉じる</button></div>`);
   $('#panel').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{S.diff=b.dataset.k;save();hud();settingsPanel()});
-  bindVol($('#panel'));bindExtra($('#panel'));
+  bindVol($('#panel'));bindExtra($('#panel'));bindAdmin($('#panel'));
   const imp=$('#imp');if(imp)imp.onclick=()=>{applyScan(rec);toast('診断サイトの記録を読み込みました');settingsPanel()};
   $('#rs').onclick=()=>{$('#rsRow').innerHTML='<span class="note">スキャン結果も消えます。</span><button class="nbtn pink" id="rsy" type="button">消して最初から</button><button class="nbtn ghost" id="rsn" type="button">やめる</button>';
     $('#rsy').onclick=()=>{S={...fresh(),snd:S.snd,endings:S.endings};save();sndApply();player.dir=1;closePanel();$('#title').hidden=false;mode='title';titleButtons();hud()};$('#rsn').onclick=settingsPanel};
