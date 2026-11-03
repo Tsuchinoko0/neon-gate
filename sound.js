@@ -18,6 +18,7 @@
  *       'sky'   天穹区（ガラスの和音とオルゴール。静かで美しいが、どこか不安）
  *       'fight' 戦い（天穹区の区画で戦うとき。速いベースとドラム）
  *       'boss'  戦い・番人（'fight' に重い金管のような音が加わる）
+ *       'boss2' 中央AIの第二形態（もっと遅く重い。地をはう重低音のうなりと、不協和の一撃）
  *       'top'   中央区（パイプオルガンのような和音と、ひとりの歌声のような旋律）
  *   NGSound.analyser()        … 波形表示用の AnalyserNode（init 前は null）
  */
@@ -26,7 +27,7 @@
 
   const BPM = 84, SPB = 60 / BPM, S16 = SPB / 4, LOOP = 512;
   /* 曲ごとの速さ（圏外・沈殿街・企業区は今までどおり 84） */
-  const TEMPO = { out: 84, lower: 84, corp: 84, sky: 66, fight: 138, boss: 138, top: 52 };
+  const TEMPO = { out: 84, lower: 84, corp: 84, sky: 66, fight: 138, boss: 138, boss2: 112, top: 52 };
   const MOODS = Object.keys(TEMPO);
   /* Dm → B♭ → Gm → A（2小節ずつ、8小節で1周） */
   const PROG = [
@@ -386,6 +387,15 @@
       o.connect(f); o.start(t); o.stop(t + 1.35);
     }));
   }
+  /* 第二形態：地をはう重低音のうなり（ひずませたのこぎり波を低くこもらせ、ゆっくり揺らす） */
+  function growl(m, t, dur, lvl) {
+    const f = filt('lowpass', 180, 6, null), a = g(0, B().out); f.connect(a);
+    f.frequency.setValueAtTime(90, t); f.frequency.linearRampToValueAtTime(320, t + dur * 0.5); f.frequency.linearRampToValueAtTime(110, t + dur);
+    a.gain.setValueAtTime(0, t); a.gain.linearRampToValueAtTime(lvl, t + 0.08); a.gain.setValueAtTime(lvl, t + dur * 0.8); a.gain.linearRampToValueAtTime(0, t + dur);
+    [-9, 0, 9].forEach(det => { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = mtof(m); o.detune.value = det; o.connect(f); o.start(t); o.stop(t + dur + 0.05); });
+    const s2 = ctx.createOscillator(); s2.type = 'sine'; s2.frequency.value = mtof(m - 12); const a2 = g(0, B().out); s2.connect(a2);
+    a2.gain.setValueAtTime(0, t); a2.gain.linearRampToValueAtTime(lvl * 1.6, t + 0.05); a2.gain.linearRampToValueAtTime(0, t + dur); s2.start(t); s2.stop(t + dur + 0.05);
+  }
   /* パイプオルガンのような和音（倍音を重ねた波形） */
   function organ(tones, t, dur, lvl) {
     const f = filt('lowpass', 1600, 0.6, null), a = swell(t, dur, lvl, 3.0, 3.5, B().out); f.connect(a);
@@ -472,6 +482,18 @@
     if (bar === 0 && st.pad) pad({ root: ch.root, tones: ch.tones.map(m => m - 12) }, t, 32 * sd);
     if (boss && ss === 0) bossHit(ch.root, t);
   }
+  /* 第二形態：戦いの曲を1オクターブ下げ、遅く重く。小節ごとに重低音のうなり、2拍ごとに低い一撃と、半音ずれた不協和の刻み */
+  function playBoss2(s, t) {
+    const sd = stepDur(), ss = s % 16, bar = s % 32, ci = Math.floor(s / 32) % 4, ch = PROG_FIGHT[ci];
+    fbass(ch.root - 24 + FIGHT_BASS[ss], t, sd, ss % 4 === 0 ? 1 : 0.6);
+    if (ss === 0 || ss === 3 || ss === 8 || ss === 11) kick(t, 0.5);
+    if (ss === 4 || ss === 12) snare(t, 0.05);
+    if (ss % 4 === 2) hat(t, 0.012, false);
+    if (ss === 0) { growl(ch.root - 24, t, 16 * sd, 0.07); bossHit(ch.root - 12, t); }
+    if (ss === 8) bossHit(ch.root - 11, t);
+    if (bar === 0 && st.pad) sub(ch.root - 24, t, 32 * sd, 0.07);
+    if (ss === 6 || ss === 14) arp(ch.root + 1, t, 0.012, 0.3);
+  }
   /* 中央区：ずっと鳴っている低いド、ゆっくりふくらむオルガンの和音、一定に鳴る機械の鼓動。
      2周目から、ひとりの歌声のような旋律。ドラムはない */
   function playTop(s, t) {
@@ -488,6 +510,7 @@
     if (st.mood === 'lower') return playLower(s, t);
     if (st.mood === 'corp') return playCorp(s, t);
     if (st.mood === 'sky') return playSky(s, t);
+    if (st.mood === 'boss2') return playBoss2(s, t);
     if (st.mood === 'fight' || st.mood === 'boss') return playFight(s, t, st.mood === 'boss');
     if (st.mood === 'top') return playTop(s, t);
     const b = st.bright, ss = s % 16, chord = PROG[Math.floor(s / 32) % 4];
@@ -557,10 +580,10 @@
   function setMood(m) {
     m = MOODS.includes(m) ? m : 'out';
     if (m === st.mood) return;
-    const prev = st.mood, toFight = m === 'fight' || m === 'boss', fromFight = prev === 'fight' || prev === 'boss';
+    const prev = st.mood, toFight = m === 'fight' || m === 'boss' || m === 'boss2', fromFight = prev === 'fight' || prev === 'boss' || prev === 'boss2';
     st.mood = m;
     if (!ctx) return;
-    if (toFight && fromFight) { st.mood = m; return; } /* 戦いの途中で番人に変わるときは、拍を止めずにそのまま */
+    if (toFight && fromFight && m !== 'boss2') { st.mood = m; return; } /* 戦いの途中で番人に変わるときは、拍を止めずにそのまま */
     if (toFight) switchBus(0.25, 0.03);
     else if (fromFight) switchBus(1.2, 1.5);
     else switchBus(0.8, 1.0);
