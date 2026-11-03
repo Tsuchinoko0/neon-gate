@@ -252,7 +252,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.31 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.32 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -295,7 +295,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.31"></script>
+<script src="sound.js?v=0.32"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -961,7 +961,7 @@ function aiNet(){if(AI_NET)return AI_NET;const R=27,c=document.createElement('ca
   for(const [x,y] of vs){dot(x,y,'#ffffff');dot(x+0.5,y,'rgba(90,170,255,.9)')}
   for(let i=0;i<360;i++){const b=i*Math.PI/180;dot(Math.cos(b)*R,Math.sin(b)*R,'#3a8aff');dot(Math.cos(b)*(R-0.5),Math.sin(b)*(R-0.5),'rgba(200,235,255,.9)')}
   AI_NET=c;return c}
-function drawAIShield(f,sx,fy,t){const cy=fy-78,R=27,left=f.open-T,open=left>0,net=aiNet();
+function drawAIShield(f,sx,fy,t){if(f.p2)drawAIForm2(f,sx,fy,t);const cy=fy-78,R=27,left=f.open-T,open=left>0,net=aiNet();
   if(!open){/* 盾：薄い膜、網、上から下へなぞる予測の線、網の上を回る光 */
     for(let dy=-R;dy<=R;dy++){const hw=Math.round(Math.sqrt(R*R-dy*dy));ctx.fillStyle=`rgba(110,180,255,${0.16+0.06*Math.sin(t*2+dy*0.2)})`;ctx.fillRect(sx-hw,cy+dy,hw*2,1)}
     ctx.globalAlpha=0.8+0.2*Math.sin(t*3);ctx.drawImage(net,sx-R-2,cy-R-2,R*2+4,R*2+4);ctx.globalAlpha=1;
@@ -984,6 +984,10 @@ function drawAIShield(f,sx,fy,t){const cy=fy-78,R=27,left=f.open-T,open=left>0,n
   for(const [dx,dy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){const x=sx+dx*o-(dx>0?1:0),y=cy+dy*o-(dy>0?1:0);ctx.fillRect(dx<0?x:x-3,y,4,1);ctx.fillRect(x,dy<0?y:y-3,1,4)}
   /* 閉じる直前：網がまた張られていく */
   if(left<0.8){ctx.globalAlpha=(1-left/0.8)*(Math.floor(t*14)%2?0.7:0.3);ctx.drawImage(net,sx-R-2,cy-R-2,R*2+4,R*2+4);ctx.globalAlpha=1}}
+/* 第二形態：癖を理解したAI。核のまわりに赤い棘と、もう一つの目（ドット絵係が整える） */
+function drawAIForm2(f,sx,fy,t){const cy=fy-78,m=f.morph&&T<f.morph?clamp(1-(f.morph-T)/2.2,0,1):1;ctx.save();
+  for(let i=0;i<10;i++){const a=i*Math.PI/5+t*0.5,r=(18+6*Math.sin(t*3+i))*m;ctx.fillStyle=i%2?'#ff3b4e':'#7a0a1e';ctx.fillRect(Math.round(sx+Math.cos(a)*r)-1,Math.round(cy+Math.sin(a)*r)-1,3,3)}
+  ctx.fillStyle=`rgba(255,40,70,${0.25*m})`;ctx.fillRect(sx-22,cy-22,44,44);ctx.fillStyle='#ff3b4e';ctx.fillRect(sx-2,cy-30,4,3);ctx.fillStyle='#fff0f4';ctx.fillRect(sx-1,cy-29,2,1);ctx.restore()}
 /* 中央区ゲートの番人：脚の長い白い警備機。胸の赤い核が弱点 */
 function drawWarden(f,sx,fy,t){const x=sx,y=fy,w=f.st==='wind',p=f.pat,R=(c,a,b,ww,hh)=>{ctx.fillStyle=c;ctx.fillRect(x+a,y+b,ww,hh)},O='#4a5470',D='#8a94aa',M='#c4cad8',L='#eef2f8',G='#e0b85a';
   R('rgba(40,50,80,.25)',-22,-1,44,2);
@@ -1314,9 +1318,12 @@ const FOE={drone:{hp:3,w:14,h:9,fly:1,sp:44,weak:[0,-5],range:150,cd:2.3},
   warden:{hp:70,w:40,h:54,sp:0,weak:[0,-32],range:400,cd:2.2,boss:1},
   seeker:{hp:2,w:10,h:16,sp:40,weak:[0,-14],range:0,cd:9},
   ai:{hp:60,w:44,h:100,sp:0,weak:[0,-78],range:999,cd:1.0,boss:1}};
+/* 第二形態は攻撃の間を短く（stepFight の cd に掛ける） */
+const cdMul=f=>f.k==='ai'&&f.p2?0.7:1;
 function spawnFoe(k,x){const d=FOE[k],c=cbt(),max=Math.round(d.hp*c.foeHp),hp=d.boss&&F.wardenLeft?Math.min(max,F.wardenLeft):max;
   F.foes.push({k,x,y:d.fly?-14:(d.boss||k==='seeker'?GY:-20),vy:0,hp,max,spr:k==='seeker'?SEEK_SPR[Math.floor(Math.random()*SEEK_SPR.length)]:null,born:T,lastU:T,open:0,dir:-1,st:'in',t:0,cd:0.6+Math.random()*0.8,hit:0,ph:Math.random()*6,burst:0})}
-const foeHurt=(f,n,weak)=>{if(f.k==='ai'&&T>=f.open){if(T>(f.blk||0)){f.blk=T+0.5;F.fx.push({k:'txt',x:f.x,y:f.y-FOE.ai.h-4,t:T,s:'予測済み',c:'#9ad0ff'});sfx('ehit')}return}f.hp-=n;f.hit=T+0.1;F.fx.push({k:'spark',x:f.x,y:f.y-(FOE[f.k].h/2),t:T,c:weak?'#ffd34a':'#ffffff'});if(weak)F.fx.push({k:'txt',x:f.x,y:f.y-FOE[f.k].h-4,t:T,s:'WEAK',c:'#ffd34a'});sfx(weak?'weak':'ehit');
+const foeHurt=(f,n,weak)=>{if(f.k==='ai'&&f.morph&&T<f.morph)return;if(f.k==='ai'&&T>=f.open){if(T>(f.blk||0)){f.blk=T+0.5;F.fx.push({k:'txt',x:f.x,y:f.y-FOE.ai.h-4,t:T,s:'予測済み',c:'#9ad0ff'});sfx('ehit')}return}f.hp-=n;f.hit=T+0.1;F.fx.push({k:'spark',x:f.x,y:f.y-(FOE[f.k].h/2),t:T,c:weak?'#ffd34a':'#ffffff'});if(weak)F.fx.push({k:'txt',x:f.x,y:f.y-FOE[f.k].h-4,t:T,s:'WEAK',c:'#ffd34a'});sfx(weak?'weak':'ehit');
+  if(f.hp<=0&&f.k==='ai'&&!f.p2)return aiPhase2(f);
   if(f.hp<=0){f.dead=1;F.fx.push({k:'boom',x:f.x,y:f.y-FOE[f.k].h/2,t:T,r:FOE[f.k].boss?26:10});sfx('boom')}};
 const weakAt=f=>{const d=FOE[f.k];return{x:f.x+d.weak[0]*f.dir,y:f.y+d.weak[1]}};
 /* プレイヤーの当たり（足もと y から上に 15） */
@@ -1354,6 +1361,7 @@ function stepFight(dt){const st=ST(),c=cbt();
   for(const f of F.foes){const d=FOE[f.k],dx=player.x-f.x,dist=Math.abs(dx);f.t+=dt;
     if(f.st==='in'){if(d.fly){f.y+=60*dt;if(f.y>=GY-46){f.st='move'}}else{f.vy+=PHYS.grav*dt;f.y+=f.vy*dt;if(f.y>=GY){f.y=GY;f.vy=0;f.st='move';F.fx.push({k:'dust',x:f.x,y:GY,t:T})}}continue}
     if(mode!=='play')continue;
+    if(f.morph&&T<f.morph)continue;/* 第二形態に変わる間は攻撃しない */
     if(f.st!=='atk'&&f.k!=='warden')f.dir=dx<0?-1:1;
     if(f.k==='drone'){const tx=player.x+(f.x<player.x?-70:70);f.x+=clamp(tx-f.x,-d.sp*dt,d.sp*dt);f.y=GY-46+Math.round(Math.sin(T*2+f.ph)*5)}
     else if(f.k==='trooper'&&f.st==='move'){const want=dist>100?1:dist<60?-0.6:0;f.x+=Math.sign(dx)*want*d.sp*dt}
@@ -1366,7 +1374,7 @@ function stepFight(dt){const st=ST(),c=cbt();
         if(c.tell)sfx('warn')}}
     else if(f.st==='wind'){if(f.t>=f.wind){f.st='atk';f.t=0;foeAttack(f)}}
     else if(f.st==='atk'){if(f.k==='cyborg'){f.x+=f.dir*170*dt;if(f.t>0.35){f.st='move';f.cd=d.cd}}else if(f.k==='trooper'){if(f.t>=0.13*f.n&&f.n<3){f.n++;F.eshots.push({x:f.x+f.dir*7,y:GY-10,vx:f.dir*150,vy:0,life:2.4,dmg:1});sfx('eshot')}if(f.t>0.45){f.st='move';f.cd=d.cd*(0.8+Math.random()*0.5)}}
-      else{if(f.t>0.5){f.st='move';f.cd=d.cd*(0.8+Math.random()*0.4)}}}
+      else{if(f.t>0.5){f.st='move';f.cd=d.cd*cdMul(f)*(0.8+Math.random()*0.4)}}}
     /* 体当たり */
     if((f.k==='cyborg'&&f.st==='atk')&&dist<9&&Math.abs(player.y-f.y)<14)hurtPlayer(2,f.x);
     if(f.k==='warden'&&dist<22)hurtPlayer(1,f.x)}
@@ -1418,7 +1426,7 @@ function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
     else if(b.ai)drawAIBeam(b,t);
     else{const x=Math.round(b.x-camX),hw=9;ctx.fillStyle='rgba(120,220,255,.35)';ctx.fillRect(x-hw,-OY,hw*2,GY+OY);ctx.fillStyle='#e8fbff';ctx.fillRect(x-3,-OY,6,GY+OY)}}
   /* 予兆：中央AIは、いまの場所に赤い警告。撃つ直前だけ、読んだ先に桃色の照準 */
-  for(const f of F.foes)if(f.st==='wind'&&f.k==='ai'){drawAIWarn(f,t);if(f.px!=null&&f.t>f.wind-0.22)drawAIAim(f,t)}
+  for(const f of F.foes)if(f.st==='wind'&&f.k==='ai'){drawAIWarn(f,t);if(f.px!=null&&f.t>f.wind-0.22)drawAIAim(f,t);if(f.px2!=null&&f.t>f.wind-0.22)drawAIAim({...f,px:f.px2},t)}
   for(const f of F.foes)if(f.st==='wind'&&f.k==='warden'&&f.pat==='pillar'){const x=Math.round(f.tx-camX);ctx.fillStyle=`rgba(120,220,255,${0.25+0.25*Math.sin(t*30)})`;ctx.fillRect(x-9,GY-2,18,3)}
   for(const f of F.foes){const d=FOE[f.k],sx=Math.round(f.x-camX),fy=Math.round(f.y);if(sx<-40||sx>W+40)continue;drawFoe(f,sx,fy,t);
     /* GPU：弱点が光る */
@@ -1500,7 +1508,7 @@ function endPanel(no=1){inEnding=false;aiVoiceStop();if(no===2||no===3)hackDone(
   const frame=()=>{if(!$('#ecv'))return;const now=performance.now(),t=now/1000,k=clamp((now-t0)/3000,0,1);
     g.setTransform(1,0,0,1,0,0);g.fillStyle='#07060d';g.fillRect(0,0,CW,CH);if(!big)drawEndScene(g,no,t,party);
     P.forEach(([w,nm],i)=>{let [x,y]=pos(i),rot=0,a=1;
-      if(no===4&&now>t0){x+=k*(140+i*40);y-=k*(90+i*30)+Math.sin(t*3+i)*4;rot=k*(1.5+i)}/* 風で飛んでいく */
+      if(no===4&&now>t0){x+=k*(260+i*50);y-=k*(230+i*30)+Math.sin(t*3+i)*4;rot=k*(1.5+i)}/* 風で飛んでいく */
       if(no===5&&now>t0){const fx=CW/2-30;x+=(fx-x)*k;y+=(150-y)*k;a=1-clamp((k-0.6)/0.4,0,1)}/* 焚き火にくべる */
       g.save();g.globalAlpha=a;g.translate(x+5*sc,y+6.5*sc);g.rotate(rot);g.setTransform(sc*Math.cos(rot),sc*Math.sin(rot),-sc*Math.sin(rot),sc*Math.cos(rot),x+5*sc,y+6.5*sc);drawPosterG(g,-5,-6.5,{who:w});g.restore();
       if(big){g.fillStyle='#c8c4d8';g.font='15px "M PLUS 1 Code",monospace';g.textAlign='center';g.fillText(nm,60+i*120,150);g.textAlign='start'}});
@@ -1658,26 +1666,30 @@ function aiPredict(from){const row=AIB.tab[AIB.last+2][from];let best=1,bv=-1,to
   for(let k=0;k<5;k++){if(k===2)continue;const v=row[k]*2+AIB.glob[k];tot+=v;if(v>bv){bv=v;best=k}}
   const thin=TOPF.no===5?0.15*PALLY.filter(a=>PARTY[a.id].cy<HACK_AT).length:0;
   if((AIB.turns<3&&AIB.prior<0.3)||Math.random()<thin){const c=[0,1,3,4];best=c[Math.floor(Math.random()*4)]}
-  return{d:best-2,conf:tot?bv/tot:0}}
+  let sec=-1,sv=-1;for(let k=0;k<5;k++){if(k===2||k===best)continue;const v=row[k]*2+AIB.glob[k];if(v>sv){sv=v;sec=k}}
+  return{d:best-2,d2:sec-2,conf:tot?bv/tot:0}}
 function aiLearnMove(d,from){if(!d)return;const k=clamp(d,-2,2);AIB.tab[AIB.last+2][from][k+2]++;AIB.glob[k+2]++;AIB.last=k;habitLearn(d,from,'fight')}
 /* 必ず予測不能を起こす間隔（EASY 25秒、NORMAL 35秒、HARD は保証なし） */
 const aiGuarantee=()=>({easy:25,normal:35,hard:0})[diffNow()];
 /* 攻撃の始め（警告）：警告の位置と、読んだ先を決める */
 function aiWind(f){f.wx=player.x;f.from=aiRegion(player.x);const g=aiGuarantee(),force=g&&T-AIB.lastU>=g-2;
-  const p=aiPredict(f.from);f.pd=force?null:p.d;f.px=f.pd==null?null:clamp(player.x+f.pd*AI_LANE,F.zone.x0+8,STAGES.top.ai-50);f.force=force}
+  const p=aiPredict(f.from),cl=x=>clamp(x,F.zone.x0+8,STAGES.top.ai-50);f.pd=force?null:p.d;f.px=f.pd==null?null:cl(player.x+f.pd*AI_LANE);f.px2=f.p2&&!force?cl(player.x+p.d2*AI_LANE):null;f.force=force;if(f.p2)f.wind=0.85+0.15*cbt().tell}
+/* 第二形態：あなたの癖を理解した姿。読みを2つ撃ち、攻撃の間が短くなる。体力は7割から */
+function aiPhase2(f){f.p2=1;f.max=Math.round(f.max*0.7);f.hp=f.max;f.open=0;f.morph=T+2.2;f.st='move';f.cd=2.4;F.beams=[];F.eshots=[];shakeT=T+1.6;sfx('warden');sfx('boom');buzz([80,40,160]);
+  F.fx.push({k:'boom',x:f.x,y:f.y-60,t:T,r:40});mood('boss');setTimeout(()=>{if(TOPF.fight&&mode==='play')talk(AI_P2.map(t=>L('ai',t)))},700)}
 /* 撃つ：警告の位置と、読んだ先。動いた向きを学ぶ */
 function aiFire(f){const d=clamp(Math.round((player.x-f.wx)/AI_LANE),-2,2);AIB.turns++;aiLearnMove(d,f.from);
-  F.beams.push({k:'pillar',x:f.wx,on:T,off:T+0.45,ai:1});if(f.px!=null)F.beams.push({k:'pillar',x:f.px,on:T,off:T+0.45,ai:1,pred:1});sfx('laser');
-  const inW=Math.abs(player.x-f.wx)<AI_LANE/2,inP=f.px!=null&&Math.abs(player.x-f.px)<AI_LANE/2;
+  F.beams.push({k:'pillar',x:f.wx,on:T,off:T+0.45,ai:1});if(f.px!=null)F.beams.push({k:'pillar',x:f.px,on:T,off:T+0.45,ai:1,pred:1});if(f.px2!=null)F.beams.push({k:'pillar',x:f.px2,on:T,off:T+0.45,ai:1,pred:1});sfx('laser');
+  const inW=Math.abs(player.x-f.wx)<AI_LANE/2,inP=(f.px!=null&&Math.abs(player.x-f.px)<AI_LANE/2)||(f.px2!=null&&Math.abs(player.x-f.px2)<AI_LANE/2);
   if(inP&&!inW){AIB.hits++;aiSay(AI_HIT)}
   else if(!inW&&!inP){AIB.lastU=T;f.open=T+4;F.fx.push({k:'txt',x:player.x,y:player.y-26,t:T,s:'予測不能',c:'#ffd34a'},{k:'txt',x:f.x,y:f.y-FOE.ai.h-16,t:T,s:'核がむき出しになった',c:'#ff9ac8'});sfx('unlock');aiSay(AI_MISS)}}
 let aiSayN=0;function aiSay(list){if(aiSayN++%2)return;const s=list[AIB.turns%list.length];aiVoice(s);F.fx.push({k:'txt',x:STAGES.top.ai-40,y:GY-112,t:T,s,c:'#9ad0ff',long:1})}
 const aiRate=()=>AIB.turns?Math.round(AIB.hits/AIB.turns*1000)/10:0;
 /* 右上：あなたの癖（AIの見立て）と的中率 */
 function drawAIBrain(){if(!AIB.glob)return;ctx.save();ctx.setTransform(2,0,0,2,0,0);
-  /* スマホ（横176）では細く。上は体力バーと「中央AI」の名前の下から */
-  const sm=W<240,bw=sm?74:98,bx=W-bw-3,by=25,rh=sm?7:8,bh=13+rh*4+(sm?13:14),fn='"M PLUS 1 Code",monospace';
-  ctx.fillStyle='rgba(7,6,13,.8)';ctx.fillRect(bx,by,bw,bh);
+  /* 小さく、左上（体力と弾の下）に出す。右の中央AIを隠さない */
+  const sm=true,bw=W<240?60:66,bx=3,by=26,rh=6,bh=13+rh*4+13,fn='"M PLUS 1 Code",monospace';
+  ctx.fillStyle='rgba(7,6,13,.62)';ctx.fillRect(bx,by,bw,bh);
   ctx.fillStyle='rgba(56,232,255,.35)';ctx.fillRect(bx,by,bw,1);ctx.fillRect(bx,by+bh-1,bw,1);ctx.fillRect(bx,by,1,bh);ctx.fillRect(bx+bw-1,by,1,bh);
   ctx.fillStyle='#38e8ff';for(const[cx,cy]of[[bx,by],[bx+bw-2,by],[bx,by+bh-2],[bx+bw-2,by+bh-2]])ctx.fillRect(cx,cy,2,2);
   /* 目のしるし（見ている） */
@@ -1864,7 +1876,7 @@ function loop(ts){const t=ts/1000,dt=Math.min(0.05,(ts-last)/1000||0);last=ts;T=
   if(area()==='top'&&mode!=='panel')stepTop(dt);
   if(mode==='play'){const st=ST(),cm=CAMMAX_OF(area());stepPlayer(dt,st);
     /* 主人公の位置を先に丸めて、カメラと描く位置をそろえる（ぶれ防止） */
-    {const bs=F.zone&&F.zone.boss,w=bs&&F.foes.find(f=>FOE[f.k].boss);let cx=Math.round(player.x)-Math.round(W*(bs?0.22:0.42));if(w)cx=Math.min(Math.round(player.x)-(w.k==='ai'?Math.max(74,Math.round(W*0.42)):14),Math.max(cx,Math.round(w.x)+28-W));camX=clamp(cx,0,cm)}
+    {const bs=F.zone&&F.zone.boss,w=bs&&F.foes.find(f=>FOE[f.k].boss);let cx=Math.round(player.x)-Math.round(W*(bs?0.22:0.42));if(w)cx=Math.min(Math.round(player.x)-(w.k==='ai'?74:14),Math.max(cx,Math.round(w.x)+28-W));camX=clamp(cx,0,cm)}
     /* 右（ゲート）へ進むほど BGM が明るい */
     const pr=camX/Math.max(1,cm),br=Math.round((area()==='sky'?0.75+0.25*pr:area()==='top'?1:area()==='corp'?0.6+0.3*pr:area()==='lower'?0.4+0.4*pr:0.5*pr)*50)/50;if(br!==lastBright){lastBright=br;try{SND&&SND.setBrightness(br)}catch(e){}}}
   else if(mode==='cut'){const fx=camT?camT.x:player.x,tx=clamp(Math.round(fx)-Math.round(W*(camT?0.5:0.42)),0,CAMMAX_OF(area()));camX=Math.round(camX+(tx-camX)*Math.min(1,dt*3))}
@@ -1900,7 +1912,7 @@ function show(){const L=D.lines[D.i],box=$('#dlg');box.hidden=false;box.classNam
   D.full=pickText(L.text);if(L.who==='ai'||L.who==='gate')aiVoice(D.full);D.n=0;D.typing=true;clearInterval(typeT);const el=$('#dlgTxt');el.textContent='';
   typeT=setInterval(()=>{D.n+=1;el.textContent=D.full.slice(0,D.n);if(D.n%2===0&&/[^\s…・。、]/.test(D.full[D.n-1]||''))sfx('text');if(D.n>=D.full.length)doneTyping()},L.honne?48:26)}
 function doneTyping(){clearInterval(typeT);D.typing=false;D.doneAt=performance.now();$('#dlgTxt').textContent=D.full;const L=D.lines[D.i];
-  if(L.choices){const sf=L.choices.findIndex(c=>/やめ|まだ|わかった|戻る/.test(c.label));D.sel=sf>=0?sf:L.choices.length-1;$('#dlgCh').innerHTML=L.choices.map((c,i)=>`<button class="nbtn ${i===D.sel?'sel':''}" type="button" data-i="${i}">${esc(c.label)}</button>`).join('');
+  if(L.choices){D.chAt=performance.now();const sf=L.choices.findIndex(c=>/やめ|まだ|わかった|戻る/.test(c.label));D.sel=sf>=0?sf:L.choices.length-1;$('#dlgCh').innerHTML=L.choices.map((c,i)=>`<button class="nbtn ${i===D.sel?'sel':''}" type="button" data-i="${i}">${esc(c.label)}</button>`).join('');
     $('#dlgCh').querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();pick(+b.dataset.i)})}
   else $('#dlgMore').hidden=false}
 function pick(i){const c=D.lines[D.i].choices[i];habitChoice(i,D.lines[D.i].choices.length);sfx('ui');document.activeElement&&document.activeElement.blur();endDialog();c.fn&&c.fn()}
@@ -2092,6 +2104,8 @@ const END45_TEXT={
   mono:[LH('me','生身のまま、ここにいたのは、ほんの一握りだった。'),LH('me','……でも、AIに読めなかったのは、その生身だった。'),LH('me','人間の進化の先は、これじゃない。……少なくとも、今日は。')]
 };
 /* ===== 学習する中央AIのセリフ（数字はセーブの記録から入る） ===== */
+/* 第二形態に変わるとき */
+const AI_P2=['……あなたの癖は、すべて理解しました。','第二段階へ移行します。予測を、二重にします。'];
 const AI_TALK={
   drone:(n,pct,lab)=>`あなたは圏外で、ドローンから${n}回逃げました。そのうち${pct}%は、${lab}でした。`,
   choice:(pct,pos)=>`あなたは、選択肢の${pos}を、${pct}%の確率で選びます。想定範囲です。`,
@@ -2263,7 +2277,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">天穹区は次の版で</p>
-  <p class="muted">試作版 v0.31 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
+  <p class="muted">試作版 v0.32 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">企業区に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -3016,7 +3030,7 @@ addEventListener('keydown',e=>{if(e.key==='Shift')keys.run=true;if(inField(e))re
     else if((k==='f'||k==='F')&&!e.repeat){setLight(!S.light)}
     else if(k===' '||k==='Enter'||k==='z'||k==='Z'){if(e.target.tagName==='BUTTON'&&e.target.id!=='kA')return;e.preventDefault();if(!e.repeat)interact()}}
   else if(mode==='dialog'){if(k==='ArrowLeft'||k==='ArrowUp'){e.preventDefault();moveSel(-1)}else if(k==='ArrowRight'||k==='ArrowDown'){e.preventDefault();moveSel(1)}
-    else if(k===' '||k==='Enter'||k==='z'||k==='Z'){e.preventDefault();if(e.repeat)return;if(D&&!D.typing&&D.lines[D.i].choices)pick(D.sel);else advance()}}
+    else if(k===' '||k==='Enter'||k==='z'||k==='Z'){e.preventDefault();if(e.repeat)return;if(D&&!D.typing&&D.lines[D.i].choices){if(performance.now()-(D.chAt||0)>=700)pick(D.sel)}else advance()}}
   else if(mode==='title'&&(k==='Enter'||k===' ')&&e.target.tagName!=='BUTTON'){e.preventDefault();startGame()}});
 addEventListener('keyup',e=>{const k=e.key;if(k==='Shift')keys.run=false;if(k==='x'||k==='X'||k==='j'||k==='J')keys.fire=false;if(k==='ArrowLeft'||k==='a'||k==='A')keys.l=false;if(k==='ArrowRight'||k==='d'||k==='D')keys.r=false});
 addEventListener('blur',()=>{keys.l=keys.r=keys.run=keys.fire=false});
@@ -3024,7 +3038,7 @@ function hold(el,key){const on=e=>{e.preventDefault();keys[key]=true},off=()=>ke
 hold($('#kL'),'l');hold($('#kR'),'r');hold($('#kF'),'fire');
 $('#kJ').addEventListener('pointerdown',e=>{e.preventDefault();jump()});$('#kDg').addEventListener('pointerdown',e=>{e.preventDefault();dodge()});
 $('#kRun').addEventListener('click',e=>{keys.runT=!keys.runT;e.currentTarget.setAttribute('aria-pressed',keys.runT)});
-$('#kA').addEventListener('click',()=>{if(mode==='play')interact();else if(mode==='dialog'){if(D&&!D.typing&&D.lines[D.i].choices)pick(D.sel);else advance()}});
+$('#kA').addEventListener('click',()=>{if(mode==='play')interact();else if(mode==='dialog'){if(D&&!D.typing&&D.lines[D.i].choices){if(performance.now()-(D.chAt||0)>=700)pick(D.sel)}else advance()}});
 cv.addEventListener('pointerdown',()=>{if(mode==='dialog')advance()});
 
 /* ===== タイトル ===== */
