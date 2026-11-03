@@ -426,15 +426,15 @@ const isAdmin=()=>{try{return localStorage.getItem(ADMIN_KEY)==='1'}catch(e){ret
 /* スキャン値を最大（4つとも 100 点）にする */
 function adminMax(){S.cur={cpu:180,ram:10,gpu:30,alu:30};if(!S.base)S.base={...S.cur};S.scans=(S.scans||0)+1;S.started=true;save();hud();toast('管理者：スキャン値を最大にした（4つとも 100 点）',3600)}
 /* 全部のゲートを通れるようにする（物語の条件をそろえ、天穹区まで行けるようにする。中央区ゲートの番人も倒した扱い） */
-function adminGates(){if(!overall(S.cur))adminMax();S.passed=1;S.started=true;S.reached=[...new Set([...(S.reached||[]),'out','lower','corp','sky'])];
+function adminGates(){if(!overall(S.cur)||effective()<gateReq('corp'))adminMax();if(F.zone&&area()==='sky')resetFight(true);S.passed=1;S.started=true;S.reached=[...new Set([...(S.reached||[]),'out','lower','corp','sky'])];
   S.st={...S.st,poster:1,join:1,arrive:1,genji:1,ray:1,done:1,corp:1,corpArrive:1,news:1,resolve:1,weapon:1,tenkyu:1,skyArrive:1,z_z1:1,zs_z1:1,sou:1,z_z2:1,zs_z2:1,z_z3:1,zs_z3:1};
   save();hud();toast('管理者：全部のゲートを通れるようにした（昇降機で天穹区まで行ける）',4200)}
 function adminAll(){adminMax();adminGates()}
 window.ngAdmin={max:adminMax,gates:adminGates,all:adminAll,go:to=>{if(AREAS[to]&&to!=='top'){if(!S.reached.includes(to))S.reached=[...S.reached,to];travel(to,'lift')}}};
-function adminHTML(){return isAdmin()?`<div><p>管理者</p><p class="note">作者が試すためのもの。URL に ?admin を付けて開いたときだけ出ます（?admin=0 で消える）。</p></div>
+function adminHTML(){return isAdmin()?`<div><p>管理者</p><p class="note">作者が試すためのもの。URL に ?admin を付けて開くと、このブラウザでは出たままになります（?admin=0 を付けて開くと消える）。</p></div>
   <div class="prow"><button class="nbtn pink" type="button" data-ad="max">スキャン値を最大に</button><button class="nbtn pink" type="button" data-ad="gates">全部のゲートを通れるように</button><button class="nbtn pink" type="button" data-ad="all">両方</button></div>
   <div class="prow">${['out','lower','corp','sky'].map(a=>`<button class="nbtn ghost" type="button" data-go="${a}">${AREAS[a].nm.split(' · ')[0]}へ</button>`).join('')}</div>`:''}
-function bindAdmin(root){root.querySelectorAll('[data-ad]').forEach(b=>b.onclick=()=>{({max:adminMax,gates:adminGates,all:adminAll})[b.dataset.ad]()});
+function bindAdmin(root){root.querySelectorAll('[data-ad]').forEach(b=>b.onclick=()=>closePanel(()=>({max:adminMax,gates:adminGates,all:adminAll})[b.dataset.ad]()));
   root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const to=b.dataset.go;if(!S.reached.includes(to))S.reached=[...S.reached,to];closePanel(()=>travel(to,'lift'))})}
 /* ===== 音（sound.js） ===== */
 const SND=window.NGSound||null;
