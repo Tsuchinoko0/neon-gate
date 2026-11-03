@@ -252,7 +252,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.32 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.33 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -295,7 +295,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.32"></script>
+<script src="sound.js?v=0.33"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -439,7 +439,7 @@ function bindAdmin(root){root.querySelectorAll('[data-ad]').forEach(b=>b.onclick
 /* ===== 音（sound.js） ===== */
 const SND=window.NGSound||null;
 const sfx=n=>{try{SND&&SND.se(n)}catch(e){}};
-function sndApply(){if(!SND)return;const o=S.snd||{};try{SND.setVolume('bgm',o.bgm??0.6);SND.setVolume('se',o.se??0.8);SND.setMuted(!!o.muted);SND.setCyber(1-flesh()/100);SND.setMood&&SND.setMood(F.zone?(F.zone.boss?'boss':'fight'):area())}catch(e){}}
+function sndApply(){if(!SND)return;const o=S.snd||{};try{SND.setVolume('bgm',o.bgm??0.6);SND.setVolume('se',o.se??0.8);SND.setMuted(!!o.muted);SND.setCyber(1-flesh()/100);SND.setMood&&SND.setMood(F.zone?(F.zone.boss?(F.foes.some(f=>f.k==='ai'&&f.p2)?'boss2':'boss'):'fight'):area())}catch(e){}}
 const mood=m=>{try{SND&&SND.setMood&&SND.setMood(m)}catch(e){}};
 let endQuiet=false;/* END の画面（バツを書く間）は BGM を止めたままにする */
 function sndStart(){if(!SND)return;try{
@@ -1296,6 +1296,8 @@ function drawPeopleAndProps(t){const s=ST(),ents=[],m=docMood();
   for(const p of s.props)if(p.k!=='hang')ents.push({y:GY+(p.z||0),draw:()=>drawProp(p,t)});
   for(const f of s.fires)ents.push({y:f.y+13.5,draw:()=>drawFire(f,t)});
   ents.push({y:Math.min(player.y,GY),draw:()=>{if(armed()&&T<F.inv&&Math.floor(T*16)%2)return;const spr=(!player.onGround&&actArea())||(player.moving&&Math.floor(player.step*8)%2)?P_B:P_A;drawAt(spr,Math.round(player.x),Math.round(player.y),player.dir<0);
+    /* シールドの膜（残っている間、ときどき光る） */
+    if(armed()&&hasShield()&&F.sh>0)drawShieldAura(Math.round(player.x-camX),Math.round(player.y));
     /* パルスガン（天穹区から） */
     if(armed()){const gx=Math.round(player.x-camX)+(player.dir>0?3:-7),gy=Math.round(player.y)-9;ctx.fillStyle='#3a3e50';ctx.fillRect(gx,gy,5,2);ctx.fillStyle='#3ef2e0';ctx.fillRect(player.dir>0?gx+4:gx,gy,1,1);
       if(T<F.muzzle){ctx.fillStyle='#e8fffc';ctx.fillRect(player.dir>0?gx+5:gx-3,gy-1,3,3)}}
@@ -1343,7 +1345,7 @@ function cbt(){const c=impLv('reflex'),r=impLv('buffer'),g=impLv('optic'),a=impL
 const AMMO_MAX=24;
 let T=0;/* 今の時刻（秒）。loop で更新 */
 const F={hp:6,ammo:AMMO_MAX,inv:0,dodgeT:0,dodgeCD:0,fireCD:0,kb:0,shots:[],eshots:[],foes:[],fx:[],zone:null,wave:0,waveT:0,heal:0,amCD:0,minaCD:1.5,souCD:1,flash:0,muzzle:0,beams:[]};
-function resetFight(full){F.hacked=false;if(F.zone&&area()==='sky')mood('sky');F.shots=[];F.eshots=[];F.foes=[];F.fx=[];F.beams=[];F.zone=null;F.wave=0;F.waveT=0;if(full){F.hp=cbt().hp;F.ammo=AMMO_MAX;F.heal=0;F.amCD=0}}
+function resetFight(full){F.hacked=false;if(F.zone&&area()==='sky')mood('sky');F.shots=[];F.eshots=[];F.foes=[];F.fx=[];F.beams=[];F.zone=null;F.wave=0;F.waveT=0;if(full){F.sh=shMax();F.hp=cbt().hp;F.ammo=AMMO_MAX;F.heal=0;F.amCD=0}}
 /* 仲間（天穹区ではミナがついてくる。ソウは再会のあと） */
 const ALLY={mina:{id:'mina',x:0,z:-3,ally:1,flip:false,mv:0,step:0},sou:{id:'sou',x:0,z:3,ally:1,flip:false,mv:0,step:0}};
 function placeAllies(){ALLY.mina.x=player.x-26*player.dir;ALLY.sou.x=player.x+22*player.dir}
@@ -1357,14 +1359,21 @@ const FOE={drone:{hp:3,w:14,h:9,fly:1,sp:44,weak:[0,-5],range:150,cd:2.3},
 /* 第二形態は攻撃の間を短く（stepFight の cd に掛ける） */
 const cdMul=f=>f.k==='ai'&&f.p2?0.7:1;
 function spawnFoe(k,x){const d=FOE[k],c=cbt(),max=Math.round(d.hp*c.foeHp),hp=d.boss&&F.wardenLeft?Math.min(max,F.wardenLeft):max;
-  if(k==='ai'&&TOPF.p2Start){TOPF.p2Start=false;const m=Math.round(max*0.6);F.foes.push({k,x,y:GY,vy:0,hp:m,max:m,dir:-1,st:'in',t:0,cd:1.2,hit:0,ph:0,burst:0,born:T,lastU:T,open:0,p2:1});return}
+  if(k==='ai'&&TOPF.p2Start){TOPF.p2Start=false;const m=Math.round(max*0.6);F.foes.push({k,x,y:GY,vy:0,hp:m,max:m,dir:-1,st:'in',t:0,cd:1.2,hit:0,ph:0,burst:0,born:T,lastU:T,open:0,p2:1});mood('boss2');return}
   F.foes.push({k,x,y:d.fly?-14:(d.boss||k==='seeker'?GY:-20),vy:0,hp,max,spr:k==='seeker'?SEEK_SPR[Math.floor(Math.random()*SEEK_SPR.length)]:null,born:T,lastU:T,open:0,dir:-1,st:'in',t:0,cd:0.6+Math.random()*0.8,hit:0,ph:Math.random()*6,burst:0})}
 const foeHurt=(f,n,weak)=>{if(f.k==='ai'&&f.morph&&T<f.morph)return;if(f.k==='ai'&&T>=f.open){if(T>(f.blk||0)){f.blk=T+0.5;F.fx.push({k:'txt',x:f.x,y:f.y-FOE.ai.h-4,t:T,s:'予測済み',c:'#9ad0ff'});sfx('ehit')}return}f.hp-=n;f.hit=T+0.1;F.fx.push({k:'spark',x:f.x,y:f.y-(FOE[f.k].h/2),t:T,c:weak?'#ffd34a':'#ffffff'});if(weak)F.fx.push({k:'txt',x:f.x,y:f.y-FOE[f.k].h-4,t:T,s:'WEAK',c:'#ffd34a'});sfx(weak?'weak':'ehit');
   if(f.hp<=0&&f.k==='ai'&&!f.p2)return aiPhase2(f);
   if(f.hp<=0){f.dead=1;F.fx.push({k:'boom',x:f.x,y:f.y-FOE[f.k].h/2,t:T,r:FOE[f.k].boss?26:10});sfx('boom')}};
 const weakAt=f=>{const d=FOE[f.k];return{x:f.x+d.weak[0]*f.dir,y:f.y+d.weak[1]}};
+/* シールド（v0.33）：企業区で RAY が銃と一緒に渡す（銃を持っていれば持っている）。攻撃を受けると体力より先に減り、5秒受けなければ4秒ごとに1つ戻る */
+const hasShield=()=>!!(S.st&&S.st.weapon);
+const shMax=()=>hasShield()?({easy:3,normal:2,hard:1})[diffNow()]:0;
+/* 戻るのは、天穹区では敵の波と波の間だけ（6秒受けなければ）。中央区の戦いは敵が消えないので、8秒受けなければ */
+function stepShield(){if(!hasShield())return;if(F.sh==null)F.sh=shMax();if(F.sh>shMax())F.sh=shMax();const wait=TOPF.fight?8:6,calm=TOPF.fight||!F.foes.some(f=>f.st!=='in');if(calm&&F.sh<shMax()&&T-(F.hurtT||0)>wait&&T>=(F.shT||0)){F.sh++;F.shT=T+5;F.fx.push({k:'txt',x:player.x,y:player.y-24,t:T,s:'シールド回復',c:'#7fd0ff'})}}
 /* プレイヤーの当たり（足もと y から上に 15） */
-function hurtPlayer(n,from){if(T<F.inv||T<F.dodgeT||mode!=='play')return;const c=cbt();buzz(70);F.hp-=Math.max(1,Math.round(n*c.dmg));F.inv=T+1.0;F.kb=T+0.18;F.flash=T+0.15;
+function hurtPlayer(n,from){if(T<F.inv||T<F.dodgeT||mode!=='play')return;const c=cbt();F.hurtT=T;F.shT=T+5;
+  if(F.sh>0){F.sh--;F.inv=T+0.8;F.kb=T+0.1;buzz(30);sfx('ehit');F.fx.push({k:'shield',x:player.x,y:player.y,t:T},{k:'txt',x:player.x,y:player.y-24,t:T,s:F.sh?'シールド':'シールド破損',c:'#7fd0ff'});return}
+  buzz(70);F.hp-=Math.max(1,Math.round(n*c.dmg));F.inv=T+1.0;F.kb=T+0.18;F.flash=T+0.15;
   player.vx=(player.x<from?-1:1)*110;player.vy=-120;sfx('hurt');if(F.hp<=0){F.hp=0;fallen()}}
 function playerHit(x,y,r=2){return Math.abs(x-player.x)<4+r&&y>player.y-16-r&&y<player.y+r}
 /* 倒れたら、ミナが助け起こす。区画の手前からやり直し（敵も元に戻る） */
@@ -1393,6 +1402,7 @@ function stepFight(dt){const st=ST(),c=cbt();
   const z=F.zone;
   /* 波：前の波を倒しきると、少し間をおいて次が来る */
   if(z&&!z.end3&&mode==='play'&&!F.foes.length){if(!F.waveT)F.waveT=T+(F.wave?0.9:0.4);else if(T>=F.waveT){F.waveT=0;if(F.wave<z.waves.length){for(const s of z.waves[F.wave])spawnFoe(s.k,s.x);F.wave++}else clearZone(z)}}
+  stepShield();
   if(keys.fire)fire();
   /* 敵の動き */
   for(const f of F.foes){const d=FOE[f.k],dx=player.x-f.x,dist=Math.abs(dx);f.t+=dt;
@@ -1482,13 +1492,46 @@ function drawFight(t){const c=cbt();ctx.setTransform(2,0,0,2,0,2*OY);
     else if(e.k==='txt'){ctx.font='bold 8px "M PLUS 1 Code",monospace';ctx.textAlign='center';ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillText(e.s,x+1,y-Math.round(k*10)+1);ctx.fillStyle=e.c;ctx.fillText(e.s,x,y-Math.round(k*10));ctx.textAlign='start'}
     else if(e.k==='dust'){ctx.fillStyle=`rgba(200,210,230,${0.6-k*1.5})`;ctx.fillRect(x-8-k*20,y-2,4,2);ctx.fillRect(x+4+k*20,y-2,4,2)}
     else if(e.k==='ghost'){ctx.globalAlpha=0.35-k;drawAt(P_B,e.x,e.y,e.dir<0);ctx.globalAlpha=1}
+    else if(e.k==='shield'){drawShieldHit(e,x,y,T-e.t)}
     else if(e.k==='slash'){ctx.strokeStyle=`rgba(255,240,200,${1-k*2.5})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,9,e.dir>0?-1.2:Math.PI-1.2,e.dir>0?1.2:Math.PI+1.2);ctx.stroke();ctx.lineWidth=1}
     else if(e.k==='heal'){ctx.fillStyle=`rgba(125,255,176,${0.8-k*2})`;for(let i=0;i<6;i++)ctx.fillRect(x-6+i*2.4,Math.round(y-6-k*30-(i%3)*4),1,2)}}
   /* 封鎖の壁 */
   for(const z of ST().zones||[]){const act=F.zone===z,closed=!zoneDone(z)&&!zoneNeed(z);if(!act&&!closed)continue;
     for(const x of act?[z.x0,z.x1]:[z.x0]){const sx=Math.round(x-camX);if(sx<-6||sx>W+6)continue;ctx.fillStyle='rgba(255,61,90,.18)';ctx.fillRect(sx-4,GY-70,8,70);ctx.fillStyle=`rgba(255,90,120,${0.55+0.25*Math.sin(t*9)})`;for(let y=GY-68;y<GY;y+=4)ctx.fillRect(sx-1,y,2,2);ctx.fillStyle='#3a3a50';ctx.fillRect(sx-3,GY-72,6,3)}}}
+/* シールドの六角形の膜（とがった頂点が上下。点で描く） */
+function hexV(cx,cy,r){const v=[];for(let i=0;i<6;i++){const a=-Math.PI/2+i*Math.PI/3;v.push([cx+Math.cos(a)*r*0.9,cy+Math.sin(a)*r])}return v}
+function pxLine(x0,y0,x1,y1,step=1){const n=Math.max(1,Math.round(Math.max(Math.abs(x1-x0),Math.abs(y1-y0))));for(let i=0;i<=n;i+=step)ctx.fillRect(Math.round(x0+(x1-x0)*i/n),Math.round(y0+(y1-y0)*i/n),1,1)}
+/* 体のまわりの膜：ふだんはごく薄く、ときどき上から下へ光が走る */
+function drawShieldAura(x,y){const cx=x,cy=y-8,v=hexV(cx,cy,12),p=(T%3.2)/0.55;
+  ctx.fillStyle='rgba(90,180,255,.13)';for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6];pxLine(a[0],a[1],b[0],b[1],2)}
+  if(p<1){const band=cy-13+p*28;for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6],n=Math.round(Math.max(Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1])));
+      for(let j=0;j<=n;j++){const px=Math.round(a[0]+(b[0]-a[0])*j/n),py=Math.round(a[1]+(b[1]-a[1])*j/n),d=Math.abs(py-band);if(d>4)continue;ctx.fillStyle=d<1.5?'rgba(58,166,240,.6)':'rgba(127,208,255,.35)';ctx.fillRect(px,py,1,1)}}
+    /* 光の帯が通る高さに、膜の目（ハニカムの点）が少し見える */
+    const by=Math.round(band);for(let xx=-9;xx<=9;xx+=3){const h=12-Math.abs(xx)*0.577;if(Math.abs(by-cy)<h-1)ctx.fillStyle='rgba(160,225,255,.28)',ctx.fillRect(cx+xx+((by>>1)&1),by,1,1)}}}
+/* シールドで防いだときの光：膜が光り、6枚に割れて飛び散る（約0.4秒）。明るい天穹区でも見えるよう、濃い青の縁と明るい芯の2色で描く */
+function drawShieldHit(e,x,y,k){if(k>0.42)return;const cx=x,cy=y-8,r=12;
+  if(k<0.1){const f=1-k/0.1,vo=hexV(cx,cy,r+1),vi=hexV(cx,cy,r);
+    /* 膜の内側（市松の点） */
+    ctx.fillStyle=`rgba(89,195,255,${0.4*f+0.1})`;for(let yy=-r+1;yy<r;yy++){const w=Math.min(r*0.9-1,(r-Math.abs(yy))/0.577*0.9-1);for(let xx=-Math.floor(w);xx<=w;xx++)if(((xx+yy)&1)===0)ctx.fillRect(cx+xx,cy+yy,1,1)}
+    ctx.fillStyle=`rgba(36,110,200,${0.9*f+0.1})`;for(let i=0;i<6;i++){const a=vo[i],b=vo[(i+1)%6];pxLine(a[0],a[1],b[0],b[1])}
+    ctx.fillStyle=`rgba(235,250,255,${0.9*f+0.1})`;for(let i=0;i<6;i++){const a=vi[i],b=vi[(i+1)%6];pxLine(a[0],a[1],b[0],b[1])}
+    /* 受けた点の光（頂点に小さな十字） */
+    ctx.fillStyle=`rgba(255,255,255,${f})`;for(const q of [vo[0],vo[2],vo[4]]){const qx=Math.round(q[0]),qy=Math.round(q[1]);ctx.fillRect(qx-1,qy,3,1);ctx.fillRect(qx,qy-1,1,3)}return}
+  const q=(k-0.1)/0.32,al=Math.max(0,1-q*q),v=hexV(cx,cy,r);
+  for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=(mx-cx)/r,dy=(my-cy)/r,
+      ox=dx*q*16,oy=dy*q*12+q*q*16,sh=0.5-q*0.3,tw=(i%2?1:-1)*q*2;
+    const x0=mx+(a[0]-mx)*sh*2+ox,y0=my+(a[1]-my)*sh*2+oy+tw,x1=mx+(b[0]-mx)*sh*2+ox,y1=my+(b[1]-my)*sh*2+oy-tw;
+    ctx.fillStyle=`rgba(36,110,200,${al})`;pxLine(x0+dx,y0+dy+1,x1+dx,y1+dy+1);
+    ctx.fillStyle=`rgba(${i%2?'200,240,255':'120,210,255'},${al})`;pxLine(x0,y0,x1,y1)}
+  /* 細かいかけら */
+  for(let i=0;i<8;i++){const a=i*0.785+0.4,rr=r+2+q*22;ctx.fillStyle=i%2?`rgba(36,110,200,${al})`:`rgba(220,246,255,${al})`;ctx.fillRect(Math.round(cx+Math.cos(a)*rr*0.9),Math.round(cy+Math.sin(a)*rr+q*q*20),1,1)}}
+/* HUD のシールドの印：小さな青い盾（中に六角形の目）。なくなると割れた輪郭だけ */
+function drawShieldPip(x,y,on){const M=on?['.oooo.','oLHHHo','oHhhHo','oHhhHo','.oHHo.','..oo..']:['.oo.o.','o....o','.....o','o...o.','.o..o.','..oo..'];
+  const C=on?{o:'#2f86d8',H:'#6fd0ff',h:'#3aa6f0',L:'#f0fbff'}:{o:'rgba(160,190,230,.32)'};
+  for(let r=0;r<6;r++)for(let c=0;c<6;c++){const ch=M[r][c];if(ch==='.')continue;ctx.fillStyle=C[ch];ctx.fillRect(x+c,y+r,1,1)}
+  if(on&&(T%2.4)<0.18){ctx.fillStyle='rgba(255,255,255,.8)';ctx.fillRect(x+1+Math.floor((T%2.4)/0.18*4),y+1,1,1)}}
 /* 体力・弾・番人の体力（画面の上） */
-function drawFightHud(t){if(!armed())return;if(TOPF.fight&&TOPF.no>=4){drawAIBrain();drawCoreArrow(t);const e=F.fx.filter(e=>e.long).pop();if(e)drawAISay(e)}ctx.setTransform(2,0,0,2,0,0);const c=cbt();ctx.fillStyle='rgba(8,10,28,.42)';ctx.fillRect(2,3,Math.max(78,c.hp*8+4),21);
+function drawFightHud(t){if(!armed())return;if(TOPF.fight&&TOPF.no>=4){drawAIBrain();drawCoreArrow(t);const e=F.fx.filter(e=>e.long).pop();if(e)drawAISay(e)}ctx.setTransform(2,0,0,2,0,0);const c=cbt();ctx.fillStyle='rgba(8,10,28,.42)';ctx.fillRect(2,3,Math.max(78,c.hp*8+4+shMax()*7+4),21);for(let i=0;i<shMax();i++)drawShieldPip(6+c.hp*8+4+i*7,6,i<(F.sh??shMax()));
   for(let i=0;i<c.hp;i++){const x=6+i*8,y=6,on=i<F.hp;ctx.fillStyle=on?'#ff3d6b':'rgba(255,255,255,.18)';ctx.fillRect(x,y,2,2);ctx.fillRect(x+3,y,2,2);ctx.fillRect(x-1,y+1,7,2);ctx.fillRect(x,y+3,5,1);ctx.fillRect(x+1,y+4,3,1);ctx.fillRect(x+2,y+5,1,1)}
   ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(5,15,50,4);ctx.fillStyle=F.ammo<=4?'#ffb547':'#3ef2e0';ctx.fillRect(6,16,Math.round(48*F.ammo/AMMO_MAX),2);
   ctx.font='7px "M PLUS 1 Code",monospace';ctx.fillStyle='rgba(10,12,30,.75)';ctx.fillText(`弾 ${F.ammo}`,59,21);ctx.fillStyle='#e8f0ff';ctx.fillText(`弾 ${F.ammo}`,58,20);
@@ -1687,6 +1730,8 @@ function souRecall(){S.st={...S.st,souPlan:'with'};save();placeAllies();talk(SOU
 /* エンディングの番号（中央区ゲートを通るときに決まる） */
 function endingNo(){const ps=(S.party||[]).map(id=>PARTY[id].cy),hi=ps.some(c=>c>=HACK_AT),lo=ps.filter(c=>c<HACK_AT).length,r=rikCy()>=HACK_AT;
   if(!souEvac())return r?1:2;if(r||hi)return 3;return lo>=2?5:4}
+/* 目的画面に出す、まだ見ていないエンディングのヒント（条件をそのまま書かない。物語係） */
+const END_HINTS={1:'体を機械に換えて、ソウと並んでてっぺんへ。',2:'生身のまま、ソウの手を引いて上ると……。',3:'ソウを逃がしても、機械の体が一つでもあれば……。',4:'ソウは電波の届かない場所へ。生身のまま、いつもと違う動きで。',5:'ソウは電波の届かない場所へ。生身に近い仲間たちと。'};
 const END_NAMES={1:'捕縛',2:'ごめん',3:'終わらない列',4:'予測の外',5:'共に'};
 /* ===== 学習する中央AI（END4・5 のボス戦） ===== */
 /* 床を幅 AI_LANE の「列」に分けて考える。AIは攻撃の前に、いまの位置に赤い警告を出し、同時に表から「逃げそうな先」を選んで、そこも撃つ。
@@ -1713,7 +1758,7 @@ function aiWind(f){f.wx=player.x;f.from=aiRegion(player.x);const g=aiGuarantee()
   const p=aiPredict(f.from),cl=x=>clamp(x,F.zone.x0+8,STAGES.top.ai-50);f.pd=force?null:p.d;f.px=f.pd==null?null:cl(player.x+f.pd*AI_LANE);f.px2=f.p2&&!force?cl(player.x+p.d2*AI_LANE):null;if(f.px2!=null&&f.px!=null&&Math.abs(f.px2-f.px)<AI_LANE/2)f.px2=cl(f.px+(f.px<STAGES.top.ai-100?AI_LANE:-AI_LANE));f.force=force;if(f.p2)f.wind=0.85+0.15*cbt().tell}
 /* 第二形態：あなたの癖を理解した姿。読みを2つ撃ち、攻撃の間が短くなる。体力は7割から */
 function aiPhase2(f){f.p2=1;f.max=Math.round(f.max*0.6);f.hp=f.max;f.open=0;f.morph=T+2.2;f.st='move';f.cd=2.4;F.beams=[];F.eshots=[];shakeT=T+1.6;sfx('warden');sfx('boom');buzz([80,40,160]);
-  mood('boss');setTimeout(()=>{if(TOPF.fight&&mode==='play'){TOPF.lowDlg=true;talk(AI_P2.map(t=>L('ai',t)),()=>{TOPF.lowDlg=false})}},2300)}/* 変身が見えるように、セリフは変わり終えてから */
+  mood('boss2');setTimeout(()=>{if(TOPF.fight&&mode==='play'){TOPF.lowDlg=true;talk(AI_P2.map(t=>L('ai',t)),()=>{TOPF.lowDlg=false})}},2300)}/* 変身が見えるように、セリフは変わり終えてから */
 /* 撃つ：警告の位置と、読んだ先。動いた向きを学ぶ */
 function aiFire(f){const d=clamp(Math.round((player.x-f.wx)/AI_LANE),-2,2);AIB.turns++;aiLearnMove(d,f.from);
   F.beams.push({k:'pillar',x:f.wx,on:T,off:T+0.45,ai:1});if(f.px!=null)F.beams.push({k:'pillar',x:f.px,on:T,off:T+0.45,ai:1,pred:1});if(f.px2!=null)F.beams.push({k:'pillar',x:f.px2,on:T,off:T+0.45,ai:1,pred:1});sfx('laser');
@@ -1814,7 +1859,7 @@ let PALLY=[];
 function makePartyAllies(){PALLY=(S.party||[]).map((id,i)=>({id,x:player.x-40-i*14,z:i%2?5:-5,ally:1,flip:false,mv:0,step:0,cd:1+i*0.4,hacked:false}))}
 /* 大規模AI：攻撃の前に、リクの動きを予測した印を出す。生身は、ときどき予測の外に動ける（「予測不能」→核がむき出し） */
 function topZone(){const st=STAGES.top;return{id:'top',top:1,x0:TOPF.no>=4?st.ai-260:30,x1:st.ai+30,boss:TOPF.no!==3,end3:TOPF.no===3,waves:TOPF.no===3?[]:[[{k:'ai',x:st.ai}]]}}
-function startTopFight(){if(TOPF.no>=4&&!AIB.tab)aiBrainReset();if(TOPF.no>=4){player.x=STAGES.top.ai-230;player.vx=0}TOPF.fight=true;TOPF.t0=T;TOPF.hacked=false;TOPF.spawnT=T+0.5;STAGES.top.endX=STAGES.top.ai-46;resetFight(true);makePartyAllies();placeAllies();ALLY.mina.x=player.x-26;
+function startTopFight(){if(TOPF.p2Start)setTimeout(()=>mood('boss2'),0);if(TOPF.no>=4&&!AIB.tab)aiBrainReset();if(TOPF.no>=4){player.x=STAGES.top.ai-230;player.vx=0}TOPF.fight=true;TOPF.t0=T;TOPF.hacked=false;TOPF.spawnT=T+0.5;STAGES.top.endX=STAGES.top.ai-46;resetFight(true);makePartyAllies();placeAllies();ALLY.mina.x=player.x-26;
   const z=topZone();F.zone=z;F.wave=0;F.waveT=0;sfx('lock');sfx('alarm');mood(z.end3?'fight':'boss');mode='play';hud()}
 function stopTopFight(keep){TOPF.fight=false;TOPF.show=!!keep;F.zone=null;if(!keep)F.foes=[];F.eshots=[];F.beams=[];F.shots=[];STAGES.top.endX=450}
 /* 1コマぶん（END3 の列と、ハッキング） */
@@ -2015,8 +2060,8 @@ function talkMinaCorp(){const ls=[];
 /* 企業区の RAY：武器を渡す */
 function talkRayCorp(){if(!S.st.weapon){S.st={...S.st,weapon:1};save();
     return talk([L('ray','……来たか。ミナから話は聞いた。'),L('ray','ソウを上に送ったのは、俺だ。換えれば上に行けるって、あいつに教えた。'),
-      L('ray','だから、これを持っていけ。鋼組の裏ルートで回ってきた、保安機体用のパルスガンだ。'),L('ray','今度は、引きずり下ろさねえように使え。'),L('me','……ミナは？ 天穹区のゲートは 78 だ。生身じゃ通れない。'),L('ray','ミナは配送の荷として上げる。……鋼組の裏ルートなら、ゲートは見ねえ。'),L('me','……ありがとう、RAY。')],
-      ()=>toast('持ち物に「パルスガン」が入った',5200))}
+      L('ray','だから、これを持っていけ。鋼組の裏ルートで回ってきた、保安機体用のパルスガンだ。'),L('ray','今度は、引きずり下ろさねえように使え。'),L('ray','それと、これだ。携帯用の防壁。何発かは、代わりに受けてくれる。'),L('ray','盾があっても、突っ込むんじゃねえ。……ソウみてえにな。'),L('me','……ミナは？ 天穹区のゲートは 78 だ。生身じゃ通れない。'),L('ray','ミナは配送の荷として上げる。……鋼組の裏ルートなら、ゲートは見ねえ。'),L('me','……ありがとう、RAY。')],
+      ()=>toast('持ち物に「パルスガン」と「シールド」が入った',5200))}
   talk([L('ray',pick3('ray_corp',['使い方は、撃つ前に考えることだ。……ソウは、それを忘れた。','天穹区は、空まで作り物だ。足もとを見失うなよ。','俺はまた配送に戻る。……生きて、会いに来い。']))])}
 /* 正規クリニック：サエキ（企業の正規品。値段は高いが、性能もいい） */
 function talkSaeki(){const first=!S.st.saeki;if(first){S.st={...S.st,saeki:1};save()}
@@ -2314,7 +2359,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">天穹区は次の版で</p>
-  <p class="muted">試作版 v0.32 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
+  <p class="muted">試作版 v0.33 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">企業区に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
@@ -2590,7 +2635,7 @@ function goalPanel(){$('#goalBtn').classList.remove('new');const g=goalNow(),st=
   const mark=(ok,lock)=>lock?'<span class="lock">－</span>':ok?'<span class="ok">✓</span>':'<span class="ng">✗</span>';
   const story=[S.started&&'リク、18歳。圏外の畑の村で生まれ育った。子どものころから、ピラミッド都市・東京の中が見たかった。脳のスペックが基準に届けば、圏外からでも東京に入れる。',st.poster&&'村の掲示板に、指名手配の紙が貼られていた。「指名手配　ソウ」「中央区ゲート襲撃」。',o&&`ドク・カゲロウのブレインスキャンで、脳は「${o.tier.name}」と測られた。`,S.passed&&'圏外のゲートを通った。ミナが追ってきた。手配書のソウは、ミナの兄だった。基準は越えていたが、一人では入れなかったのだという。',
     st.arrive&&'ピラミッドの底、第1層・沈殿街に着いた。ミナはここで生まれ、十年前に検査に落ちて圏外へ出された。兄のソウは東京に残った。ミナは昇降機のそばに残り、インプラントに頼らず次のゲートを通るため勉強を始めた。',
-    st.genji&&'屋台のゲンジいわく、ソウは昔の常連で、「てっぺんに上って、全部変える」と言って鋼組に入り、体を換え始めた。',st.ray&&'鋼組のRAYいわく、ソウに体を換える道を勧めたのは自分だった。ソウは天穹区まで上ったが、スペックが上がらなくなり、仲間と中央区のゲートを襲って失敗した。今は手配者として、天穹区に隠れている。',st.done&&'ミナに知らせた。ミナは、生身のまま兄を迎えに行くと決めた。',st.corp&&'企業区ゲートを通った。ミナも、生身のままぎりぎりで基準に届いた。企業区では毎日の査定で、数字が落ちた人から下の層へ送られている。',st.news&&'ニュースによると、ソウの仲間5人のうち4人は保安機体にやられた。ソウは一人で天穹区に潜んでいる。',st.resolve&&'ミナと話した。ソウのところへ行くなら、戦いは避けられない。ミナは生身のまま後ろから支えると言い、二人で覚悟を決めた。',st.weapon&&'RAY から、鋼組の裏ルートのパルスガンを受け取った。「今度は、引きずり下ろさねえように使え」。生身のミナは、RAY が配送の荷として上へ運ぶ。',st.tenkyu&&'天穹区ゲートを通った。作り物の空の下、白く整いすぎた街。ソウの手配書が、至るところで回っていた。',st.z_z1&&'銃を持ちこんだことを知られ、保安部隊と戦った。ミナは後ろから、手当てと弾と援護射撃で支えてくれた。',st.sou&&'整備路の奥で、ソウと再会した。体を換えすぎて、スペックはもう上がらない。仲間を失ったのは自分のせいだと、ソウは言った。それでも今も、中央区の大規模AIを止めれば制度は止まると信じている。三人で中央区を目指すことにした。リクとミナも、手配者になった。',st.z_z2&&'ソウと並んで、サイボーグ部隊を突破した。',st.z_z3&&'中央区ゲートの番人を倒した。ソウの仲間たちが、たどり着けなかった場所。',st.end&&'東京のてっぺん、中央区。そこにいたのは、AIと、サイボーグだけだった。三人とも、そこで捕まった。'].filter(Boolean);
+    st.genji&&'屋台のゲンジいわく、ソウは昔の常連で、「てっぺんに上って、全部変える」と言って鋼組に入り、体を換え始めた。',st.ray&&'鋼組のRAYいわく、ソウに体を換える道を勧めたのは自分だった。ソウは天穹区まで上ったが、スペックが上がらなくなり、仲間と中央区のゲートを襲って失敗した。今は手配者として、天穹区に隠れている。',st.done&&'ミナに知らせた。ミナは、生身のまま兄を迎えに行くと決めた。',st.corp&&'企業区ゲートを通った。ミナも、生身のままぎりぎりで基準に届いた。企業区では毎日の査定で、数字が落ちた人から下の層へ送られている。',st.news&&'ニュースによると、ソウの仲間5人のうち4人は保安機体にやられた。ソウは一人で天穹区に潜んでいる。',st.resolve&&'ミナと話した。ソウのところへ行くなら、戦いは避けられない。ミナは生身のまま後ろから支えると言い、二人で覚悟を決めた。',st.weapon&&'RAY から、鋼組の裏ルートのパルスガンとシールドを受け取った。「今度は、引きずり下ろさねえように使え」。生身のミナは、RAY が配送の荷として上へ運ぶ。',st.tenkyu&&'天穹区ゲートを通った。作り物の空の下、白く整いすぎた街。ソウの手配書が、至るところで回っていた。',st.z_z1&&'銃を持ちこんだことを知られ、保安部隊と戦った。ミナは後ろから、手当てと弾と援護射撃で支えてくれた。',st.sou&&'整備路の奥で、ソウと再会した。体を換えすぎて、スペックはもう上がらない。仲間を失ったのは自分のせいだと、ソウは言った。それでも今も、中央区の大規模AIを止めれば制度は止まると信じている。三人で中央区を目指すことにした。リクとミナも、手配者になった。',st.z_z2&&'ソウと並んで、サイボーグ部隊を突破した。',st.z_z3&&'中央区ゲートの番人を倒した。ソウの仲間たちが、たどり着けなかった場所。',st.end&&'東京のてっぺん、中央区。そこにいたのは、AIと、サイボーグだけだった。三人とも、そこで捕まった。'].filter(Boolean);
   openPanel(`<div class="eyebrow">OBJECTIVE · 目的</div><h3>目的</h3>
   <div class="goal"><b>いまやること</b><p style="margin:4px 0 0">${esc(g.t)}</p><p class="note" style="margin-top:4px">${esc(g.h)}</p></div>
   <div><p>ゲートの条件</p><p class="note">実効スペック＝生身のスキャン点数＋インプラント。インプラントでも通れるが、生身率が下がると、人の態度や会話が変わる。</p></div>
@@ -2602,6 +2647,7 @@ function goalPanel(){$('#goalBtn').classList.remove('new');const g=goalNow(),st=
   </div>
   <div><p>これまでのあらすじ</p></div><ol class="story">${story.map(t=>`<li>${esc(t)}</li>`).join('')}</ol>
   ${st.tenkyu?`<p class="note">ヒント：${hintN()} / ${HINT_IDS.length}（豆電球のついた人が知っている）</p>`:''}
+  ${Object.keys(S.endings||{}).length?`<div><p>エンディング ${Object.keys(S.endings).length} / 5</p></div><ol class="story">${[1,2,3,4,5].map(i=>`<li>${S.endings[i]?`END${i}「${esc(END_NAMES[i])}」 · 見た`:`？？？ · ${esc(END_HINTS[i])}`}</li>`).join('')}</ol>`:''}
   <p class="note">本音を聞いた人：${hn} / ${Object.keys(HONNE).length}人${hn?'':'（同じ人と、とことん話してみると……）'}</p>
   <div class="prow"><button class="nbtn" id="cl" type="button">閉じる</button></div>`);
   $('#cl').onclick=()=>closePanel();$('#cl').focus()}
@@ -3098,7 +3144,7 @@ function setLight(on,quiet){S.light=!!on;save();sfx('ui');if(!quiet)toast(on?'�
 function itemsPanel(){openPanel(`<div class="eyebrow">ITEMS · 持ち物</div><h3>持ち物</h3>
   <div class="goal"><b>ライト（懐中電灯）</b><p class="note" style="margin-top:4px">向いている方を照らす。暗い圏外では手放せない。沈殿街は明るいので、ふだんはしまっておく。</p>
     <p style="margin:6px 0 0">いま：<span id="ltNow">${S.light?'ついている':'しまってある'}</span></p></div>
-  ${S.st&&S.st.weapon?`<div class="goal"><b>パルスガン（鋼組の裏ルート品）</b><p class="note" style="margin-top:4px">保安機体用の銃。RAY から受け取った。「今度は、引きずり下ろさねえように使え」。使うのは、天穹区から。</p></div>`:''}
+  ${S.st&&S.st.weapon?`<div class="goal"><b>パルスガン（鋼組の裏ルート品）</b><p class="note" style="margin-top:4px">保安機体用の銃。RAY から受け取った。「今度は、引きずり下ろさねえように使え」。使うのは、天穹区から。</p></div><div class="goal"><b>シールド（携帯用の防壁）</b><p class="note" style="margin-top:4px">銃と一緒に RAY から受け取った。「盾があっても、突っ込むんじゃねえ」。攻撃を受けると、体力より先にシールドが減る（${shMax()}つ分）。しばらく攻撃を受けなければ、また戻る。</p></div>`:''}
   ${S.st&&S.st.sou?`<div class="goal"><b>仲間（サイボーグ化率）</b><p class="note" style="margin-top:4px">リク ${rikCy()}%／ミナ 0%（生身）／ソウ ${SOU_CY}%（${souEvac()?'圏外の村に避難':'一緒に行く'}）${(S.party||[]).map(id=>`／${WHO[id]} ${PARTY[id].cy}%`).join('')}</p><p class="note">仲間は、天穹区・企業区・沈殿街の何人かに頼める。中央区ゲートの前で待っている。</p></div>`:''}
   <p class="note">キーボードの F キーでも、ライトをつけたり消したりできる。</p>
   <div class="prow"><button class="nbtn" id="lt" type="button">${S.light?'消す':'つける'}</button><button class="nbtn ghost" id="cl" type="button">閉じる</button></div>`);
