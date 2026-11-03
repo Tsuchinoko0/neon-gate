@@ -1367,8 +1367,9 @@ const foeHurt=(f,n,weak)=>{if(f.k==='ai'&&f.morph&&T<f.morph)return;if(f.k==='ai
 const weakAt=f=>{const d=FOE[f.k];return{x:f.x+d.weak[0]*f.dir,y:f.y+d.weak[1]}};
 /* シールド（v0.33）：企業区で RAY が銃と一緒に渡す（銃を持っていれば持っている）。攻撃を受けると体力より先に減り、5秒受けなければ4秒ごとに1つ戻る */
 const hasShield=()=>!!(S.st&&S.st.weapon);
-const shMax=()=>hasShield()?({easy:3,normal:2,hard:2})[diffNow()]:0;
-function stepShield(){if(!hasShield())return;if(F.sh==null)F.sh=shMax();if(F.sh<shMax()&&T-(F.hurtT||0)>5&&T>=(F.shT||0)){F.sh++;F.shT=T+4;F.fx.push({k:'txt',x:player.x,y:player.y-24,t:T,s:'シールド回復',c:'#7fd0ff'})}}
+const shMax=()=>hasShield()?({easy:3,normal:2,hard:1})[diffNow()]:0;
+/* 戻るのは、天穹区では敵の波と波の間だけ（6秒受けなければ）。中央区の戦いは敵が消えないので、8秒受けなければ */
+function stepShield(){if(!hasShield())return;if(F.sh==null)F.sh=shMax();if(F.sh>shMax())F.sh=shMax();const wait=TOPF.fight?8:6,calm=TOPF.fight||!F.foes.some(f=>f.st!=='in');if(calm&&F.sh<shMax()&&T-(F.hurtT||0)>wait&&T>=(F.shT||0)){F.sh++;F.shT=T+5;F.fx.push({k:'txt',x:player.x,y:player.y-24,t:T,s:'シールド回復',c:'#7fd0ff'})}}
 /* プレイヤーの当たり（足もと y から上に 15） */
 function hurtPlayer(n,from){if(T<F.inv||T<F.dodgeT||mode!=='play')return;const c=cbt();F.hurtT=T;F.shT=T+5;
   if(F.sh>0){F.sh--;F.inv=T+0.8;F.kb=T+0.1;buzz(30);sfx('ehit');F.fx.push({k:'shield',x:player.x,y:player.y,t:T},{k:'txt',x:player.x,y:player.y-24,t:T,s:F.sh?'シールド':'シールド破損',c:'#7fd0ff'});return}
@@ -1858,7 +1859,7 @@ let PALLY=[];
 function makePartyAllies(){PALLY=(S.party||[]).map((id,i)=>({id,x:player.x-40-i*14,z:i%2?5:-5,ally:1,flip:false,mv:0,step:0,cd:1+i*0.4,hacked:false}))}
 /* 大規模AI：攻撃の前に、リクの動きを予測した印を出す。生身は、ときどき予測の外に動ける（「予測不能」→核がむき出し） */
 function topZone(){const st=STAGES.top;return{id:'top',top:1,x0:TOPF.no>=4?st.ai-260:30,x1:st.ai+30,boss:TOPF.no!==3,end3:TOPF.no===3,waves:TOPF.no===3?[]:[[{k:'ai',x:st.ai}]]}}
-function startTopFight(){if(TOPF.no>=4&&!AIB.tab)aiBrainReset();if(TOPF.no>=4){player.x=STAGES.top.ai-230;player.vx=0}TOPF.fight=true;TOPF.t0=T;TOPF.hacked=false;TOPF.spawnT=T+0.5;STAGES.top.endX=STAGES.top.ai-46;resetFight(true);makePartyAllies();placeAllies();ALLY.mina.x=player.x-26;
+function startTopFight(){if(TOPF.p2Start)setTimeout(()=>mood('boss2'),0);if(TOPF.no>=4&&!AIB.tab)aiBrainReset();if(TOPF.no>=4){player.x=STAGES.top.ai-230;player.vx=0}TOPF.fight=true;TOPF.t0=T;TOPF.hacked=false;TOPF.spawnT=T+0.5;STAGES.top.endX=STAGES.top.ai-46;resetFight(true);makePartyAllies();placeAllies();ALLY.mina.x=player.x-26;
   const z=topZone();F.zone=z;F.wave=0;F.waveT=0;sfx('lock');sfx('alarm');mood(z.end3?'fight':'boss');mode='play';hud()}
 function stopTopFight(keep){TOPF.fight=false;TOPF.show=!!keep;F.zone=null;if(!keep)F.foes=[];F.eshots=[];F.beams=[];F.shots=[];STAGES.top.endX=450}
 /* 1コマぶん（END3 の列と、ハッキング） */
@@ -2634,7 +2635,7 @@ function goalPanel(){$('#goalBtn').classList.remove('new');const g=goalNow(),st=
   const mark=(ok,lock)=>lock?'<span class="lock">－</span>':ok?'<span class="ok">✓</span>':'<span class="ng">✗</span>';
   const story=[S.started&&'リク、18歳。圏外の畑の村で生まれ育った。子どものころから、ピラミッド都市・東京の中が見たかった。脳のスペックが基準に届けば、圏外からでも東京に入れる。',st.poster&&'村の掲示板に、指名手配の紙が貼られていた。「指名手配　ソウ」「中央区ゲート襲撃」。',o&&`ドク・カゲロウのブレインスキャンで、脳は「${o.tier.name}」と測られた。`,S.passed&&'圏外のゲートを通った。ミナが追ってきた。手配書のソウは、ミナの兄だった。基準は越えていたが、一人では入れなかったのだという。',
     st.arrive&&'ピラミッドの底、第1層・沈殿街に着いた。ミナはここで生まれ、十年前に検査に落ちて圏外へ出された。兄のソウは東京に残った。ミナは昇降機のそばに残り、インプラントに頼らず次のゲートを通るため勉強を始めた。',
-    st.genji&&'屋台のゲンジいわく、ソウは昔の常連で、「てっぺんに上って、全部変える」と言って鋼組に入り、体を換え始めた。',st.ray&&'鋼組のRAYいわく、ソウに体を換える道を勧めたのは自分だった。ソウは天穹区まで上ったが、スペックが上がらなくなり、仲間と中央区のゲートを襲って失敗した。今は手配者として、天穹区に隠れている。',st.done&&'ミナに知らせた。ミナは、生身のまま兄を迎えに行くと決めた。',st.corp&&'企業区ゲートを通った。ミナも、生身のままぎりぎりで基準に届いた。企業区では毎日の査定で、数字が落ちた人から下の層へ送られている。',st.news&&'ニュースによると、ソウの仲間5人のうち4人は保安機体にやられた。ソウは一人で天穹区に潜んでいる。',st.resolve&&'ミナと話した。ソウのところへ行くなら、戦いは避けられない。ミナは生身のまま後ろから支えると言い、二人で覚悟を決めた。',st.weapon&&'RAY から、鋼組の裏ルートのパルスガンを受け取った。「今度は、引きずり下ろさねえように使え」。生身のミナは、RAY が配送の荷として上へ運ぶ。',st.tenkyu&&'天穹区ゲートを通った。作り物の空の下、白く整いすぎた街。ソウの手配書が、至るところで回っていた。',st.z_z1&&'銃を持ちこんだことを知られ、保安部隊と戦った。ミナは後ろから、手当てと弾と援護射撃で支えてくれた。',st.sou&&'整備路の奥で、ソウと再会した。体を換えすぎて、スペックはもう上がらない。仲間を失ったのは自分のせいだと、ソウは言った。それでも今も、中央区の大規模AIを止めれば制度は止まると信じている。三人で中央区を目指すことにした。リクとミナも、手配者になった。',st.z_z2&&'ソウと並んで、サイボーグ部隊を突破した。',st.z_z3&&'中央区ゲートの番人を倒した。ソウの仲間たちが、たどり着けなかった場所。',st.end&&'東京のてっぺん、中央区。そこにいたのは、AIと、サイボーグだけだった。三人とも、そこで捕まった。'].filter(Boolean);
+    st.genji&&'屋台のゲンジいわく、ソウは昔の常連で、「てっぺんに上って、全部変える」と言って鋼組に入り、体を換え始めた。',st.ray&&'鋼組のRAYいわく、ソウに体を換える道を勧めたのは自分だった。ソウは天穹区まで上ったが、スペックが上がらなくなり、仲間と中央区のゲートを襲って失敗した。今は手配者として、天穹区に隠れている。',st.done&&'ミナに知らせた。ミナは、生身のまま兄を迎えに行くと決めた。',st.corp&&'企業区ゲートを通った。ミナも、生身のままぎりぎりで基準に届いた。企業区では毎日の査定で、数字が落ちた人から下の層へ送られている。',st.news&&'ニュースによると、ソウの仲間5人のうち4人は保安機体にやられた。ソウは一人で天穹区に潜んでいる。',st.resolve&&'ミナと話した。ソウのところへ行くなら、戦いは避けられない。ミナは生身のまま後ろから支えると言い、二人で覚悟を決めた。',st.weapon&&'RAY から、鋼組の裏ルートのパルスガンとシールドを受け取った。「今度は、引きずり下ろさねえように使え」。生身のミナは、RAY が配送の荷として上へ運ぶ。',st.tenkyu&&'天穹区ゲートを通った。作り物の空の下、白く整いすぎた街。ソウの手配書が、至るところで回っていた。',st.z_z1&&'銃を持ちこんだことを知られ、保安部隊と戦った。ミナは後ろから、手当てと弾と援護射撃で支えてくれた。',st.sou&&'整備路の奥で、ソウと再会した。体を換えすぎて、スペックはもう上がらない。仲間を失ったのは自分のせいだと、ソウは言った。それでも今も、中央区の大規模AIを止めれば制度は止まると信じている。三人で中央区を目指すことにした。リクとミナも、手配者になった。',st.z_z2&&'ソウと並んで、サイボーグ部隊を突破した。',st.z_z3&&'中央区ゲートの番人を倒した。ソウの仲間たちが、たどり着けなかった場所。',st.end&&'東京のてっぺん、中央区。そこにいたのは、AIと、サイボーグだけだった。三人とも、そこで捕まった。'].filter(Boolean);
   openPanel(`<div class="eyebrow">OBJECTIVE · 目的</div><h3>目的</h3>
   <div class="goal"><b>いまやること</b><p style="margin:4px 0 0">${esc(g.t)}</p><p class="note" style="margin-top:4px">${esc(g.h)}</p></div>
   <div><p>ゲートの条件</p><p class="note">実効スペック＝生身のスキャン点数＋インプラント。インプラントでも通れるが、生身率が下がると、人の態度や会話が変わる。</p></div>
