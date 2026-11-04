@@ -252,7 +252,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap">
   <header class="head">
     <h1>NEON GATE</h1>
-    <span class="eyebrow">PROTOTYPE v0.33 · 脳スペック診断 続編</span>
+    <span class="eyebrow">PROTOTYPE v0.34 · 脳スペック診断 続編</span>
   </header>
 
   <div class="bar" aria-live="polite">
@@ -295,7 +295,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 
-<script src="sound.js?v=0.33"></script>
+<script src="sound.js?v=0.34"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -430,11 +430,19 @@ function adminGates(){if(!overall(S.cur)||effective()<gateReq('corp'))adminMax()
   S.st={...S.st,poster:1,join:1,arrive:1,genji:1,ray:1,done:1,corp:1,corpArrive:1,news:1,resolve:1,weapon:1,tenkyu:1,skyArrive:1,z_z1:1,zs_z1:1,sou:1,z_z2:1,zs_z2:1,z_z3:1,zs_z3:1};
   save();hud();toast('管理者：全部のゲートを通れるようにした（昇降機で天穹区まで行ける）',4200)}
 function adminAll(){adminMax();adminGates()}
-window.ngAdmin={max:adminMax,gates:adminGates,all:adminAll,go:to=>{if(AREAS[to]&&to!=='top'){if(!S.reached.includes(to))S.reached=[...S.reached,to];travel(to,'lift')}}};
+/* 生身率を決める（v0.34）。インプラントのレベルを、部位を順にまわして上げ、生身率がその値以下になるまで入れる（実効スペック・中央AIの読みもインプラントどおりに変わる） */
+function adminFlesh(target){target=clamp(Math.round(target),0,100);S.imp={};S.impQ={};let i=0;
+  while(flesh()>target&&totalLv()<IMPLANTS.length*IMP_MAX){const m=IMPLANTS[i++%IMPLANTS.length];if(impLv(m.id)<IMP_MAX)S.imp={...S.imp,[m.id]:impLv(m.id)+1}}
+  S.impQ=Object.fromEntries(IMPLANTS.map(m=>[m.id,Array(impLv(m.id)).fill(0)]));save();hud();sndApply();
+  toast(`管理者：生身 ${flesh()}%・サイボーグ ${100-flesh()}% にした（実効スペック ${effective()??'—'}）`,4200)}
+window.ngAdmin={max:adminMax,gates:adminGates,all:adminAll,flesh:adminFlesh,go:to=>{if(AREAS[to]&&to!=='top'){if(!S.reached.includes(to))S.reached=[...S.reached,to];travel(to,'lift')}}};
 function adminHTML(){return isAdmin()?`<div><p>管理者</p><p class="note">作者が試すためのもの。URL に ?admin を付けて開くと、このブラウザでは出たままになります（?admin=0 を付けて開くと消える）。</p></div>
   <div class="prow"><button class="nbtn pink" type="button" data-ad="max">スキャン値を最大に</button><button class="nbtn pink" type="button" data-ad="gates">全部のゲートを通れるように</button><button class="nbtn pink" type="button" data-ad="all">両方</button></div>
-  <div class="prow">${['out','lower','corp','sky'].map(a=>`<button class="nbtn ghost" type="button" data-go="${a}">${AREAS[a].nm.split(' · ')[0]}へ</button>`).join('')}</div>`:''}
+  <div class="prow">${['out','lower','corp','sky'].map(a=>`<button class="nbtn ghost" type="button" data-go="${a}">${AREAS[a].nm.split(' · ')[0]}へ</button>`).join('')}</div>
+  <p class="note">生身率（いま 生身 ${flesh()}%・サイボーグ ${100-flesh()}%）。インプラントのレベルで合わせます。サイボーグ 70% 以上（生身 30% 以下）は中央区でハッキングされる。</p>
+  <div class="prow">${[100,80,60,40,30,10,0].map(v=>`<button class="nbtn ${flesh()===v?'':'ghost'}" type="button" data-fl="${v}">生身 ${v}%</button>`).join('')}</div>`:''}
 function bindAdmin(root){root.querySelectorAll('[data-ad]').forEach(b=>b.onclick=()=>closePanel(()=>({max:adminMax,gates:adminGates,all:adminAll})[b.dataset.ad]()));
+  root.querySelectorAll('[data-fl]').forEach(b=>b.onclick=()=>closePanel(()=>adminFlesh(+b.dataset.fl)));
   root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const to=b.dataset.go;if(!S.reached.includes(to))S.reached=[...S.reached,to];closePanel(()=>travel(to,'lift'))})}
 /* ===== 音（sound.js） ===== */
 const SND=window.NGSound||null;
@@ -2359,7 +2367,7 @@ function clearPanel(){const o=overall(S.cur),b=overall(S.base);
     <div class="stat"><span>稼いだクレジット</span><b>${(S.earned||0).toLocaleString()} CR</b></div>
   </div>
   <p class="earn" style="font-size:clamp(20px,4.5vw,30px)">天穹区は次の版で</p>
-  <p class="muted">試作版 v0.33 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
+  <p class="muted">試作版 v0.34 の区切りです。昇降機でほかの層に戻って、仕事や再スキャン、本音集めを続けることもできます。</p>
   <div class="prow"><button class="nbtn" id="ok" type="button">企業区に戻る</button></div>`);
   $('#ok').onclick=()=>closePanel();$('#ok').focus()}
 /* ===== ミナの同行と沈殿街 ===== */
